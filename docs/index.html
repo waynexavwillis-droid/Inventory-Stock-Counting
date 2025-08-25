@@ -6,13 +6,13 @@
   <title>Inventory System with Alerts</title>
   <style>
     body { font-family: Arial, sans-serif; margin:0; display:flex; height:100vh; }
-    .sidebar { width:220px; background:#f3f3f3; padding:20px; box-sizing:border-box; }
+    .sidebar { width:240px; background:#f3f3f3; padding:20px; box-sizing:border-box; }
     .sidebar button { display:block; width:100%; margin-bottom:10px; padding:10px; cursor:pointer; }
-    .content { flex:1; padding:20px; box-sizing:border-box; }
+    .content { flex:1; padding:20px; box-sizing:border-box; overflow:auto; }
     input, button { padding:8px; margin:4px; }
-    table { width:80%; margin-top:20px; border-collapse:collapse; }
-    table, th, td { border:1px solid black; }
-    th, td { padding:8px; text-align:left; }
+    table { width:100%; margin-top:12px; border-collapse:collapse; }
+    table, th, td { border:1px solid #000; }
+    th, td { padding:8px; text-align:left; vertical-align:top; }
     .action-btn { padding:4px 8px; margin-right:5px; cursor:pointer; font-weight:bold; font-size:14px; }
 
     /* --- Modal styles --- */
@@ -31,6 +31,9 @@
     .modal-card input, .modal-card textarea { width:100%; box-sizing:border-box; padding:8px; }
     .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:12px; }
     .muted { color:#666; font-size:12px; margin-top:6px; }
+    .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+    .pill { display:inline-block; padding:2px 8px; border:1px solid #ccc; border-radius:999px; font-size:12px; color:#555; }
+    .nowrap { white-space:nowrap; }
   </style>
 </head>
 <body>
@@ -39,6 +42,7 @@
     <button onclick="showPage('addPage')">Add New Stock</button>
     <button onclick="showPage('adjustPage')">Adjust Stock</button>
     <button onclick="showPage('goalPage')">Set Stock Count Goal</button>
+    <button onclick="showPage('historyPage')">History</button>
   </div>
 
   <div class="content">
@@ -82,6 +86,38 @@
         <tbody></tbody>
       </table>
     </div>
+
+    <!-- History Page -->
+    <div id="historyPage" style="display:none;">
+      <h2>History</h2>
+
+      <div class="toolbar">
+        <input id="hist-search" type="text" placeholder="Search item / name / purpose…" oninput="renderHistory()">
+        <select id="hist-item-filter" onchange="renderHistory()">
+          <option value="">All items</option>
+        </select>
+        <span class="pill" id="hist-count">0 records</span>
+        <div style="flex:1"></div>
+        <button onclick="exportHistoryCSV()">Export CSV</button>
+        <button onclick="clearHistory()">Clear History</button>
+      </div>
+
+      <table id="historyTable">
+        <thead>
+          <tr>
+            <th class="nowrap">Date/Time</th>
+            <th>Item</th>
+            <th class="nowrap">Change</th>
+            <th>Qty After</th>
+            <th>By (Name)</th>
+            <th>Purpose</th>
+            <th>For (names)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="muted">Only this device/browser can see this history (localStorage).</div>
+    </div>
   </div>
 
   <!-- ===== Adjust dialog (opens on + / -) ===== -->
@@ -115,11 +151,13 @@
     function saveAdjustments() { localStorage.setItem('adjustments', JSON.stringify(adjustments)); }
 
     function showPage(pageId) {
-      document.getElementById('addPage').style.display = 'none';
-      document.getElementById('adjustPage').style.display = 'none';
-      document.getElementById('goalPage').style.display = 'none';
+      ['addPage','adjustPage','goalPage','historyPage'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+      });
       document.getElementById(pageId).style.display = 'block';
+
       if (pageId === 'adjustPage' || pageId === 'goalPage') renderTables();
+      if (pageId === 'historyPage') { populateHistoryFilters(); renderHistory(); }
     }
 
     // Add new item
@@ -187,7 +225,6 @@
     function checkLowStockAlerts() {
       inventory.forEach(item => {
         if (item.goal > 0 && item.qty <= item.goal) {
-          // optional: throttle alerts by marking a flag on the item
           alert(`Low stock for "${item.name}"`);
         }
       });
@@ -199,15 +236,13 @@
     function openAdjustDialog(index, delta) {
       pending = { index, delta };
       const item = inventory[index];
-      document.getElementById('adj-title').textContent =
-        `Adjust "${item.name}"`;
+      document.getElementById('adj-title').textContent = `Adjust "${item.name}"`;
       document.getElementById('adj-subtitle').textContent =
         `Change: ${delta > 0 ? '+' : ''}${delta} | Current qty: ${item.qty}`;
       document.getElementById('adj-name').value = '';
       document.getElementById('adj-purpose').value = '';
       document.getElementById('adj-for').value = '';
       document.getElementById('adjustModal').classList.add('open');
-      // focus first input
       setTimeout(() => document.getElementById('adj-name').focus(), 0);
     }
     function closeAdjustDialog() {
@@ -228,11 +263,9 @@
       }
 
       const item = inventory[pending.index];
-      // apply adjustment
       item.qty += pending.delta;
       if (item.qty < 0) item.qty = 0;
 
-      // log audit entry
       adjustments.push({
         ts: new Date().toISOString(),
         item: item.name,
@@ -244,9 +277,108 @@
       saveAdjustments();
 
       renderStockTable();
+      if (document.getElementById('historyPage').style.display !== 'none') renderHistory();
       checkLowStockAlerts();
       closeAdjustDialog();
     });
+
+    // ====== History helpers ======
+    function populateHistoryFilters() {
+      const sel = document.getElementById('hist-item-filter');
+      const current = sel.value;
+      const names = Array.from(new Set(adjustments.map(a => a.item))).sort((a,b)=>a.localeCompare(b));
+      sel.innerHTML = '<option value="">All items</option>' + names.map(n => `<option value="${n}">${n}</option>`).join('');
+      if ([...sel.options].some(o => o.value === current)) sel.value = current;
+    }
+
+    function renderHistory() {
+      const tbody = document.querySelector('#historyTable tbody');
+      tbody.innerHTML = '';
+
+      let rows = adjustments.slice().sort((a,b)=> (a.ts < b.ts ? 1 : -1)); // newest first
+
+      const q = document.getElementById('hist-search').value.trim().toLowerCase();
+      if (q) {
+        rows = rows.filter(r =>
+          (r.item||'').toLowerCase().includes(q) ||
+          (r.actor||'').toLowerCase().includes(q) ||
+          (r.purpose||'').toLowerCase().includes(q) ||
+          (r.forWhom||'').toLowerCase().includes(q)
+        );
+      }
+      const itemFilter = document.getElementById('hist-item-filter').value;
+      if (itemFilter) rows = rows.filter(r => r.item === itemFilter);
+
+      document.getElementById('hist-count').textContent = `${rows.length} record${rows.length===1?'':'s'}`;
+
+      for (const r of rows) {
+        const tr = document.createElement('tr');
+        const dt = new Date(r.ts);
+        const dtStr = isNaN(+dt) ? r.ts : dt.toLocaleString();
+        tr.innerHTML = `
+          <td>${dtStr}</td>
+          <td>${escapeHtml(r.item)}</td>
+          <td class="nowrap">${r.delta > 0 ? '+' : ''}${r.delta}</td>
+          <td>${r.qtyAfter}</td>
+          <td>${escapeHtml(r.actor)}</td>
+          <td>${escapeHtml(r.purpose)}</td>
+          <td>${escapeHtml(r.forWhom)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function exportHistoryCSV() {
+      if (!adjustments.length) return alert('No history to export.');
+      const header = ['Timestamp','Item','Delta','QtyAfter','Actor','Purpose','ForWhom'];
+      const lines = [header.join(',')];
+
+      for (const r of adjustments) {
+        const row = [
+          r.ts,
+          r.item,
+          r.delta,
+          r.qtyAfter,
+          r.actor,
+          r.purpose,
+          r.forWhom
+        ].map(csvEscape).join(',');
+        lines.push(row);
+      }
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'inventory-history.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function clearHistory() {
+      if (!adjustments.length) return alert('History is already empty.');
+      if (!confirm('Clear ALL history on this device? This cannot be undone.')) return;
+      adjustments = [];
+      saveAdjustments();
+      populateHistoryFilters();
+      renderHistory();
+    }
+
+    // utils
+    function csvEscape(v) {
+      const s = (v ?? '').toString();
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+    }
+    function escapeHtml(s) {
+      return (s ?? '').toString()
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
+    }
 
     // Initial render
     renderTables();
