@@ -66,10 +66,11 @@
     .card__title { color:var(--card-text); font-size:1.1em; margin:0; font-weight:700; transition:all .3s; }
     .card__description { color:var(--card-text); font-size:.75em; margin:0; opacity:.7; transition:all .3s; }
 
-    /* NEW: actions row under the title */
+    /* actions row under the title */
     .card__actions { display:flex; justify-content:center; gap:12px; margin-top:8px; }
     .card__button { width:28px; height:28px; background:var(--card-accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; cursor:pointer; transition:all .3s; transform:scale(.9); user-select:none; }
     .card__button--minus { background:#ef4444; }
+    .card__button--trash { background:#111827; } /* delete button */
 
     .card:hover { transform:translateY(-10px); box-shadow:0 20px 25px -5px rgba(0,0,0,.1), 0 10px 10px -5px rgba(0,0,0,.04); border-color:rgba(124,58,237,.2); }
     .card:hover .card__shine{opacity:1; animation:shine 3s infinite;}
@@ -194,6 +195,28 @@
     </div>
   </div>
 
+  <!-- ===== Delete dialog ===== -->
+  <div id="deleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="del-title">
+    <div class="modal-card">
+      <h3 id="del-title">Delete Item</h3>
+      <div id="del-subtitle" class="muted"></div>
+
+      <label for="del-name">Your name</label>
+      <input id="del-name" type="text" placeholder="e.g., Alice Tan">
+
+      <label for="del-purpose">Purpose</label>
+      <input id="del-purpose" type="text" placeholder="e.g., remove discontinued item">
+
+      <label for="del-for">For (names)</label>
+      <input id="del-for" type="text" placeholder="e.g., Ops team">
+
+      <div class="modal-actions">
+        <button id="del-cancel">Cancel</button>
+        <button id="del-confirm" style="background:#111827;color:#fff;">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ===== Data (inventory + audit log) in localStorage =====
     let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
@@ -262,6 +285,7 @@
             <div class="card__actions">
               <div class="card__button" title="Add" onclick="openAdjustDialog(${index}, 'add')">+</div>
               <div class="card__button card__button--minus" title="Minus" onclick="openAdjustDialog(${index}, 'sub')">–</div>
+              <div class="card__button card__button--trash" title="Delete item" onclick="openDeleteDialog(${index})">🗑</div>
             </div>
           </div>
         `;
@@ -356,9 +380,72 @@
       saveAdjustments();
 
       renderStockGrid();
-      if (document.getElementById('historyPage').style.display !== 'none') renderHistory();
+      renderGoalTable();
+      if (document.getElementById('historyPage').style.display !== 'none') { populateHistoryFilters(); renderHistory(); }
       checkLowStockAlerts();
       closeAdjustDialog();
+    });
+
+    // ====== Delete dialog logic ======
+    let pendingDeleteIndex = null;
+
+    function openDeleteDialog(index) {
+      pendingDeleteIndex = index;
+      const item = inventory[index];
+      document.getElementById('del-title').textContent = `Delete "${item.name}"`;
+      document.getElementById('del-subtitle').textContent = `This will remove the item and log a history entry with -${item.qty} (Qty after: 0).`;
+      document.getElementById('del-name').value = '';
+      document.getElementById('del-purpose').value = '';
+      document.getElementById('del-for').value = '';
+      document.getElementById('deleteModal').classList.add('open');
+      setTimeout(() => document.getElementById('del-name').focus(), 0);
+    }
+    function closeDeleteDialog() {
+      document.getElementById('deleteModal').classList.remove('open');
+    }
+    document.getElementById('del-cancel').addEventListener('click', closeDeleteDialog);
+    document.getElementById('deleteModal').addEventListener('click', (e) => {
+      if (e.target.id === 'deleteModal') closeDeleteDialog();
+    });
+    document.getElementById('deleteModal').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('del-confirm').click(); }
+    });
+
+    document.getElementById('del-confirm').addEventListener('click', () => {
+      if (pendingDeleteIndex === null) return closeDeleteDialog();
+
+      const actor   = document.getElementById('del-name').value.trim();
+      const purpose = document.getElementById('del-purpose').value.trim();
+      const forWhom = document.getElementById('del-for').value.trim();
+
+      if (!actor || !purpose || !forWhom) return alert('Please fill in Your name, Purpose, and For (names).');
+
+      const removed = inventory[pendingDeleteIndex];
+      const prevQty = removed?.qty ?? 0;
+
+      // Log a history entry representing the deletion
+      adjustments.push({
+        ts: new Date().toISOString(),
+        item: removed.name,
+        delta: -prevQty,
+        actor, purpose, forWhom,
+        qtyAfter: 0
+      });
+
+      // Remove from inventory
+      inventory.splice(pendingDeleteIndex, 1);
+      pendingDeleteIndex = null;
+
+      saveInventory();
+      saveAdjustments();
+
+      // Refresh UI
+      renderStockGrid();
+      renderGoalTable();
+      populateHistoryFilters();
+      renderHistory();
+
+      closeDeleteDialog();
     });
 
     // ====== History helpers ======
