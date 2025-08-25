@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory System with Alerts</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 220px;
+      background-color: #f3f3f3;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .sidebar button {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 10px;
+      cursor: pointer;
+    }
+    .content {
+      flex: 1;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    input, button {
+      padding: 8px;
+      margin: 4px;
+    }
+    table {
+      width: 80%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+    .action-btn {
+      padding: 4px 8px;
+      margin-right: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <button onclick="showPage('addPage')">Add New Stock</button>
+    <button onclick="showPage('adjustPage')">Adjust Stock</button>
+    <button onclick="showPage('goalPage')">Set Stock Count Goal</button>
+  </div>
+
+  <div class="content">
+    <!-- Add New Stock Page -->
+    <div id="addPage">
+      <h2>Add New Item</h2>
+      <input type="text" id="newItemName" placeholder="Item Name">
+      <input type="number" id="newItemQty" placeholder="Quantity">
+      <button onclick="addNewItem()">Add Item</button>
+    </div>
+
+    <!-- Adjust Stock Page -->
+    <div id="adjustPage" style="display:none;">
+      <h2>Adjust Stock</h2>
+      <table id="stockTable">
+        <thead>
+          <tr>
+            <th>Item Name</th>
+            <th>Quantity</th>
+            <th>Stock Goal</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Goal Settings Page -->
+    <div id="goalPage" style="display:none;">
+      <h2>Set Stock Count Goal</h2>
+      <table id="goalTable">
+        <thead>
+          <tr>
+            <th>Item Name</th>
+            <th>Current Goal</th>
+            <th>New Goal</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Load inventory from localStorage or initialize empty
+    let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+
+    function saveInventory() {
+      localStorage.setItem('inventory', JSON.stringify(inventory));
+    }
+
+    function showPage(pageId) {
+      document.getElementById('addPage').style.display = 'none';
+      document.getElementById('adjustPage').style.display = 'none';
+      document.getElementById('goalPage').style.display = 'none';
+      document.getElementById(pageId).style.display = 'block';
+      if(pageId === 'adjustPage' || pageId === 'goalPage') renderTables();
+    }
+
+    // Add new item
+    function addNewItem() {
+      const name = document.getElementById('newItemName').value.trim();
+      const qty = parseInt(document.getElementById('newItemQty').value);
+      if(!name || isNaN(qty) || qty <= 0) return alert("Enter valid name and quantity");
+
+      const existing = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
+      if(existing) {
+        existing.qty += qty;
+      } else {
+        inventory.push({ name, qty, goal: 0 });
+      }
+      saveInventory();
+      alert(`Item "${name}" added.`);
+      document.getElementById('newItemName').value = '';
+      document.getElementById('newItemQty').value = '';
+    }
+
+    // Render tables
+    function renderTables() {
+      renderStockTable();
+      renderGoalTable();
+      checkLowStockAlerts();
+    }
+
+    function renderStockTable() {
+      const tbody = document.getElementById('stockTable').querySelector('tbody');
+      tbody.innerHTML = '';
+      inventory.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${item.name}</td>
+          <td>${item.qty}</td>
+          <td>${item.goal}</td>
+          <td>
+            <button class="action-btn" onclick="adjustQty(${index}, 1)">+</button>
+            <button class="action-btn" onclick="adjustQty(${index}, -1)">-</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function renderGoalTable() {
+      const tbody = document.getElementById('goalTable').querySelector('tbody');
+      tbody.innerHTML = '';
+      inventory.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${item.name}</td>
+          <td>${item.goal}</td>
+          <td><input type="number" id="newGoal-${index}" placeholder="New Goal"></td>
+          <td><button onclick="updateGoal(${index})">Update</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function adjustQty(index, delta) {
+      const item = inventory[index];
+      item.qty += delta;
+      if(item.qty < 0) item.qty = 0;
+      saveInventory();
+      renderStockTable();
+      checkLowStockAlerts();
+    }
+
+    function updateGoal(index) {
+      const newGoal = parseInt(document.getElementById(`newGoal-${index}`).value);
+      if(isNaN(newGoal) || newGoal < 0) return alert("Enter valid stock goal");
+      inventory[index].goal = newGoal;
+      saveInventory();
+      renderGoalTable();
+      alert(`Stock goal updated for ${inventory[index].name}`);
+    }
+
+    function checkLowStockAlerts() {
+      inventory.forEach(item => {
+        if(item.goal > 0 && item.qty <= item.goal) {
+          alert(`Low stock for "${item.name}"`);
+        }
+      });
+    }
+
+    // Initial render
+    renderTables();
+  </script>
+
+</body>
+</html>
