@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inventory System with Alerts</title>
   <style>
+    /* Base layout */
     body { font-family: Arial, sans-serif; margin:0; display:flex; height:100vh; }
     .sidebar { width:240px; background:#f3f3f3; padding:20px; box-sizing:border-box; }
     .sidebar button { display:block; width:100%; margin-bottom:10px; padding:10px; cursor:pointer; }
@@ -13,7 +14,6 @@
     table { width:100%; margin-top:12px; border-collapse:collapse; }
     table, th, td { border:1px solid #000; }
     th, td { padding:8px; text-align:left; vertical-align:top; }
-    .action-btn { padding:4px 8px; margin-right:5px; cursor:pointer; font-weight:bold; font-size:14px; }
     .muted { color:#666; font-size:12px; margin-top:6px; }
     .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
     .pill { display:inline-block; padding:2px 8px; border:1px solid #ccc; border-radius:999px; font-size:12px; color:#555; }
@@ -26,7 +26,7 @@
       gap: 16px;
     }
 
-    /* === Uiverse.io card styles (with small tweaks) === */
+    /* === Uiverse.io card styles (with tiny tweaks) === */
     .card {
       --card-bg: #ffffff;
       --card-accent: #7c3aed;
@@ -161,7 +161,7 @@
     @keyframes shine { 0% { background-position: -100% 0; } 100% { background-position: 200% 0; } }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
-    /* Small helper for quantity badge inside image */
+    /* quantity badge inside image */
     .qty-badge {
       position:absolute; bottom:8px; right:8px;
       background:#111827; color:#fff; font-size:12px; padding:2px 6px; border-radius:999px; opacity:.9;
@@ -196,7 +196,7 @@
       <div class="muted">Tip: data is saved in this browser using localStorage.</div>
     </div>
 
-    <!-- Adjust Stock Page (CARD GRID) -->
+    <!-- Adjust Stock Page (Card Grid) -->
     <div id="adjustPage" style="display:none;">
       <h2>Adjust Stock</h2>
       <div id="stockGrid" class="grid"></div>
@@ -310,7 +310,7 @@
       document.getElementById('newItemQty').value = '';
     }
 
-    // Render tables (goal table + card grid)
+    // Render both adjust grid + goal table
     function renderTables() { renderStockGrid(); renderGoalTable(); checkLowStockAlerts(); }
 
     // === Adjust page: card grid ===
