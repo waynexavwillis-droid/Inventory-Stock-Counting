@@ -4,6 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inventory System with Alerts</title>
+
+  <!-- Authentication Script (MUST go here, outside <style>) -->
+  <script>
+    // Simple front-end gate: redirect to login if not authenticated
+    if (localStorage.getItem('auth_v1') !== 'ok') {
+      window.location.replace('login.html');
+    }
+    function logout(){
+      localStorage.removeItem('auth_v1');
+      localStorage.removeItem('auth_time'); // optional
+      window.location.replace('login.html');
+    }
+  </script>
+
+  
   <style>
     /* Base layout */
     body { font-family: Arial, sans-serif; margin:0; display:flex; height:100vh; }
@@ -179,6 +194,15 @@
   </style>
 </head>
 <body>
+
+  <div class="sidebar">
+    <button onclick="showPage('addPage')">Add New Stock</button>
+    <button onclick="showPage('adjustPage')">Adjust Stock</button>
+    <button onclick="showPage('goalPage')">Set Stock Count Goal</button>
+    <button onclick="showPage('historyPage')">History</button>
+    <hr>
+    <button onclick="logout()">Logout</button>
+  </div>
 
   <div class="sidebar">
     <button onclick="showPage('addPage')">Add New Stock</button>
