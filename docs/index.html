@@ -94,6 +94,68 @@
     .modal-card label { display:block; margin:10px 0 4px; font-size:14px; }
     .modal-card input { width:100%; box-sizing:border-box; padding:8px; }
     .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:12px; }
+
+    /* ========= Uiverse.io (eslam-hany) input style ========= */
+    /* Wrapped in .input-container for floating label & animated lines */
+    .input-container {
+      position: relative;
+      margin: 8px 4px; /* aligns with your existing input margin */
+    }
+    .input {
+      width: 100%;
+      padding: 10px;
+      height: 40px;
+      border: 2px solid #0B2447;
+      border-top: none;
+      border-bottom: none;
+      font-size: 16px;
+      background: transparent;
+      outline: none;
+      box-shadow: 7px 7px 0px 0px #0B2447;
+      transition: all 0.5s;
+    }
+    .input:focus {
+      box-shadow: none;
+      transition: all 0.5s;
+    }
+    .label {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: #0B2447;
+      transition: all 0.5s;
+      transform: scale(0);
+      z-index: -1;
+      background: #fff; /* prevents text overlap on light backgrounds */
+      padding: 0 4px;
+    }
+    .input-container .topline,
+    .input-container .underline {
+      position: absolute;
+      background-color: #0B2447;
+      height: 2px;
+      right: 0;
+      transition: all 0.5s;
+    }
+    .input-container .topline { width: 0%; top: 0; }
+    .input-container .underline { width: 0%; bottom: 0; }
+
+    /* Apply focus animation to any input inside container (text or number if you add the class) */
+    .input-container input:focus ~ .topline { width: 35%; }
+    .input-container input:focus ~ .underline { width: 100%; }
+    .input-container input:focus ~ .label {
+      top: -10px;
+      transform: scale(1);
+    }
+    /* If you want the floating label visible when there's content (not just focus), uncomment below:
+    .input-container input:not(:placeholder-shown) ~ .label {
+      top: -10px; transform: scale(1);
+    }
+    */
+
+    /* Optional: if you later want to style number inputs too,
+       just add class="input" and this will match because selectors target .input */
+    /* ========= End Uiverse style ========= */
   </style>
 </head>
 <body>
@@ -109,8 +171,17 @@
     <!-- Add New Stock Page -->
     <div id="addPage">
       <h2>Add New Item</h2>
-      <input type="text" id="newItemName" placeholder="Item Name">
+
+      <div class="input-container">
+        <input type="text" id="newItemName" class="input" placeholder=" " />
+        <span class="topline"></span>
+        <span class="underline"></span>
+        <label for="newItemName" class="label">Item Name</label>
+      </div>
+
+      <!-- keeping quantity as a standard number input for usability -->
       <input type="number" id="newItemQty" placeholder="Quantity">
+
       <button onclick="addNewItem()">Add Item</button>
       <div class="muted">Tip: data is saved in this browser using localStorage.</div>
     </div>
@@ -142,7 +213,13 @@
       <h2>History</h2>
 
       <div class="toolbar">
-        <input id="hist-search" type="text" placeholder="Search item / name / purpose…" oninput="renderHistory()">
+        <div class="input-container" style="flex:1; min-width:260px;">
+          <input id="hist-search" type="text" class="input" placeholder=" " oninput="renderHistory()">
+          <span class="topline"></span>
+          <span class="underline"></span>
+          <label for="hist-search" class="label">Search item / name / purpose…</label>
+        </div>
+
         <select id="hist-item-filter" onchange="renderHistory()">
           <option value="">All items</option>
         </select>
@@ -179,14 +256,26 @@
       <label for="adj-amount">Amount</label>
       <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount">
 
-      <label for="adj-name">Your name</label>
-      <input id="adj-name" type="text" placeholder="e.g., Alice Tan">
+      <div class="input-container">
+        <input id="adj-name" type="text" class="input" placeholder=" ">
+        <span class="topline"></span>
+        <span class="underline"></span>
+        <label for="adj-name" class="label">Your name</label>
+      </div>
 
-      <label for="adj-purpose">Purpose</label>
-      <input id="adj-purpose" type="text" placeholder="e.g., customer pickup / audit / transfer">
+      <div class="input-container">
+        <input id="adj-purpose" type="text" class="input" placeholder=" ">
+        <span class="topline"></span>
+        <span class="underline"></span>
+        <label for="adj-purpose" class="label">Purpose (e.g., pickup / audit / transfer)</label>
+      </div>
 
-      <label for="adj-for">For (names)</label>
-      <input id="adj-for" type="text" placeholder="e.g., John Lim, Priya Rao">
+      <div class="input-container">
+        <input id="adj-for" type="text" class="input" placeholder=" ">
+        <span class="topline"></span>
+        <span class="underline"></span>
+        <label for="adj-for" class="label">For (names)</label>
+      </div>
 
       <div class="modal-actions">
         <button id="adj-cancel">Cancel</button>
@@ -201,14 +290,26 @@
       <h3 id="del-title">Delete Item</h3>
       <div id="del-subtitle" class="muted"></div>
 
-      <label for="del-name">Your name</label>
-      <input id="del-name" type="text" placeholder="e.g., Alice Tan">
+      <div class="input-container">
+        <input id="del-name" type="text" class="input" placeholder=" ">
+        <span class="topline"></span>
+        <span class="underline"></span>
+        <label for="del-name" class="label">Your name</label>
+      </div>
 
-      <label for="del-purpose">Purpose</label>
-      <input id="del-purpose" type="text" placeholder="e.g., remove discontinued item">
+      <div class="input-container">
+        <input id="del-purpose" type="text" class="input" placeholder=" ">
+        <span class="topline"></span>
+        <span class="underline"></span>
+        <label for="del-purpose" class="label">Purpose (e.g., discontinued)</label>
+      </div>
 
-      <label for="del-for">For (names)</label>
-      <input id="del-for" type="text" placeholder="e.g., Ops team">
+      <div class="input-container">
+        <input id="del-for" type="text" class="input" placeholder=" ">
+        <span class="topline"></span>
+        <span class="underline"></span>
+        <label for="del-for" class="label">For (names)</label>
+      </div>
 
       <div class="modal-actions">
         <button id="del-cancel">Cancel</button>
