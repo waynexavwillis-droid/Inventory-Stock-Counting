@@ -42,8 +42,7 @@
       transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
       box-shadow: var(--card-shadow);
       border: 1px solid rgba(255, 255, 255, 0.2);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-        Ubuntu, Cantarell, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     }
 
     .card__shine { position:absolute; inset:0;
@@ -96,15 +95,14 @@
     .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:12px; }
 
     /* ========= Uiverse.io (eslam-hany) input style ========= */
-    /* Wrapped in .input-container for floating label & animated lines */
     .input-container {
       position: relative;
-      margin: 4px 2px; /* aligns with your existing input margin */
+      margin: 8px 4px; /* aligns with your existing input margin */
     }
     .input {
-      width: 25%;
-      padding: 5px;
-      height: 10px;
+      width: 100%;
+      padding: 10px;
+      height: 40px;
       border: 2px solid #0B2447;
       border-top: none;
       border-bottom: none;
@@ -113,6 +111,7 @@
       outline: none;
       box-shadow: 7px 7px 0px 0px #0B2447;
       transition: all 0.5s;
+      box-sizing: border-box;              /* <-- keep width proportional */
     }
     .input:focus {
       box-shadow: none;
@@ -126,7 +125,7 @@
       transition: all 0.5s;
       transform: scale(0);
       z-index: -1;
-      background: #fff; /* prevents text overlap on light backgrounds */
+      background: #fff;
       padding: 0 4px;
     }
     .input-container .topline,
@@ -140,22 +139,43 @@
     .input-container .topline { width: 0%; top: 0; }
     .input-container .underline { width: 0%; bottom: 0; }
 
-    /* Apply focus animation to any input inside container (text or number if you add the class) */
     .input-container input:focus ~ .topline { width: 35%; }
     .input-container input:focus ~ .underline { width: 100%; }
     .input-container input:focus ~ .label {
       top: -10px;
       transform: scale(1);
     }
-    /* If you want the floating label visible when there's content (not just focus), uncomment below:
-    .input-container input:not(:placeholder-shown) ~ .label {
-      top: -10px; transform: scale(1);
-    }
-    */
-
-    /* Optional: if you later want to style number inputs too,
-       just add class="input" and this will match because selectors target .input */
     /* ========= End Uiverse style ========= */
+
+    /* ---- proportional Add page layout ---- */
+    #addPage{
+      max-width: 800px;        /* cap form width */
+      margin: 0 auto;          /* center it */
+    }
+    #addPage .input-container{
+      max-width: 560px;        /* keep underline/topline same width as field */
+    }
+    #addPage input[type="number"]{
+      width: 140px;            /* sensible quantity width */
+      box-sizing: border-box;
+    }
+
+    /* One neat row for name + quantity + button */
+    .add-row{
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) 140px auto;
+      gap: 12px;
+      align-items: center;
+      max-width: 800px;
+    }
+    .add-row .input-container,
+    .add-row .input{ width:100%; }
+
+    @media (max-width: 560px){
+      .add-row{
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -172,17 +192,18 @@
     <div id="addPage">
       <h2>Add New Item</h2>
 
-      <div class="input-container">
-        <input type="text" id="newItemName" class="input" placeholder=" " />
-        <span class="topline"></span>
-        <span class="underline"></span>
-        <label for="newItemName" class="label">Item Name</label>
+      <div class="add-row">
+        <div class="input-container">
+          <input type="text" id="newItemName" class="input" placeholder=" " />
+          <span class="topline"></span>
+          <span class="underline"></span>
+          <label for="newItemName" class="label">Item Name</label>
+        </div>
+
+        <input type="number" id="newItemQty" placeholder="Quantity">
+        <button onclick="addNewItem()">Add Item</button>
       </div>
 
-      <!-- keeping quantity as a standard number input for usability -->
-      <input type="number" id="newItemQty" placeholder="Quantity">
-
-      <button onclick="addNewItem()">Add Item</button>
       <div class="muted">Tip: data is saved in this browser using localStorage.</div>
     </div>
 
