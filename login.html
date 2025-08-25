@@ -111,7 +111,7 @@
         localStorage.setItem('auth_v1', 'ok');
         localStorage.setItem('auth_user', username);
         localStorage.setItem('auth_time', String(Date.now()));
-        location.href = 'app.html'; // Redirect to your app
+        location.href = 'index.html'; // ✅ CHANGED HERE
       } else {
         document.getElementById('err').textContent = "Invalid password.";
       }
@@ -119,7 +119,7 @@
 
     // If already authenticated, skip login
     if (localStorage.getItem('auth_v1') === 'ok') {
-      location.replace('index.html');
+      location.replace('index.html'); // ✅ ALREADY CORRECT
     }
   </script>
 </body>
