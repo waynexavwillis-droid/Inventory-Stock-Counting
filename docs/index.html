@@ -16,19 +16,12 @@
     .action-btn { padding:4px 8px; margin-right:5px; cursor:pointer; font-weight:bold; font-size:14px; }
 
     /* --- Modal styles --- */
-    .modal {
-      position: fixed; inset: 0; display:none;
-      align-items:center; justify-content:center;
-      background: rgba(0,0,0,0.4); z-index: 9999;
-    }
+    .modal { position: fixed; inset: 0; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,0.4); z-index: 9999; }
     .modal.open { display:flex; }
-    .modal-card {
-      width:95%; max-width:460px; background:#fff; border-radius:8px;
-      padding:16px 18px; box-shadow:0 10px 30px rgba(0,0,0,0.25);
-    }
+    .modal-card { width:95%; max-width:460px; background:#fff; border-radius:8px; padding:16px 18px; box-shadow:0 10px 30px rgba(0,0,0,0.25); }
     .modal-card h3 { margin:0 0 10px; }
     .modal-card label { display:block; margin:10px 0 4px; font-size:14px; }
-    .modal-card input, .modal-card textarea { width:100%; box-sizing:border-box; padding:8px; }
+    .modal-card input { width:100%; box-sizing:border-box; padding:8px; }
     .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:12px; }
     .muted { color:#666; font-size:12px; margin-top:6px; }
     .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
@@ -126,6 +119,9 @@
       <h3 id="adj-title">Adjust Stock</h3>
       <div id="adj-subtitle" class="muted"></div>
 
+      <label for="adj-amount">Amount</label>
+      <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount">
+
       <label for="adj-name">Your name</label>
       <input id="adj-name" type="text" placeholder="e.g., Alice Tan">
 
@@ -189,8 +185,8 @@
           <td>${item.qty}</td>
           <td>${item.goal}</td>
           <td>
-            <button class="action-btn" onclick="openAdjustDialog(${index}, 1)">+</button>
-            <button class="action-btn" onclick="openAdjustDialog(${index}, -1)">-</button>
+            <button class="action-btn" onclick="openAdjustDialog(${index}, 'add')">+</button>
+            <button class="action-btn" onclick="openAdjustDialog(${index}, 'sub')">-</button>
           </td>
         `;
         tbody.appendChild(row);
@@ -231,19 +227,19 @@
     }
 
     // ====== Adjust dialog logic ======
-    let pending = { index: null, delta: 0 };
+    let pending = { index: null, mode: 'add' }; // mode: 'add' | 'sub'
 
-    function openAdjustDialog(index, delta) {
-      pending = { index, delta };
+    function openAdjustDialog(index, mode) {
+      pending = { index, mode };
       const item = inventory[index];
-      document.getElementById('adj-title').textContent = `Adjust "${item.name}"`;
-      document.getElementById('adj-subtitle').textContent =
-        `Change: ${delta > 0 ? '+' : ''}${delta} | Current qty: ${item.qty}`;
+      document.getElementById('adj-title').textContent = `${mode === 'add' ? 'Add to' : 'Minus from'} "${item.name}"`;
+      document.getElementById('adj-subtitle').textContent = `Current qty: ${item.qty}`;
+      document.getElementById('adj-amount').value = '1';
       document.getElementById('adj-name').value = '';
       document.getElementById('adj-purpose').value = '';
       document.getElementById('adj-for').value = '';
       document.getElementById('adjustModal').classList.add('open');
-      setTimeout(() => document.getElementById('adj-name').focus(), 0);
+      setTimeout(() => document.getElementById('adj-amount').focus(), 0);
     }
     function closeAdjustDialog() {
       document.getElementById('adjustModal').classList.remove('open');
@@ -253,23 +249,33 @@
       if (e.target.id === 'adjustModal') closeAdjustDialog(); // click outside card
     });
 
+    // Allow Enter key to confirm from any input inside modal
+    document.getElementById('adjustModal').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('adj-confirm').click();
+      }
+    });
+
     document.getElementById('adj-confirm').addEventListener('click', () => {
+      const amount = parseInt(document.getElementById('adj-amount').value, 10);
       const actor   = document.getElementById('adj-name').value.trim();
       const purpose = document.getElementById('adj-purpose').value.trim();
       const forWhom = document.getElementById('adj-for').value.trim();
-      if (!actor || !purpose || !forWhom) {
-        alert('Please fill in Your name, Purpose, and For (names).');
-        return;
-      }
+
+      if (!Number.isInteger(amount) || amount <= 0) return alert('Enter a valid positive amount.');
+      if (!actor || !purpose || !forWhom) return alert('Please fill in Your name, Purpose, and For (names).');
 
       const item = inventory[pending.index];
-      item.qty += pending.delta;
+      const signedDelta = pending.mode === 'add' ? amount : -amount;
+
+      item.qty += signedDelta;
       if (item.qty < 0) item.qty = 0;
 
       adjustments.push({
         ts: new Date().toISOString(),
         item: item.name,
-        delta: pending.delta,
+        delta: signedDelta,
         actor, purpose, forWhom,
         qtyAfter: item.qty
       });
