@@ -1,393 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Inventory System with Alerts</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin:0; display:flex; height:100vh; }
-    .sidebar { width:240px; background:#f3f3f3; padding:20px; box-sizing:border-box; }
-    .sidebar button { display:block; width:100%; margin-bottom:10px; padding:10px; cursor:pointer; }
-    .content { flex:1; padding:20px; box-sizing:border-box; overflow:auto; }
-    input, button { padding:8px; margin:4px; }
-    table { width:100%; margin-top:12px; border-collapse:collapse; }
-    table, th, td { border:1px solid #000; }
-    th, td { padding:8px; text-align:left; vertical-align:top; }
-    .action-btn { padding:4px 8px; margin-right:5px; cursor:pointer; font-weight:bold; font-size:14px; }
+function renderStockTable() {
+  const grid = document.getElementById('stockGrid');
+  grid.innerHTML = '';
 
-    /* --- Modal styles --- */
-    .modal { position: fixed; inset: 0; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,0.4); z-index: 9999; }
-    .modal.open { display:flex; }
-    .modal-card { width:95%; max-width:460px; background:#fff; border-radius:8px; padding:16px 18px; box-shadow:0 10px 30px rgba(0,0,0,0.25); }
-    .modal-card h3 { margin:0 0 10px; }
-    .modal-card label { display:block; margin:10px 0 4px; font-size:14px; }
-    .modal-card input { width:100%; box-sizing:border-box; padding:8px; }
-    .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:12px; }
-    .muted { color:#666; font-size:12px; margin-top:6px; }
-    .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
-    .pill { display:inline-block; padding:2px 8px; border:1px solid #ccc; border-radius:999px; font-size:12px; color:#555; }
-    .nowrap { white-space:nowrap; }
-  </style>
-</head>
-<body>
+  inventory.forEach((item, index) => {
+    const low = item.goal > 0 && item.qty <= item.goal;
 
-  <div class="sidebar">
-    <button onclick="showPage('addPage')">Add New Stock</button>
-    <button onclick="showPage('adjustPage')">Adjust Stock</button>
-    <button onclick="showPage('goalPage')">Set Stock Count Goal</button>
-    <button onclick="showPage('historyPage')">History</button>
-  </div>
+    const card = document.createElement('div');
+    card.className = 'card';
 
-  <div class="content">
-    <!-- Add New Stock Page -->
-    <div id="addPage">
-      <h2>Add New Item</h2>
-      <input type="text" id="newItemName" placeholder="Item Name">
-      <input type="number" id="newItemQty" placeholder="Quantity">
-      <button onclick="addNewItem()">Add Item</button>
-      <div class="muted">Tip: data is saved in this browser using localStorage.</div>
-    </div>
-
-    <!-- Adjust Stock Page -->
-    <div id="adjustPage" style="display:none;">
-      <h2>Adjust Stock</h2>
-      <table id="stockTable">
-        <thead>
-          <tr>
-            <th>Item Name</th>
-            <th>Quantity</th>
-            <th>Stock Goal</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <!-- Goal Settings Page -->
-    <div id="goalPage" style="display:none;">
-      <h2>Set Stock Count Goal</h2>
-      <table id="goalTable">
-        <thead>
-          <tr>
-            <th>Item Name</th>
-            <th>Current Goal</th>
-            <th>New Goal</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <!-- History Page -->
-    <div id="historyPage" style="display:none;">
-      <h2>History</h2>
-
-      <div class="toolbar">
-        <input id="hist-search" type="text" placeholder="Search item / name / purpose…" oninput="renderHistory()">
-        <select id="hist-item-filter" onchange="renderHistory()">
-          <option value="">All items</option>
-        </select>
-        <span class="pill" id="hist-count">0 records</span>
-        <div style="flex:1"></div>
-        <button onclick="exportHistoryCSV()">Export CSV</button>
-        <button onclick="clearHistory()">Clear History</button>
+    card.innerHTML = `
+      <div class="card__shine"></div>
+      <div class="card__glow"></div>
+      <div class="card__badge" style="${low ? 'opacity:1; transform:scale(1);' : ''}">
+        ${low ? 'LOW' : 'OK'}
       </div>
 
-      <table id="historyTable">
-        <thead>
-          <tr>
-            <th class="nowrap">Date/Time</th>
-            <th>Item</th>
-            <th class="nowrap">Change</th>
-            <th>Qty After</th>
-            <th>By (Name)</th>
-            <th>Purpose</th>
-            <th>For (names)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <div class="muted">Only this device/browser can see this history (localStorage).</div>
-    </div>
-  </div>
+      <div class="card__content">
+        <div class="card__image">
+          <span class="qty-badge">Qty: ${item.qty}</span>
+        </div>
 
-  <!-- ===== Adjust dialog (opens on + / -) ===== -->
-  <div id="adjustModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adj-title">
-    <div class="modal-card">
-      <h3 id="adj-title">Adjust Stock</h3>
-      <div id="adj-subtitle" class="muted"></div>
+        <div class="card__text">
+          <h3 class="card__title" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</h3>
+          <p class="card__description">Goal: ${item.goal || 0}</p>
+        </div>
 
-      <label for="adj-amount">Amount</label>
-      <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount">
-
-      <label for="adj-name">Your name</label>
-      <input id="adj-name" type="text" placeholder="e.g., Alice Tan">
-
-      <label for="adj-purpose">Purpose</label>
-      <input id="adj-purpose" type="text" placeholder="e.g., customer pickup / audit / transfer">
-
-      <label for="adj-for">For (names)</label>
-      <input id="adj-for" type="text" placeholder="e.g., John Lim, Priya Rao">
-
-      <div class="modal-actions">
-        <button id="adj-cancel">Cancel</button>
-        <button id="adj-confirm">Confirm</button>
+        <div class="card__footer">
+          <div class="card__price">In stock</div>
+          <div style="display:flex; gap:8px;">
+            <div class="card__button" title="Add" onclick="openAdjustDialog(${index}, 'add')">+</div>
+            <div class="card__button card__button--minus" title="Minus" onclick="openAdjustDialog(${index}, 'sub')">–</div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+    `;
 
-  <script>
-    // ===== Data (inventory + audit log) in localStorage =====
-    let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
-    let adjustments = JSON.parse(localStorage.getItem('adjustments')) || []; // audit entries
+    grid.appendChild(card);
+  });
+}
 
-    function saveInventory() { localStorage.setItem('inventory', JSON.stringify(inventory)); }
-    function saveAdjustments() { localStorage.setItem('adjustments', JSON.stringify(adjustments)); }
-
-    function showPage(pageId) {
-      ['addPage','adjustPage','goalPage','historyPage'].forEach(id => {
-        document.getElementById(id).style.display = 'none';
-      });
-      document.getElementById(pageId).style.display = 'block';
-
-      if (pageId === 'adjustPage' || pageId === 'goalPage') renderTables();
-      if (pageId === 'historyPage') { populateHistoryFilters(); renderHistory(); }
-    }
-
-    // Add new item
-    function addNewItem() {
-      const name = document.getElementById('newItemName').value.trim();
-      const qty  = parseInt(document.getElementById('newItemQty').value);
-      if (!name || isNaN(qty) || qty <= 0) return alert("Enter valid name and quantity");
-
-      const existing = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
-      if (existing) { existing.qty += qty; }
-      else { inventory.push({ name, qty, goal: 0 }); }
-
-      saveInventory();
-      alert(`Item "${name}" added.`);
-      document.getElementById('newItemName').value = '';
-      document.getElementById('newItemQty').value = '';
-    }
-
-    // Render tables
-    function renderTables() { renderStockTable(); renderGoalTable(); checkLowStockAlerts(); }
-
-    function renderStockTable() {
-      const tbody = document.querySelector('#stockTable tbody');
-      tbody.innerHTML = '';
-      inventory.forEach((item, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${item.name}</td>
-          <td>${item.qty}</td>
-          <td>${item.goal}</td>
-          <td>
-            <button class="action-btn" onclick="openAdjustDialog(${index}, 'add')">+</button>
-            <button class="action-btn" onclick="openAdjustDialog(${index}, 'sub')">-</button>
-          </td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-
-    function renderGoalTable() {
-      const tbody = document.querySelector('#goalTable tbody');
-      tbody.innerHTML = '';
-      inventory.forEach((item, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${item.name}</td>
-          <td>${item.goal}</td>
-          <td><input type="number" id="newGoal-${index}" placeholder="New Goal"></td>
-          <td><button onclick="updateGoal(${index})">Update</button></td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-
-    function updateGoal(index) {
-      const newGoal = parseInt(document.getElementById(`newGoal-${index}`).value);
-      if (isNaN(newGoal) || newGoal < 0) return alert("Enter valid stock goal");
-      inventory[index].goal = newGoal;
-      saveInventory();
-      renderGoalTable();
-      alert(`Stock goal updated for ${inventory[index].name}`);
-    }
-
-    // ====== Low stock alert ======
-    function checkLowStockAlerts() {
-      inventory.forEach(item => {
-        if (item.goal > 0 && item.qty <= item.goal) {
-          alert(`Low stock for "${item.name}"`);
-        }
-      });
-    }
-
-    // ====== Adjust dialog logic ======
-    let pending = { index: null, mode: 'add' }; // mode: 'add' | 'sub'
-
-    function openAdjustDialog(index, mode) {
-      pending = { index, mode };
-      const item = inventory[index];
-      document.getElementById('adj-title').textContent = `${mode === 'add' ? 'Add to' : 'Minus from'} "${item.name}"`;
-      document.getElementById('adj-subtitle').textContent = `Current qty: ${item.qty}`;
-      document.getElementById('adj-amount').value = '1';
-      document.getElementById('adj-name').value = '';
-      document.getElementById('adj-purpose').value = '';
-      document.getElementById('adj-for').value = '';
-      document.getElementById('adjustModal').classList.add('open');
-      setTimeout(() => document.getElementById('adj-amount').focus(), 0);
-    }
-    function closeAdjustDialog() {
-      document.getElementById('adjustModal').classList.remove('open');
-    }
-    document.getElementById('adj-cancel').addEventListener('click', closeAdjustDialog);
-    document.getElementById('adjustModal').addEventListener('click', (e) => {
-      if (e.target.id === 'adjustModal') closeAdjustDialog(); // click outside card
-    });
-
-    // Allow Enter key to confirm from any input inside modal
-    document.getElementById('adjustModal').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('adj-confirm').click();
-      }
-    });
-
-    document.getElementById('adj-confirm').addEventListener('click', () => {
-      const amount = parseInt(document.getElementById('adj-amount').value, 10);
-      const actor   = document.getElementById('adj-name').value.trim();
-      const purpose = document.getElementById('adj-purpose').value.trim();
-      const forWhom = document.getElementById('adj-for').value.trim();
-
-      if (!Number.isInteger(amount) || amount <= 0) return alert('Enter a valid positive amount.');
-      if (!actor || !purpose || !forWhom) return alert('Please fill in Your name, Purpose, and For (names).');
-
-      const item = inventory[pending.index];
-      const signedDelta = pending.mode === 'add' ? amount : -amount;
-
-      item.qty += signedDelta;
-      if (item.qty < 0) item.qty = 0;
-
-      adjustments.push({
-        ts: new Date().toISOString(),
-        item: item.name,
-        delta: signedDelta,
-        actor, purpose, forWhom,
-        qtyAfter: item.qty
-      });
-      saveInventory();
-      saveAdjustments();
-
-      renderStockTable();
-      if (document.getElementById('historyPage').style.display !== 'none') renderHistory();
-      checkLowStockAlerts();
-      closeAdjustDialog();
-    });
-
-    // ====== History helpers ======
-    function populateHistoryFilters() {
-      const sel = document.getElementById('hist-item-filter');
-      const current = sel.value;
-      const names = Array.from(new Set(adjustments.map(a => a.item))).sort((a,b)=>a.localeCompare(b));
-      sel.innerHTML = '<option value="">All items</option>' + names.map(n => `<option value="${n}">${n}</option>`).join('');
-      if ([...sel.options].some(o => o.value === current)) sel.value = current;
-    }
-
-    function renderHistory() {
-      const tbody = document.querySelector('#historyTable tbody');
-      tbody.innerHTML = '';
-
-      let rows = adjustments.slice().sort((a,b)=> (a.ts < b.ts ? 1 : -1)); // newest first
-
-      const q = document.getElementById('hist-search').value.trim().toLowerCase();
-      if (q) {
-        rows = rows.filter(r =>
-          (r.item||'').toLowerCase().includes(q) ||
-          (r.actor||'').toLowerCase().includes(q) ||
-          (r.purpose||'').toLowerCase().includes(q) ||
-          (r.forWhom||'').toLowerCase().includes(q)
-        );
-      }
-      const itemFilter = document.getElementById('hist-item-filter').value;
-      if (itemFilter) rows = rows.filter(r => r.item === itemFilter);
-
-      document.getElementById('hist-count').textContent = `${rows.length} record${rows.length===1?'':'s'}`;
-
-      for (const r of rows) {
-        const tr = document.createElement('tr');
-        const dt = new Date(r.ts);
-        const dtStr = isNaN(+dt) ? r.ts : dt.toLocaleString();
-        tr.innerHTML = `
-          <td>${dtStr}</td>
-          <td>${escapeHtml(r.item)}</td>
-          <td class="nowrap">${r.delta > 0 ? '+' : ''}${r.delta}</td>
-          <td>${r.qtyAfter}</td>
-          <td>${escapeHtml(r.actor)}</td>
-          <td>${escapeHtml(r.purpose)}</td>
-          <td>${escapeHtml(r.forWhom)}</td>
-        `;
-        tbody.appendChild(tr);
-      }
-    }
-
-    function exportHistoryCSV() {
-      if (!adjustments.length) return alert('No history to export.');
-      const header = ['Timestamp','Item','Delta','QtyAfter','Actor','Purpose','ForWhom'];
-      const lines = [header.join(',')];
-
-      for (const r of adjustments) {
-        const row = [
-          r.ts,
-          r.item,
-          r.delta,
-          r.qtyAfter,
-          r.actor,
-          r.purpose,
-          r.forWhom
-        ].map(csvEscape).join(',');
-        lines.push(row);
-      }
-
-      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'inventory-history.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    function clearHistory() {
-      if (!adjustments.length) return alert('History is already empty.');
-      if (!confirm('Clear ALL history on this device? This cannot be undone.')) return;
-      adjustments = [];
-      saveAdjustments();
-      populateHistoryFilters();
-      renderHistory();
-    }
-
-    // utils
-    function csvEscape(v) {
-      const s = (v ?? '').toString();
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
-    }
-    function escapeHtml(s) {
-      return (s ?? '').toString()
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-        .replace(/'/g,'&#39;');
-    }
-
-    // Initial render
-    renderTables();
-  </script>
-</body>
-</html>
+// helper already in your file, but if not:
+function escapeHtml(s) {
+  return (s ?? '').toString()
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
