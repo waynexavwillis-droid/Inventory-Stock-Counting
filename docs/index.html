@@ -60,10 +60,13 @@
     /* ===== Off-canvas sidebar (hidden by default) ===== */
     #menu-check{ display:none; } /* the toggle */
 
-    /* Animated hamburger (CSS-only; inspired by your snippet) */
+    /* Animated hamburger (CSS-only) */
     .hamburger{
-      position:fixed; left:12px; top:12px; z-index:1100;
-      width:32px; display:flex; flex-direction:column; gap:7px; cursor:pointer; user-select:none;
+      position:fixed; left:12px; top:12px;
+      width:32px; display:flex; flex-direction:column; gap:7px;
+      cursor:pointer; user-select:none;
+      z-index:1200; /* above everything */
+      transition: transform .3s ease;
     }
     .hamburger .bar{
       height:3px; background:#111; border-radius:10px;
@@ -72,6 +75,10 @@
     .hamburger .bar.bar1, .hamburger .bar.bar3 { width:18px; }
     .hamburger .bar.bar2 { width:28px; }
 
+    /* when open, move hamburger over the page to align with drawer edge */
+    #menu-check:checked + label.hamburger{
+      transform: translateX(var(--nav-w));
+    }
     /* animate to X when open */
     #menu-check:checked + label.hamburger .bar1{
       transform: translateY(10px) rotate(45deg);
@@ -88,7 +95,7 @@
       position:fixed; inset:0 auto 0 0; width:var(--nav-w);
       background:#f3f4f6; padding:20px; box-sizing:border-box;
       transform:translateX(-100%); transition:transform .3s ease;
-      z-index:1050; overflow:auto; box-shadow:0 10px 30px rgba(0,0,0,.18);
+      z-index:1100; overflow:auto; box-shadow:0 10px 30px rgba(0,0,0,.18);
       border-right:1px solid var(--line);
     }
     .sidebar button{
@@ -101,7 +108,7 @@
     /* click-away overlay */
     label.overlay{
       position:fixed; inset:0; background:rgba(0,0,0,.35);
-      opacity:0; visibility:hidden; transition:.3s ease; z-index:1040;
+      opacity:0; visibility:hidden; transition:.3s ease; z-index:1090; /* below drawer */
     }
     #menu-check:checked ~ label.overlay{ opacity:1; visibility:visible; }
 
