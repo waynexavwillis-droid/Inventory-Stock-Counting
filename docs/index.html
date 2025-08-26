@@ -5,25 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inventory System with Alerts</title>
 
-  <!-- Authentication Script (MUST go here, outside <style>) -->
+  <!-- Authentication (keep outside <style>) -->
   <script>
-    // Simple front-end gate: redirect to login if not authenticated
     if (localStorage.getItem('auth_v1') !== 'ok') {
       window.location.replace('login.html');
     }
     function logout(){
       localStorage.removeItem('auth_v1');
-      localStorage.removeItem('auth_time'); // optional
+      localStorage.removeItem('auth_time');
       window.location.replace('login.html');
     }
   </script>
 
-  
   <style>
+    :root { --sidebar-w: 240px; --sidebar-w-collapsed: 56px; }
+
     /* Base layout */
     body { font-family: Arial, sans-serif; margin:0; display:flex; height:100vh; }
-    .sidebar { width:240px; background:#f3f3f3; padding:20px; box-sizing:border-box; }
-    .sidebar button { display:block; width:100%; margin-bottom:10px; padding:10px; cursor:pointer; }
     .content { flex:1; padding:20px; box-sizing:border-box; overflow:auto; }
     input, button { padding:8px; margin:4px; }
     table { width:100%; margin-top:12px; border-collapse:collapse; }
@@ -33,6 +31,33 @@
     .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
     .pill { display:inline-block; padding:2px 8px; border:1px solid #ccc; border-radius:999px; font-size:12px; color:#555; }
     .nowrap { white-space:nowrap; }
+
+    /* Collapsible sidebar */
+    .sidebar{
+      width: var(--sidebar-w);
+      background:#f3f3f3;
+      padding:20px;
+      box-sizing:border-box;
+      transition: width .25s ease;
+      overflow:hidden;
+      border-right:1px solid #ddd;
+    }
+    .sidebar button{
+      display:flex; align-items:center; gap:8px;
+      width:100%; margin-bottom:10px; padding:10px; cursor:pointer; text-align:left;
+    }
+    .menu-toggle{
+      margin-bottom:14px;
+      font-size:18px;
+      line-height:1;
+      padding:10px;
+      background:#0B2447; color:#fff; border:0; border-radius:6px; cursor:pointer;
+    }
+    .sidebar .txt{ display:inline; }
+    .sidebar.collapsed{ width: var(--sidebar-w-collapsed); }
+    .sidebar.collapsed .txt{ display:none; }
+    .sidebar.collapsed hr{ display:none; }
+    .sidebar.collapsed button:not(.menu-toggle){ display:none; }
 
     /* === Card grid layout for Adjust page === */
     .grid {
@@ -59,33 +84,26 @@
       border: 1px solid rgba(255, 255, 255, 0.2);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     }
-
     .card__shine { position:absolute; inset:0;
       background:linear-gradient(120deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.8) 50%, rgba(255,255,255,0) 60%);
       opacity:0; transition:opacity .3s; }
     .card__glow  { position:absolute; inset:-10px;
       background:radial-gradient(circle at 50% 0%, rgba(124,58,237,.3) 0%, rgba(124,58,237,0) 70%);
       opacity:0; transition:opacity .5s; }
-
     .card__content { padding:1.25em; height:100%; display:flex; flex-direction:column; gap:.75em; position:relative; z-index:2; }
     .card__badge { position:absolute; top:12px; right:12px; background:#10b981; color:#fff; padding:.25em .5em; border-radius:999px; font-size:.7em; font-weight:600; transform:scale(.8); opacity:0; transition:all .4s ease .1s; }
-
     .card__image { width:100%; height:100px; background:linear-gradient(45deg,#a78bfa,#8b5cf6); border-radius:12px; transition:all .5s cubic-bezier(.16,1,.3,1); position:relative; overflow:hidden; }
     .card__image::after { content:""; position:absolute; inset:0;
       background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.1) 0%, transparent 30%),
                  repeating-linear-gradient(45deg, rgba(139,92,246,.1) 0, rgba(139,92,246,.1) 2px, transparent 2px, transparent 4px);
       opacity:.5; }
-
     .card__text { display:flex; flex-direction:column; gap:.25em; }
     .card__title { color:var(--card-text); font-size:1.1em; margin:0; font-weight:700; transition:all .3s; }
     .card__description { color:var(--card-text); font-size:.75em; margin:0; opacity:.7; transition:all .3s; }
-
-    /* actions row under the title */
     .card__actions { display:flex; justify-content:center; gap:12px; margin-top:8px; }
     .card__button { width:28px; height:28px; background:var(--card-accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; cursor:pointer; transition:all .3s; transform:scale(.9); user-select:none; }
     .card__button--minus { background:#ef4444; }
     .card__button--trash { background:#111827; } /* delete button */
-
     .card:hover { transform:translateY(-10px); box-shadow:0 20px 25px -5px rgba(0,0,0,.1), 0 10px 10px -5px rgba(0,0,0,.04); border-color:rgba(124,58,237,.2); }
     .card:hover .card__shine{opacity:1; animation:shine 3s infinite;}
     .card:hover .card__glow{opacity:1;}
@@ -93,11 +111,8 @@
     .card:hover .card__image{transform:translateY(-5px) scale(1.03); box-shadow:0 10px 15px -3px rgba(0,0,0,.1);}
     .card:hover .card__title{color:var(--card-accent); transform:translateX(2px);}
     .card:hover .card__description{opacity:1; transform:translateX(2px);}
-    .card:hover .card__button{transform:scale(1); box-shadow:0 0 0 4px rgba(124,58,237,.2);}
     @keyframes shine { 0%{background-position:-100% 0} 100%{background-position:200% 0} }
     @keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
-
-    /* qty badge inside image */
     .qty-badge { position:absolute; bottom:8px; right:8px; background:#111827; color:#fff; font-size:12px; padding:2px 6px; border-radius:999px; opacity:.9; }
 
     /* Modal */
@@ -109,106 +124,44 @@
     .modal-card input { width:100%; box-sizing:border-box; padding:8px; }
     .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:12px; }
 
-    /* ========= Uiverse.io (eslam-hany) input style ========= */
-    .input-container {
-      position: relative;
-      margin: 8px 4px; /* aligns with your existing input margin */
-    }
-    .input {
-      width: 100%;
-      padding: 10px;
-      height: 40px;
-      border: 2px solid #0B2447;
-      border-top: none;
-      border-bottom: none;
-      font-size: 16px;
-      background: transparent;
-      outline: none;
-      box-shadow: 7px 7px 0px 0px #0B2447;
-      transition: all 0.5s;
-      box-sizing: border-box;              /* <-- keep width proportional */
-    }
-    .input:focus {
-      box-shadow: none;
-      transition: all 0.5s;
-    }
-    .label {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      color: #0B2447;
-      transition: all 0.5s;
-      transform: scale(0);
-      z-index: -1;
-      background: #fff;
-      padding: 0 4px;
-    }
-    .input-container .topline,
-    .input-container .underline {
-      position: absolute;
-      background-color: #0B2447;
-      height: 2px;
-      right: 0;
-      transition: all 0.5s;
-    }
+    /* Uiverse.io input style */
+    .input-container { position: relative; margin: 8px 4px; }
+    .input { width: 100%; padding: 10px; height: 40px; border: 2px solid #0B2447; border-top: none; border-bottom: none; font-size: 16px; background: transparent; outline: none; box-shadow: 7px 7px 0px 0px #0B2447; transition: all 0.5s; box-sizing: border-box; }
+    .input:focus { box-shadow: none; transition: all 0.5s; }
+    .label { position: absolute; top: 10px; left: 10px; color: #0B2447; transition: all 0.5s; transform: scale(0); z-index: -1; background: #fff; padding: 0 4px; }
+    .input-container .topline, .input-container .underline { position: absolute; background-color: #0B2447; height: 2px; right: 0; transition: all 0.5s; }
     .input-container .topline { width: 0%; top: 0; }
     .input-container .underline { width: 0%; bottom: 0; }
-
     .input-container input:focus ~ .topline { width: 35%; }
     .input-container input:focus ~ .underline { width: 100%; }
-    .input-container input:focus ~ .label {
-      top: -10px;
-      transform: scale(1);
-    }
-    /* ========= End Uiverse style ========= */
+    .input-container input:focus ~ .label { top: -10px; transform: scale(1); }
 
-    /* ---- proportional Add page layout ---- */
-    #addPage{
-      max-width: 800px;        /* cap form width */
-      margin: 0 auto;          /* center it */
-    }
-    #addPage .input-container{
-      max-width: 560px;        /* keep underline/topline same width as field */
-    }
-    #addPage input[type="number"]{
-      width: 140px;            /* sensible quantity width */
-      box-sizing: border-box;
-    }
-
-    /* One neat row for name + quantity + button */
-    .add-row{
-      display: grid;
-      grid-template-columns: minmax(280px, 1fr) 140px auto;
-      gap: 12px;
-      align-items: center;
-      max-width: 800px;
-    }
-    .add-row .input-container,
-    .add-row .input{ width:100%; }
-
-    @media (max-width: 560px){
-      .add-row{
-        grid-template-columns: 1fr;
-      }
-    }
+    /* Add page layout */
+    #addPage{ max-width: 800px; margin: 0 auto; }
+    #addPage .input-container{ max-width: 560px; }
+    #addPage input[type="number"]{ width: 140px; box-sizing: border-box; }
+    .add-row{ display: grid; grid-template-columns: minmax(280px, 1fr) 140px auto; gap: 12px; align-items: center; max-width: 800px; }
+    .add-row .input-container, .add-row .input{ width:100%; }
+    @media (max-width: 560px){ .add-row{ grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
 
-  <div class="sidebar">
-    <button onclick="showPage('addPage')">Add New Stock</button>
-    <button onclick="showPage('adjustPage')">Adjust Stock</button>
-    <button onclick="showPage('goalPage')">Set Stock Count Goal</button>
-    <button onclick="showPage('historyPage')">History</button>
+  <!-- Collapsible Sidebar -->
+  <div class="sidebar" id="side">
+    <button class="menu-toggle" id="menuToggle" aria-expanded="true" aria-controls="side">☰ Menu</button>
+    <button onclick="showPage('addPage')"><span class="txt">Add New Stock</span></button>
+    <button onclick="showPage('adjustPage')"><span class="txt">Adjust Stock</span></button>
+    <button onclick="showPage('goalPage')"><span class="txt">Set Stock Count Goal</span></button>
+    <button onclick="showPage('historyPage')"><span class="txt">History</span></button>
     <hr>
-    <button onclick="logout()">Logout</button>
+    <button onclick="logout()"><span class="txt">Logout</span></button>
   </div>
-  
+
   <div class="content">
     <!-- Add New Stock Page -->
     <div id="addPage">
       <h2>Add New Item</h2>
-
       <div class="add-row">
         <div class="input-container">
           <input type="text" id="newItemName" class="input" placeholder=" " />
@@ -216,11 +169,9 @@
           <span class="underline"></span>
           <label for="newItemName" class="label">Item Name</label>
         </div>
-
         <input type="number" id="newItemQty" placeholder="Quantity">
         <button onclick="addNewItem()">Add Item</button>
       </div>
-
       <div class="muted">Tip: data is saved in this browser using localStorage.</div>
     </div>
 
@@ -249,7 +200,6 @@
     <!-- History Page -->
     <div id="historyPage" style="display:none;">
       <h2>History</h2>
-
       <div class="toolbar">
         <div class="input-container" style="flex:1; min-width:260px;">
           <input id="hist-search" type="text" class="input" placeholder=" " oninput="renderHistory()">
@@ -257,7 +207,6 @@
           <span class="underline"></span>
           <label for="hist-search" class="label">Search item / name / purpose…</label>
         </div>
-
         <select id="hist-item-filter" onchange="renderHistory()">
           <option value="">All items</option>
         </select>
@@ -266,7 +215,6 @@
         <button onclick="exportHistoryCSV()">Export CSV</button>
         <button onclick="clearHistory()">Clear History</button>
       </div>
-
       <table id="historyTable">
         <thead>
           <tr>
@@ -357,6 +305,18 @@
   </div>
 
   <script>
+    // ===== Collapsible sidebar (remembers state) =====
+    const side = document.getElementById('side');
+    const toggleBtn = document.getElementById('menuToggle');
+    function setCollapsed(collapsed){
+      side.classList.toggle('collapsed', collapsed);
+      toggleBtn.setAttribute('aria-expanded', String(!collapsed));
+      localStorage.setItem('sidebar_collapsed', collapsed ? '1' : '0');
+    }
+    function toggleMenu(){ setCollapsed(!side.classList.contains('collapsed')); }
+    toggleBtn.addEventListener('click', toggleMenu);
+    setCollapsed(localStorage.getItem('sidebar_collapsed') === '1');
+
     // ===== Data (inventory + audit log) in localStorage =====
     let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
     let adjustments = JSON.parse(localStorage.getItem('adjustments')) || [];
@@ -428,7 +388,6 @@
             </div>
           </div>
         `;
-
         grid.appendChild(card);
       });
     }
@@ -468,7 +427,7 @@
     }
 
     // ====== Adjust dialog logic ======
-    let pending = { index: null, mode: 'add' }; // mode: 'add' | 'sub'
+    let pending = { index: null, mode: 'add' };
 
     function openAdjustDialog(index, mode) {
       pending = { index, mode };
@@ -482,16 +441,10 @@
       document.getElementById('adjustModal').classList.add('open');
       setTimeout(() => document.getElementById('adj-amount').focus(), 0);
     }
-    function closeAdjustDialog() {
-      document.getElementById('adjustModal').classList.remove('open');
-    }
+    function closeAdjustDialog() { document.getElementById('adjustModal').classList.remove('open'); }
     document.getElementById('adj-cancel').addEventListener('click', closeAdjustDialog);
-    document.getElementById('adjustModal').addEventListener('click', (e) => {
-      if (e.target.id === 'adjustModal') closeAdjustDialog();
-    });
-    document.getElementById('adjustModal').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('adj-confirm').click(); }
-    });
+    document.getElementById('adjustModal').addEventListener('click', (e) => { if (e.target.id === 'adjustModal') closeAdjustDialog(); });
+    document.getElementById('adjustModal').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('adj-confirm').click(); } });
 
     document.getElementById('adj-confirm').addEventListener('click', () => {
       const amount = parseInt(document.getElementById('adj-amount').value, 10);
@@ -508,13 +461,7 @@
       item.qty += signedDelta;
       if (item.qty < 0) item.qty = 0;
 
-      adjustments.push({
-        ts: new Date().toISOString(),
-        item: item.name,
-        delta: signedDelta,
-        actor, purpose, forWhom,
-        qtyAfter: item.qty
-      });
+      adjustments.push({ ts: new Date().toISOString(), item: item.name, delta: signedDelta, actor, purpose, forWhom, qtyAfter: item.qty });
       saveInventory();
       saveAdjustments();
 
@@ -539,16 +486,10 @@
       document.getElementById('deleteModal').classList.add('open');
       setTimeout(() => document.getElementById('del-name').focus(), 0);
     }
-    function closeDeleteDialog() {
-      document.getElementById('deleteModal').classList.remove('open');
-    }
+    function closeDeleteDialog() { document.getElementById('deleteModal').classList.remove('open'); }
     document.getElementById('del-cancel').addEventListener('click', closeDeleteDialog);
-    document.getElementById('deleteModal').addEventListener('click', (e) => {
-      if (e.target.id === 'deleteModal') closeDeleteDialog();
-    });
-    document.getElementById('deleteModal').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('del-confirm').click(); }
-    });
+    document.getElementById('deleteModal').addEventListener('click', (e) => { if (e.target.id === 'deleteModal') closeDeleteDialog(); });
+    document.getElementById('deleteModal').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('del-confirm').click(); } });
 
     document.getElementById('del-confirm').addEventListener('click', () => {
       if (pendingDeleteIndex === null) return closeDeleteDialog();
@@ -562,23 +503,13 @@
       const removed = inventory[pendingDeleteIndex];
       const prevQty = removed?.qty ?? 0;
 
-      // Log a history entry representing the deletion
-      adjustments.push({
-        ts: new Date().toISOString(),
-        item: removed.name,
-        delta: -prevQty,
-        actor, purpose, forWhom,
-        qtyAfter: 0
-      });
-
-      // Remove from inventory
+      adjustments.push({ ts: new Date().toISOString(), item: removed.name, delta: -prevQty, actor, purpose, forWhom, qtyAfter: 0 });
       inventory.splice(pendingDeleteIndex, 1);
       pendingDeleteIndex = null;
 
       saveInventory();
       saveAdjustments();
 
-      // Refresh UI
       renderStockGrid();
       renderGoalTable();
       populateHistoryFilters();
@@ -601,7 +532,6 @@
       tbody.innerHTML = '';
 
       let rows = adjustments.slice().sort((a,b)=> (a.ts < b.ts ? 1 : -1)); // newest first
-
       const q = document.getElementById('hist-search').value.trim().toLowerCase();
       if (q) {
         rows = rows.filter(r =>
@@ -631,44 +561,6 @@
         `;
         tbody.appendChild(tr);
       }
-    }
-
-    function exportHistoryCSV() {
-      if (!adjustments.length) return alert('No history to export.');
-      const header = ['Timestamp','Item','Delta','QtyAfter','Actor','Purpose','ForWhom'];
-      const lines = [header.join(',')];
-
-      for (const r of adjustments) {
-        const row = [
-          r.ts,
-          r.item,
-          r.delta,
-          r.qtyAfter,
-          r.actor,
-          r.purpose,
-          r.forWhom
-        ].map(csvEscape).join(',');
-        lines.push(row);
-      }
-
-      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'inventory-history.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    function clearHistory() {
-      if (!adjustments.length) return alert('History is already empty.');
-      if (!confirm('Clear ALL history on this device? This cannot be undone.')) return;
-      adjustments = [];
-      saveAdjustments();
-      populateHistoryFilters();
-      renderHistory();
     }
 
     // utils
