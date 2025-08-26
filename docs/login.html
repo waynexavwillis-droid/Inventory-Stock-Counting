@@ -83,8 +83,8 @@
   <script>
     // === STORED CREDENTIALS ===
     const VALID_USERNAME = "EPEDU";
-    // SHA-256 hash for password: EPEDU0002$%^B%ST
-    const STORED_SHA256_HEX = "4c9fdbdb1cc8475c270eaa647bc31ccdd1f7a2f5d5b5e2d793e7d29fc8f6c4b3";
+    // New SHA-256 hash for password: EPEDU2025SECURELOGIN
+    const STORED_SHA256_HEX = "e33b04a16c412d8aa3a8ef093b7ccf7ed4da3171cf5d6827ffebbd6cfb7dc706";
 
     async function sha256Hex(text) {
       const enc = new TextEncoder().encode(text);
@@ -111,7 +111,7 @@
         localStorage.setItem('auth_v1', 'ok');
         localStorage.setItem('auth_user', username);
         localStorage.setItem('auth_time', String(Date.now()));
-        location.href = 'index.html'; // ✅ CHANGED HERE
+        location.href = 'index.html';
       } else {
         document.getElementById('err').textContent = "Invalid password.";
       }
@@ -119,10 +119,8 @@
 
     // If already authenticated, skip login
     if (localStorage.getItem('auth_v1') === 'ok') {
-      location.replace('index.html'); // ✅ ALREADY CORRECT
+      location.replace('index.html');
     }
   </script>
 </body>
 </html>
-
-
