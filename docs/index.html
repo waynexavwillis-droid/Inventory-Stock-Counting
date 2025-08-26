@@ -22,14 +22,24 @@
       /* sizes */
       --nav-w: 260px;
 
-      /* ===== Black & Gray Minimal Theme ===== */
-      --bg:#f6f7f8;         /* page background */
-      --panel:#ffffff;      /* cards/panels */
-      --ink:#111111;        /* primary text (near-black) */
-      --muted:#6b7280;      /* secondary text */
-      --line:#e5e7eb;       /* borders */
-      --accent:#111111;     /* buttons / accents */
-      --accent-ink:#ffffff; /* accent text */
+      /* ===== Global Minimal Theme ===== */
+      --bg:#f6f7f8;
+      --panel:#ffffff;
+      --ink:#111111;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --accent:#111111;
+      --accent-ink:#ffffff;
+
+      /* ===== Deep Purple theme (applies to Adjust page only) ===== */
+      --p-bg: #0f0a1f;               /* page background (behind cards) */
+      --p-card: #1a1233;             /* card background */
+      --p-ink: #e8e3ff;              /* primary text on purple */
+      --p-muted:#b8acd9;             /* muted text on purple */
+      --p-line:#3b2b66;              /* borders on purple */
+      --p-accent:#6d28d9;            /* action buttons */
+      --p-accent-ink:#ffffff;        /* accent text */
+      --p-glow: rgba(109,40,217,.35);/* card glow */
     }
 
     /* ===== Base ===== */
@@ -57,15 +67,13 @@
     }
     button:hover{ background:#111; color:#fff; border-color:#111; }
 
-    /* ===== Off-canvas sidebar (hidden by default) ===== */
-    #menu-check{ display:none; } /* the toggle */
-
-    /* Animated hamburger (CSS-only) */
+    /* ===== Off-canvas sidebar ===== */
+    #menu-check{ display:none; }
     .hamburger{
       position:fixed; left:12px; top:12px;
       width:32px; display:flex; flex-direction:column; gap:7px;
       cursor:pointer; user-select:none;
-      z-index:1200; /* above everything */
+      z-index:1200;
       transition: transform .3s ease;
     }
     .hamburger .bar{
@@ -74,23 +82,11 @@
     }
     .hamburger .bar.bar1, .hamburger .bar.bar3 { width:18px; }
     .hamburger .bar.bar2 { width:28px; }
-
-    /* when open, move hamburger over the page to align with drawer edge */
-    #menu-check:checked + label.hamburger{
-      transform: translateX(var(--nav-w));
-    }
-    /* animate to X when open */
-    #menu-check:checked + label.hamburger .bar1{
-      transform: translateY(10px) rotate(45deg);
-      width:28px;
-    }
+    #menu-check:checked + label.hamburger{ transform: translateX(var(--nav-w)); }
+    #menu-check:checked + label.hamburger .bar1{ transform: translateY(10px) rotate(45deg); width:28px; }
     #menu-check:checked + label.hamburger .bar2{ opacity:0; }
-    #menu-check:checked + label.hamburger .bar3{
-      transform: translateY(-10px) rotate(-45deg);
-      width:28px;
-    }
+    #menu-check:checked + label.hamburger .bar3{ transform: translateY(-10px) rotate(-45deg); width:28px; }
 
-    /* Drawer panel */
     .sidebar{
       position:fixed; inset:0 auto 0 0; width:var(--nav-w);
       background:#f3f4f6; padding:20px; box-sizing:border-box;
@@ -102,13 +98,11 @@
       display:block; width:100%; margin-bottom:10px; padding:10px; text-align:left;
     }
     .sidebar hr{ margin:12px 0; }
-    /* show when checked */
     #menu-check:checked ~ .sidebar{ transform:translateX(0); }
 
-    /* click-away overlay */
     label.overlay{
       position:fixed; inset:0; background:rgba(0,0,0,.35);
-      opacity:0; visibility:hidden; transition:.3s ease; z-index:1090; /* below drawer */
+      opacity:0; visibility:hidden; transition:.3s ease; z-index:1090;
     }
     #menu-check:checked ~ label.overlay{ opacity:1; visibility:visible; }
 
@@ -118,23 +112,42 @@
       --card-bg: var(--panel);
       --card-accent: var(--accent);
       --card-text: var(--ink);
-      width:190px; height:254px; background:var(--panel); border-radius:20px; position:relative; overflow:hidden;
+
+      width:190px; height:254px; background:var(--card-bg);
+      border-radius:20px; position:relative; overflow:visible; /* allow badges outside */
       transition:all .5s cubic-bezier(.16,1,.3,1);
       box-shadow:0 12px 30px rgba(0,0,0,.07);
       border:1px solid var(--line);
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;
+      color:var(--card-text);
     }
-    .card__shine{position:absolute; inset:0; background:linear-gradient(120deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.8) 50%, rgba(255,255,255,0) 60%); opacity:0; transition:opacity .3s;}
-    .card__glow{position:absolute; inset:-10px; background:radial-gradient(circle at 50% 0%, rgba(17,17,17,.08) 0%, rgba(17,17,17,0) 70%); opacity:0; transition:opacity .5s;}
+    .card__shine{position:absolute; inset:0; background:linear-gradient(120deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.8) 50%, rgba(255,255,255,0) 60%); opacity:0; transition:opacity .3s; pointer-events:none;}
+    .card__glow{position:absolute; inset:-10px; background:radial-gradient(circle at 50% 0%, rgba(17,17,17,.08) 0%, rgba(17,17,17,0) 70%); opacity:0; transition:opacity .5s; pointer-events:none;}
     .card__content{padding:1.25em; height:100%; display:flex; flex-direction:column; gap:.75em; position:relative; z-index:2;}
-    .card__badge{position:absolute; top:12px; right:12px; background:#111; color:#fff; padding:.25em .5em; border-radius:999px; font-size:.7em; font-weight:600; transform:scale(.8); opacity:0; transition:all .4s ease .1s;}
-    .card__image{width:100%; height:100px; background:linear-gradient(180deg,#f3f4f6 0%, #e5e7eb 100%); border-radius:12px; transition:all .5s cubic-bezier(.16,1,.3,1); position:relative; overflow:hidden;}
+    .badge-lowok{position:absolute; top:12px; right:12px; background:#111; color:#fff; padding:.25em .5em; border-radius:999px; font-size:.7em; font-weight:600; transform:scale(.8); opacity:0; transition:all .4s ease .1s;}
+    .badge-new{
+      position:absolute; top:-10px; right:-10px;
+      background:#e11d48; color:#fff; padding:.35em .55em; border-radius:999px;
+      font-weight:700; font-size:.7em; box-shadow:0 8px 18px rgba(0,0,0,.25); cursor:pointer;
+    }
+
+    .card__image{
+      width:100%; height:100px; border-radius:12px;
+      background:linear-gradient(180deg,#f3f4f6 0%, #e5e7eb 100%);
+      background-size:cover; background-position:center; position:relative; overflow:hidden;
+    }
+    .img-edit-btn{
+      position:absolute; top:6px; left:6px; width:26px; height:26px;
+      display:flex; align-items:center; justify-content:center; font-size:14px;
+      border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.85); cursor:pointer;
+    }
+
     .qty-badge{position:absolute; bottom:8px; right:8px; background:#111; color:#fff; font-size:12px; padding:2px 6px; border-radius:999px; opacity:.9;}
     .card__text{display:flex; flex-direction:column; gap:.25em;}
-    .card__title{ color:var(--ink); font-size:1.1em; margin:0; font-weight:700; transition:all .3s; }
+    .card__title{ font-size:1.1em; margin:0; font-weight:700; transition:all .3s; }
     .card__description{ color:var(--muted); font-size:.75em; margin:0; opacity:1; transition:all .3s; }
     .card__actions{ display:flex; justify-content:center; gap:12px; margin-top:8px; }
-    .card__button{ width:28px; height:28px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; cursor:pointer; transition:all .3s; transform:scale(.9); user-select:none; }
+    .card__button{ width:28px; height:28px; background:var(--card-accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--accent-ink); cursor:pointer; transition:all .3s; transform:scale(.9); user-select:none; }
     .card__button--minus{ background:#2b2b2b; }
     .card__button--trash{
       background:transparent; color:var(--ink);
@@ -179,6 +192,31 @@
     .add-row{ display:grid; grid-template-columns: minmax(280px, 1fr) 140px auto; gap: 12px; align-items:center; max-width:800px; }
     .add-row .input-container, .add-row .input{ width:100%; }
     @media (max-width: 560px){ .add-row{ grid-template-columns: 1fr; } }
+
+    /* ===== Purple theming applied only inside #adjustPage ===== */
+    #adjustPage.theme-purple{
+      --card-bg: var(--p-card);
+      --card-accent: var(--p-accent);
+      --card-text: var(--p-ink);
+      --accent-ink: var(--p-accent-ink);
+      --line: var(--p-line);
+      --muted: var(--p-muted);
+      background: radial-gradient(60% 80% at 10% -10%, rgba(109,40,217,.2), transparent 60%),
+                  radial-gradient(50% 60% at 100% 10%, rgba(76,29,149,.25), transparent 60%),
+                  var(--p-bg);
+      border-radius: 16px;
+      padding: 16px;
+      color: var(--p-ink);
+    }
+    #adjustPage.theme-purple h2{ color: var(--p-ink); }
+    #adjustPage.theme-purple .card{
+      box-shadow: 0 20px 45px var(--p-glow), 0 8px 20px rgba(0,0,0,.25);
+      border-color: var(--p-line);
+    }
+    #adjustPage.theme-purple .card__description{ color: var(--p-muted); }
+    #adjustPage.theme-purple .card__button--trash{ color: var(--p-ink); border-color: var(--p-ink); }
+    #adjustPage.theme-purple .badge-lowok{ background: var(--p-accent); }
+    #adjustPage.theme-purple .qty-badge{ background:#0b0720; }
   </style>
 </head>
 <body>
@@ -220,8 +258,8 @@
       <div class="muted">Tip: data is saved in this browser using localStorage.</div>
     </section>
 
-    <!-- Adjust Stock Page -->
-    <section id="adjustPage" style="display:none;">
+    <!-- Adjust Stock Page (purple theme) -->
+    <section id="adjustPage" class="theme-purple" style="display:none;">
       <h2>Adjust Stock</h2>
       <div id="stockGrid" class="grid"></div>
     </section>
@@ -337,6 +375,9 @@
     </div>
   </div>
 
+  <!-- Hidden file picker (used by image set) -->
+  <input type="file" id="hiddenFileInput" accept="image/*" style="display:none" />
+
   <script>
     // keep aria-expanded in sync for the hamburger
     const menuCheck = document.getElementById('menu-check');
@@ -344,7 +385,7 @@
     function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
     menuCheck.addEventListener('change', syncAria); syncAria();
 
-    // ===== Data (inventory + audit log) in localStorage =====
+    // ===== Data in localStorage =====
     let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
     let adjustments = JSON.parse(localStorage.getItem('adjustments')) || [];
 
@@ -363,15 +404,19 @@
       if (pageId === 'historyPage') { populateHistoryFilters(); renderHistory(); }
     }
 
-    // Add new item
+    // Add new item (mark as NEW)
     function addNewItem() {
       const name = document.getElementById('newItemName').value.trim();
       const qty  = parseInt(document.getElementById('newItemQty').value);
       if (!name || isNaN(qty) || qty <= 0) return alert("Enter valid name and quantity");
 
       const existing = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
-      if (existing) existing.qty += qty;
-      else inventory.push({ name, qty, goal: 0 });
+      if (existing) {
+        existing.qty += qty;
+        existing.isNew = true; // re-flag as new on add
+      } else {
+        inventory.push({ name, qty, goal: 0, img:null, isNew:true });
+      }
 
       saveInventory();
       alert(`Item "${name}" added.`);
@@ -391,24 +436,39 @@
         const low = item.goal > 0 && item.qty <= item.goal;
         const card = document.createElement('div');
         card.className = 'card';
+        const bgStyle = item.img ? `style="background-image:url('${escapeHtml(item.img)}')"` : '';
         card.innerHTML = `
           <div class="card__shine"></div>
           <div class="card__glow"></div>
-          <div class="card__badge" style="${low ? 'opacity:1; transform:scale(1);' : ''}">
+          <div class="badge-lowok" style="${low ? 'opacity:1; transform:scale(1);' : ''}">
             ${low ? 'LOW' : 'OK'}
           </div>
+          ${item.isNew ? `<div class="badge-new" title="Dismiss">NEW</div>` : ''}
           <div class="card__content">
-            <div class="card__image"><span class="qty-badge">Qty: ${item.qty}</span></div>
+            <div class="card__image" ${bgStyle}>
+              <button class="img-edit-btn" title="Set image">🖼</button>
+              <span class="qty-badge">Qty: ${item.qty}</span>
+            </div>
             <div class="card__text">
               <h3 class="card__title" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</h3>
               <p class="card__description">Goal: ${item.goal || 0}</p>
             </div>
             <div class="card__actions">
-              <div class="card__button" title="Add" onclick="openAdjustDialog(${index}, 'add')">+</div>
-              <div class="card__button card__button--minus" title="Minus" onclick="openAdjustDialog(${index}, 'sub')">–</div>
-              <div class="card__button card__button--trash" title="Delete item" onclick="openDeleteDialog(${index})">🗑</div>
+              <div class="card__button" title="Add (Shift-click to set image)" data-plus>+</div>
+              <div class="card__button card__button--minus" title="Minus" data-minus>–</div>
+              <div class="card__button card__button--trash" title="Delete item" data-del>🗑</div>
             </div>
           </div>`;
+        // event wiring
+        card.querySelector('.img-edit-btn').addEventListener('click', () => openImagePicker(index));
+        if (item.isNew) card.querySelector('.badge-new').addEventListener('click', () => { item.isNew = false; saveInventory(); renderStockGrid(); });
+        card.querySelector('[data-plus]').addEventListener('click', (e) => {
+          if (e.shiftKey) { openImagePicker(index); return; } // SHIFT+click to set image
+          openAdjustDialog(index, 'add');
+        });
+        card.querySelector('[data-minus]').addEventListener('click', () => openAdjustDialog(index, 'sub'));
+        card.querySelector('[data-del]').addEventListener('click', () => openDeleteDialog(index));
+
         grid.appendChild(card);
       });
     }
@@ -446,7 +506,43 @@
       });
     }
 
-    // Adjust dialog
+    // ===== Image picker (file or URL) =====
+    let imgTargetIndex = null;
+    const fileInput = document.getElementById('hiddenFileInput');
+
+    function openImagePicker(index){
+      imgTargetIndex = index;
+      const choice = prompt("Set image:\n- Paste an image URL and press OK, OR\n- Leave blank to choose a file from your device.");
+      if (choice && choice.trim()){
+        setItemImageFromURL(choice.trim());
+      } else {
+        fileInput.click();
+      }
+    }
+
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (!file || imgTargetIndex === null) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        inventory[imgTargetIndex].img = reader.result; // Data URL
+        inventory[imgTargetIndex].isNew = true; // re-flag
+        saveInventory(); renderStockGrid();
+        imgTargetIndex = null;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function setItemImageFromURL(url){
+      if (imgTargetIndex === null) return;
+      inventory[imgTargetIndex].img = url; // store URL directly
+      inventory[imgTargetIndex].isNew = true;
+      saveInventory(); renderStockGrid();
+      imgTargetIndex = null;
+    }
+
+    // ===== Adjust dialog =====
     let pending = { index:null, mode:'add' };
     function openAdjustDialog(index, mode) {
       pending = { index, mode };
@@ -483,7 +579,7 @@
       checkLowStockAlerts(); closeAdjustDialog();
     });
 
-    // Delete dialog
+    // ===== Delete dialog =====
     let pendingDeleteIndex = null;
     function openDeleteDialog(index) {
       pendingDeleteIndex = index;
@@ -516,13 +612,13 @@
       closeDeleteDialog();
     });
 
-    // History
+    // ===== History =====
     function populateHistoryFilters() {
       const sel = document.getElementById('hist-item-filter');
       if (!sel) return;
       const current = sel.value;
       const names = Array.from(new Set(adjustments.map(a => a.item))).sort((a,b)=>a.localeCompare(b));
-      sel.innerHTML = '<option value="">All items</option>' + names.map(n => `<option value="${n}">${n}</option>`).join('');
+      sel.innerHTML = '<option value="">All items</option>' + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
       if ([...sel.options].some(o => o.value === current)) sel.value = current;
     }
     function renderHistory() {
@@ -556,7 +652,7 @@
       }
     }
 
-    // utils
+    // ===== Utils =====
     function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }
     function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
