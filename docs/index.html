@@ -7,11 +7,15 @@
 
   <!-- Auth gate -->
   <script>
-    if (localStorage.getItem('auth_v1') !== 'ok') {
+    const AUTH_OK = localStorage.getItem('auth_v1') === 'ok';
+    const AUTH_USER = localStorage.getItem('auth_user');
+    if (!AUTH_OK || !AUTH_USER) {
+      // if not logged in, go to login page
       window.location.replace('login.html');
     }
     function logout(){
       localStorage.removeItem('auth_v1');
+      localStorage.removeItem('auth_user');   // ← also clear stored username
       localStorage.removeItem('auth_time');
       window.location.replace('login.html');
     }
@@ -19,30 +23,12 @@
 
   <style>
     :root{
-      /* sizes */
       --nav-w: 260px;
-
-      /* ===== Global Minimal Theme ===== */
-      --bg:#f6f7f8;
-      --panel:#ffffff;
-      --ink:#111111;
-      --muted:#6b7280;
-      --line:#e5e7eb;
-      --accent:#111111;
-      --accent-ink:#ffffff;
-
-      /* ===== Deep Purple theme (applies to Adjust page only) ===== */
-      --p-bg: #0f0a1f;               /* page background (behind cards) */
-      --p-card: #1a1233;             /* card background */
-      --p-ink: #e8e3ff;              /* primary text on purple */
-      --p-muted:#b8acd9;             /* muted text on purple */
-      --p-line:#3b2b66;              /* borders on purple */
-      --p-accent:#6d28d9;            /* action buttons */
-      --p-accent-ink:#ffffff;        /* accent text */
-      --p-glow: rgba(109,40,217,.35);/* card glow */
+      --bg:#f6f7f8; --panel:#ffffff; --ink:#111111; --muted:#6b7280; --line:#e5e7eb;
+      --accent:#111111; --accent-ink:#ffffff;
+      --p-bg:#0f0a1f; --p-card:#1a1233; --p-ink:#e8e3ff; --p-muted:#b8acd9; --p-line:#3b2b66;
+      --p-accent:#6d28d9; --p-accent-ink:#ffffff; --p-glow:rgba(109,40,217,.35);
     }
-
-    /* ===== Base ===== */
     html,body{ height:100%; }
     body{ margin:0; font-family: Arial, sans-serif; background:var(--bg); color:var(--ink); }
     h1,h2,h3{ color:var(--ink); }
@@ -57,29 +43,12 @@
     .pill{ display:inline-block; padding:2px 8px; border:1px solid var(--line); border-radius:999px; font-size:12px; color:#555; }
     .nowrap{ white-space:nowrap; }
 
-    /* ===== Buttons (global) ===== */
-    button{
-      background:linear-gradient(#fafafa,#f3f4f6);
-      border:1px solid var(--line);
-      color:var(--ink);
-      border-radius:8px;
-      cursor:pointer;
-    }
+    button{ background:linear-gradient(#fafafa,#f3f4f6); border:1px solid var(--line); color:var(--ink); border-radius:8px; cursor:pointer; }
     button:hover{ background:#111; color:#fff; border-color:#111; }
 
-    /* ===== Off-canvas sidebar ===== */
     #menu-check{ display:none; }
-    .hamburger{
-      position:fixed; left:12px; top:12px;
-      width:32px; display:flex; flex-direction:column; gap:7px;
-      cursor:pointer; user-select:none;
-      z-index:1200;
-      transition: transform .3s ease;
-    }
-    .hamburger .bar{
-      height:3px; background:#111; border-radius:10px;
-      transition:transform .35s ease, opacity .25s ease, width .35s ease;
-    }
+    .hamburger{ position:fixed; left:12px; top:12px; width:32px; display:flex; flex-direction:column; gap:7px; cursor:pointer; user-select:none; z-index:1200; transition: transform .3s ease; }
+    .hamburger .bar{ height:3px; background:#111; border-radius:10px; transition:transform .35s ease, opacity .25s ease, width .35s ease; }
     .hamburger .bar.bar1, .hamburger .bar.bar3 { width:18px; }
     .hamburger .bar.bar2 { width:28px; }
     #menu-check:checked + label.hamburger{ transform: translateX(var(--nav-w)); }
@@ -87,61 +56,22 @@
     #menu-check:checked + label.hamburger .bar2{ opacity:0; }
     #menu-check:checked + label.hamburger .bar3{ transform: translateY(-10px) rotate(-45deg); width:28px; }
 
-    .sidebar{
-      position:fixed; inset:0 auto 0 0; width:var(--nav-w);
-      background:#f3f4f6; padding:20px; box-sizing:border-box;
-      transform:translateX(-100%); transition:transform .3s ease;
-      z-index:1100; overflow:auto; box-shadow:0 10px 30px rgba(0,0,0,.18);
-      border-right:1px solid var(--line);
-    }
-    .sidebar button{
-      display:block; width:100%; margin-bottom:10px; padding:10px; text-align:left;
-    }
+    .sidebar{ position:fixed; inset:0 auto 0 0; width:var(--nav-w); background:#f3f4f6; padding:20px; box-sizing:border-box; transform:translateX(-100%); transition:transform .3s ease; z-index:1100; overflow:auto; box-shadow:0 10px 30px rgba(0,0,0,.18); border-right:1px solid var(--line); }
+    .sidebar button{ display:block; width:100%; margin-bottom:10px; padding:10px; text-align:left; }
     .sidebar hr{ margin:12px 0; }
     #menu-check:checked ~ .sidebar{ transform:translateX(0); }
-
-    label.overlay{
-      position:fixed; inset:0; background:rgba(0,0,0,.35);
-      opacity:0; visibility:hidden; transition:.3s ease; z-index:1090;
-    }
+    label.overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); opacity:0; visibility:hidden; transition:.3s ease; z-index:1090; }
     #menu-check:checked ~ label.overlay{ opacity:1; visibility:visible; }
 
-    /* ===== Cards/Grid (Adjust page) ===== */
     .grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:16px; }
-    .card{
-      --card-bg: var(--panel);
-      --card-accent: var(--accent);
-      --card-text: var(--ink);
-
-      width:190px; height:254px; background:var(--card-bg);
-      border-radius:20px; position:relative; overflow:visible;
-      transition:all .5s cubic-bezier(.16,1,.3,1);
-      box-shadow:0 12px 30px rgba(0,0,0,.07);
-      border:1px solid var(--line);
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;
-      color:var(--card-text);
-    }
+    .card{ --card-bg: var(--panel); --card-accent: var(--accent); --card-text: var(--ink); width:190px; height:254px; background:var(--card-bg); border-radius:20px; position:relative; overflow:visible; transition:all .5s cubic-bezier(.16,1,.3,1); box-shadow:0 12px 30px rgba(0,0,0,.07); border:1px solid var(--line); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,sans-serif; color:var(--card-text); }
     .card__shine{position:absolute; inset:0; background:linear-gradient(120deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.8) 50%, rgba(255,255,255,0) 60%); opacity:0; transition:opacity .3s; pointer-events:none;}
     .card__glow{position:absolute; inset:-10px; background:radial-gradient(circle at 50% 0%, rgba(17,17,17,.08) 0%, rgba(17,17,17,0) 70%); opacity:0; transition:opacity .5s; pointer-events:none;}
     .card__content{padding:1.25em; height:100%; display:flex; flex-direction:column; gap:.75em; position:relative; z-index:2;}
     .badge-lowok{position:absolute; top:12px; right:12px; background:#111; color:#fff; padding:.25em .5em; border-radius:999px; font-size:.7em; font-weight:600; transform:scale(.8); opacity:0; transition:all .4s ease .1s;}
-    .badge-new{
-      position:absolute; top:-10px; right:-10px;
-      background:#e11d48; color:#fff; padding:.35em .55em; border-radius:999px;
-      font-weight:700; font-size:.7em; box-shadow:0 8px 18px rgba(0,0,0,.25); cursor:pointer;
-    }
-
-    .card__image{
-      width:100%; height:100px; border-radius:12px;
-      background:linear-gradient(180deg,#f3f4f6 0%, #e5e7eb 100%);
-      background-size:cover; background-position:center; position:relative; overflow:hidden;
-    }
-    .img-edit-btn{
-      position:absolute; top:6px; left:6px; width:26px; height:26px;
-      display:flex; align-items:center; justify-content:center; font-size:14px;
-      border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.85); cursor:pointer;
-    }
-
+    .badge-new{ position:absolute; top:-10px; right:-10px; background:#e11d48; color:#fff; padding:.35em .55em; border-radius:999px; font-weight:700; font-size:.7em; box-shadow:0 8px 18px rgba(0,0,0,.25); cursor:pointer; }
+    .card__image{ width:100%; height:100px; border-radius:12px; background:linear-gradient(180deg,#f3f4f6 0%, #e5e7eb 100%); background-size:cover; background-position:center; position:relative; overflow:hidden; }
+    .img-edit-btn{ position:absolute; top:6px; left:6px; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:14px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.85); cursor:pointer; }
     .qty-badge{position:absolute; bottom:8px; right:8px; background:#111; color:#fff; font-size:12px; padding:2px 6px; border-radius:999px; opacity:.9;}
     .card__text{display:flex; flex-direction:column; gap:.25em;}
     .card__title{ font-size:1.1em; margin:0; font-weight:700; transition:all .3s; }
@@ -149,15 +79,11 @@
     .card__actions{ display:flex; justify-content:center; gap:12px; margin-top:8px; }
     .card__button{ width:28px; height:28px; background:var(--card-accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--accent-ink); cursor:pointer; transition:all .3s; transform:scale(.9); user-select:none; }
     .card__button--minus{ background:#2b2b2b; }
-    .card__button--trash{
-      background:transparent; color:var(--ink);
-      border:1px solid var(--ink); border-radius:50%;
-    }
+    .card__button--trash{ background:transparent; color:var(--ink); border:1px solid var(--ink); border-radius:50%; }
     .card:hover{ transform:translateY(-8px); border-color:var(--line); }
     .card:hover .card__shine{ opacity:1; animation:shine 3s infinite; }
     @keyframes shine { 0%{background-position:-100% 0} 100%{background-position:200% 0} }
 
-    /* ===== Modals ===== */
     .modal{ position: fixed; inset: 0; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,0.4); z-index: 9999; }
     .modal.open{ display:flex; }
     .modal-card{ width:95%; max-width:460px; background:#fff; border-radius:8px; padding:16px 18px; box-shadow:0 20px 40px rgba(0,0,0,.15); border:1px solid var(--line); }
@@ -168,14 +94,9 @@
     #adj-confirm, #del-confirm{ background:#111; color:#fff; border-color:#111; border-radius:8px; }
     #adj-confirm:hover, #del-confirm:hover{ filter:brightness(0.9); }
 
-    /* ===== Fancy input styling ===== */
     .input-container{ position: relative; margin: 8px 4px; }
-    .input{
-      width: 100%; padding: 10px; height: 40px;
-      border: 2px solid var(--ink); border-top:none; border-bottom:none;
-      font-size: 16px; background: transparent; outline:none;
-      box-shadow: 7px 7px 0 0 var(--ink); transition: all 0.5s; box-sizing:border-box;
-    }
+    .input{ width: 100%; padding: 10px; height: 40px; border: 2px solid var(--ink); border-top:none; border-bottom:none; font-size: 16px; background: transparent; outline:none; box-shadow: 7px 7px 0 0 var(--ink); transition: all 0.5s; box-sizing:border-box; }
+    .input[readonly]{ background:#fafafa; cursor:not-allowed; } /* ← read-only look */
     .input:focus{ box-shadow:none; transition:all .5s; }
     .label{ position:absolute; top:10px; left:10px; color:var(--ink); transition: all .5s; transform: scale(0); z-index:-1; background:#fff; padding:0 4px; }
     .input-container .topline, .input-container .underline{ position:absolute; background-color: var(--ink); height:2px; right:0; transition: all .5s; }
@@ -185,7 +106,6 @@
     .input-container input:focus ~ .underline{ width:100%; }
     .input-container input:focus ~ .label{ top:-10px; transform: scale(1); }
 
-    /* Add page layout */
     #addPage{ max-width: 800px; margin: 0 auto; }
     #addPage .input-container{ max-width: 560px; }
     #addPage input[type="number"]{ width: 140px; box-sizing: border-box; }
@@ -193,26 +113,9 @@
     .add-row .input-container, .add-row .input{ width:100%; }
     @media (max-width: 560px){ .add-row{ grid-template-columns: 1fr; } }
 
-    /* ===== Purple theming applied only inside #adjustPage ===== */
-    #adjustPage.theme-purple{
-      --card-bg: var(--p-card);
-      --card-accent: var(--p-accent);
-      --card-text: var(--p-ink);
-      --accent-ink: var(--p-accent-ink);
-      --line: var(--p-line);
-      --muted: var(--p-muted);
-      background: radial-gradient(60% 80% at 10% -10%, rgba(109,40,217,.2), transparent 60%),
-                  radial-gradient(50% 60% at 100% 10%, rgba(76,29,149,.25), transparent 60%),
-                  var(--p-bg);
-      border-radius: 16px;
-      padding: 16px;
-      color: var(--p-ink);
-    }
+    #adjustPage.theme-purple{ --card-bg: var(--p-card); --card-accent: var(--p-accent); --card-text: var(--p-ink); --accent-ink: var(--p-accent-ink); --line: var(--p-line); --muted: var(--p-muted); background: radial-gradient(60% 80% at 10% -10%, rgba(109,40,217,.2), transparent 60%), radial-gradient(50% 60% at 100% 10%, rgba(76,29,149,.25), transparent 60%), var(--p-bg); border-radius: 16px; padding: 16px; color: var(--p-ink); }
     #adjustPage.theme-purple h2{ color: var(--p-ink); }
-    #adjustPage.theme-purple .card{
-      box-shadow: 0 20px 45px var(--p-glow), 0 8px 20px rgba(0,0,0,.25);
-      border-color: var(--p-line);
-    }
+    #adjustPage.theme-purple .card{ box-shadow: 0 20px 45px var(--p-glow), 0 8px 20px rgba(0,0,0,.25); border-color: var(--p-line); }
     #adjustPage.theme-purple .card__description{ color: var(--p-muted); }
     #adjustPage.theme-purple .card__button--trash{ color: var(--p-ink); border-color: var(--p-ink); }
     #adjustPage.theme-purple .badge-lowok{ background: var(--p-accent); }
@@ -255,7 +158,7 @@
         <input type="number" id="newItemQty" placeholder="Quantity">
         <button onclick="addNewItem()">Add Item</button>
       </div>
-      <div class="muted">Data now syncs via Firebase (Firestore + Storage).</div>
+      <div class="muted">Signed in as <strong id="signedAs"></strong>. Data syncs via Firebase.</div>
     </section>
 
     <!-- Adjust Stock Page (purple theme) -->
@@ -320,9 +223,9 @@
       <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount">
 
       <div class="input-container">
-        <input id="adj-name" type="text" class="input" placeholder=" ">
+        <input id="adj-name" type="text" class="input" placeholder=" " readonly>
         <span class="topline"></span><span class="underline"></span>
-        <label for="adj-name" class="label">Your name</label>
+        <label for="adj-name" class="label">Your name (auto)</label>
       </div>
 
       <div class="input-container">
@@ -351,9 +254,9 @@
       <div id="del-subtitle" class="muted"></div>
 
       <div class="input-container">
-        <input id="del-name" type="text" class="input" placeholder=" ">
+        <input id="del-name" type="text" class="input" placeholder=" " readonly>
         <span class="topline"></span><span class="underline"></span>
-        <label for="del-name" class="label">Your name</label>
+        <label for="del-name" class="label">Your name (auto)</label>
       </div>
 
       <div class="input-container">
@@ -375,14 +278,11 @@
     </div>
   </div>
 
-  <!-- Hidden file picker (used by image set) -->
+  <!-- Hidden file picker -->
   <input type="file" id="hiddenFileInput" accept="image/*" style="display:none" />
 
-  <!-- ============================= -->
-  <!-- Firebase + App Logic (module) -->
-  <!-- ============================= -->
+  <!-- ===== Firebase + App Logic ===== -->
   <script type="module">
-    /* ===== Firebase SDKs (modular v9+) ===== */
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -394,7 +294,6 @@
       getStorage, ref as storageRef, uploadBytes, getDownloadURL
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
 
-    /* ===== Your Firebase config ===== */
     const firebaseConfig = {
       apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
       authDomain: "epedu-inventory-database.firebaseapp.com",
@@ -406,65 +305,47 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    try { getAnalytics(app); } catch(e) { /* analytics needs https; ignore in dev */ }
-
-    /* ===== Firebase services ===== */
+    try { getAnalytics(app); } catch(e) {}
     const auth = getAuth(app);
     const db   = getFirestore(app);
     const st   = getStorage(app);
 
-    /* ===== Anonymous sign-in for Firestore/Storage rules ===== */
     signInAnonymously(auth).catch(console.error);
 
-    /* ===== Realtime state ===== */
-    let inventory = [];     // array of {id, name, qty, goal, img, isNew}
-    let adjustments = [];   // array of history docs
+    // who’s logged in (saved by login.html)
+    const CURRENT_USER = localStorage.getItem('auth_user') || 'Unknown';
+    // show on Add page
+    const signedAs = document.getElementById('signedAs');
+    if (signedAs) signedAs.textContent = CURRENT_USER;
 
-    /* ===== Collections ===== */
+    // collections
     const colInventory  = collection(db, "inventory");
     const colAdjustments = collection(db, "adjustments");
 
-    /* ===== Accessibility for hamburger ===== */
+    // utils
+    function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
+    function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    function toLocalDateTime(ts){ if (!ts) return ''; const d = ts.toDate ? ts.toDate() : new Date(ts); return isNaN(+d)?'':d.toLocaleString(); }
+
+    // hamburger aria
     const menuCheck = document.getElementById('menu-check');
     const hamb = document.querySelector('label.hamburger');
     function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
     menuCheck.addEventListener('change', syncAria); syncAria();
 
-    /* ===== Utilities ===== */
-    function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
-    function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-    function toLocalDateTime(ts){
-      if (!ts) return '';
-      const d = ts.toDate ? ts.toDate() : new Date(ts);
-      if (isNaN(+d)) return '';
-      return d.toLocaleString();
-    }
+    // state
+    let inventory = [];
+    let adjustments = [];
 
-    /* ===== Page routing ===== */
-    function showPage(pageId) {
-      ['addPage','adjustPage','goalPage','historyPage'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-      });
-      const target = document.getElementById(pageId);
-      if (target) target.style.display = 'block';
-
-      if (pageId === 'adjustPage' || pageId === 'goalPage') renderTables();
-      if (pageId === 'historyPage') { attachHistoryListener(); }
-    }
-    window.showPage = showPage;
-
-    /* ===== Realtime listeners ===== */
-    // Inventory: always live
+    // live listeners
     onSnapshot(colInventory, (snap) => {
       inventory = snap.docs.map(d => ({ id:d.id, ...d.data() }));
       renderTables();
     });
 
-    // Adjustments (history): attach only when viewing history
-    let unsubHistory = null;
+    let unsubHistory=null;
     function attachHistoryListener(){
-      if (unsubHistory) return; // already attached
+      if (unsubHistory) return;
       const qAdj = query(colAdjustments, orderBy("ts","desc"));
       unsubHistory = onSnapshot(qAdj, (snap) => {
         adjustments = snap.docs.map(d => ({ id:d.id, ...d.data() }));
@@ -473,22 +354,29 @@
       });
     }
 
-    /* ===== Add new item ===== */
+    // routing
+    function showPage(pageId) {
+      ['addPage','adjustPage','goalPage','historyPage'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      const target = document.getElementById(pageId);
+      if (target) target.style.display = 'block';
+      if (pageId === 'adjustPage' || pageId === 'goalPage') renderTables();
+      if (pageId === 'historyPage') attachHistoryListener();
+    }
+    window.showPage = showPage;
+
+    // add item
     async function addNewItem() {
       const name = document.getElementById('newItemName').value.trim();
       const qty  = parseInt(document.getElementById('newItemQty').value,10);
       if (!name || isNaN(qty) || qty <= 0) return alert("Enter valid name and quantity");
-
       const existing = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
       if (existing) {
-        await updateDoc(doc(db, "inventory", existing.id), {
-          qty: (existing.qty || 0) + qty,
-          isNew: true
-        });
+        await updateDoc(doc(db, "inventory", existing.id), { qty: (existing.qty||0)+qty, isNew:true });
       } else {
-        await addDoc(colInventory, {
-          name, qty, goal: 0, img: null, isNew: true, createdAt: serverTimestamp()
-        });
+        await addDoc(colInventory, { name, qty, goal:0, img:null, isNew:true, createdAt: serverTimestamp() });
       }
       alert(`Item "${name}" added.`);
       document.getElementById('newItemName').value = '';
@@ -496,7 +384,7 @@
     }
     window.addNewItem = addNewItem;
 
-    /* ===== Renderers ===== */
+    // renderers
     function renderTables(){ renderStockGrid(); renderGoalTable(); checkLowStockAlerts(); }
 
     function renderStockGrid() {
@@ -530,19 +418,13 @@
               <div class="card__button card__button--trash" title="Delete item" data-del>🗑</div>
             </div>
           </div>`;
-
-        // events
         card.querySelector('.img-edit-btn').addEventListener('click', () => openImagePicker(index));
         if (item.isNew) card.querySelector('.badge-new').addEventListener('click', async () => {
           await updateDoc(doc(db, "inventory", item.id), { isNew:false });
         });
-        card.querySelector('[data-plus]').addEventListener('click', (e) => {
-          if (e.shiftKey) { openImagePicker(index); return; }
-          openAdjustDialog(index, 'add');
-        });
-        card.querySelector('[data-minus]').addEventListener('click', () => openAdjustDialog(index, 'sub'));
+        card.querySelector('[data-plus]').addEventListener('click', (e) => { if (e.shiftKey){ openImagePicker(index); return; } openAdjustDialog(index,'add'); });
+        card.querySelector('[data-minus]').addEventListener('click', () => openAdjustDialog(index,'sub'));
         card.querySelector('[data-del]').addEventListener('click', () => openDeleteDialog(index));
-
         grid.appendChild(card);
       });
     }
@@ -560,8 +442,6 @@
           <td><button data-update-goal="${index}">Update</button></td>`;
         tbody.appendChild(row);
       });
-
-      // attach listeners for update buttons
       tbody.querySelectorAll('button[data-update-goal]').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           const idx = parseInt(e.currentTarget.getAttribute('data-update-goal'),10);
@@ -575,56 +455,46 @@
       });
     }
 
-    // Alert once per render per item when low
     function checkLowStockAlerts() {
       inventory.forEach(item => {
-        if (item.goal > 0 && (item.qty ?? 0) <= item.goal) {
-          alert(`Low stock for "${item.name}"`);
-        }
+        if (item.goal > 0 && (item.qty ?? 0) <= item.goal) alert(`Low stock for "${item.name}"`);
       });
     }
 
-    /* ===== Image picker (file or URL) ===== */
-    let imgTargetIndex = null;
-    const fileInput = document.getElementById('hiddenFileInput');
-
+    // image picker
+    let imgTargetIndex=null;
+    const fileInput=document.getElementById('hiddenFileInput');
     function openImagePicker(index){
-      imgTargetIndex = index;
-      const choice = prompt("Set image:\n- Paste an image URL and press OK, OR\n- Leave blank to choose a file from your device (uploads to Firebase Storage).");
-      if (choice && choice.trim()){
-        setItemImageFromURL(choice.trim());
-      } else {
-        fileInput.click();
-      }
+      imgTargetIndex=index;
+      const choice=prompt("Set image:\n- Paste an image URL and press OK, OR\n- Leave blank to choose a file (uploads to Firebase Storage).");
+      if (choice && choice.trim()){ setItemImageFromURL(choice.trim()); } else { fileInput.click(); }
     }
-    window.openImagePicker = openImagePicker;
+    window.openImagePicker=openImagePicker;
 
-    fileInput.addEventListener('change', async (e) => {
-      const file = e.target.files && e.target.files[0];
-      e.target.value = '';
-      if (!file || imgTargetIndex === null) return;
-      const item = inventory[imgTargetIndex];
+    fileInput.addEventListener('change', async (e)=>{
+      const file=e.target.files && e.target.files[0]; e.target.value='';
+      if(!file || imgTargetIndex===null) return;
+      const item=inventory[imgTargetIndex];
       try{
-        const path = `itemImages/${item.id}/${Date.now()}_${file.name}`;
-        const ref = storageRef(st, path);
-        await uploadBytes(ref, file);
-        const url = await getDownloadURL(ref);
-        await updateDoc(doc(db,"inventory", item.id), { img:url, isNew:true });
-      } catch(err){ console.error(err); alert('Upload failed'); }
-      imgTargetIndex = null;
+        const path=`itemImages/${item.id}/${Date.now()}_${file.name}`;
+        const ref=storageRef(st,path);
+        await uploadBytes(ref,file);
+        const url=await getDownloadURL(ref);
+        await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true });
+      }catch(err){ console.error(err); alert('Upload failed'); }
+      imgTargetIndex=null;
     });
 
     async function setItemImageFromURL(url){
-      if (imgTargetIndex === null) return;
-      const item = inventory[imgTargetIndex];
-      try{
-        await updateDoc(doc(db,"inventory", item.id), { img:url, isNew:true });
-      } catch(err){ console.error(err); alert('Failed to set image URL'); }
-      imgTargetIndex = null;
+      if(imgTargetIndex===null) return;
+      const item=inventory[imgTargetIndex];
+      try{ await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true }); }
+      catch(err){ console.error(err); alert('Failed to set image URL'); }
+      imgTargetIndex=null;
     }
-    window.setItemImageFromURL = setItemImageFromURL;
+    window.setItemImageFromURL=setItemImageFromURL;
 
-    /* ===== Adjust dialog ===== */
+    // ===== Adjust dialog (auto username) =====
     let pending = { index:null, mode:'add' };
     function openAdjustDialog(index, mode) {
       pending = { index, mode };
@@ -632,25 +502,30 @@
       document.getElementById('adj-title').textContent = `${mode === 'add' ? 'Add to' : 'Minus from'} "${item.name}"`;
       document.getElementById('adj-subtitle').textContent = `Current qty: ${item.qty ?? 0}`;
       document.getElementById('adj-amount').value = '1';
-      document.getElementById('adj-name').value = '';
+
+      // auto-fill + lock username
+      const nameInput = document.getElementById('adj-name');
+      nameInput.value = CURRENT_USER;
+      nameInput.readOnly = true;
+
       document.getElementById('adj-purpose').value = '';
       document.getElementById('adj-for').value = '';
       document.getElementById('adjustModal').classList.add('open');
       setTimeout(() => document.getElementById('adj-amount').focus(), 0);
     }
     function closeAdjustDialog(){ document.getElementById('adjustModal').classList.remove('open'); }
-    window.openAdjustDialog = openAdjustDialog;
+    window.openAdjustDialog=openAdjustDialog;
 
     document.getElementById('adj-cancel').addEventListener('click', closeAdjustDialog);
     document.getElementById('adjustModal').addEventListener('click', e => { if (e.target.id === 'adjustModal') closeAdjustDialog(); });
     document.getElementById('adjustModal').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('adj-confirm').click(); } });
     document.getElementById('adj-confirm').addEventListener('click', async () => {
       const amount = parseInt(document.getElementById('adj-amount').value, 10);
-      const actor   = document.getElementById('adj-name').value.trim();
+      const actor   = CURRENT_USER; // ← from login
       const purpose = document.getElementById('adj-purpose').value.trim();
       const forWhom = document.getElementById('adj-for').value.trim();
       if (!Number.isInteger(amount) || amount <= 0) return alert('Enter a valid positive amount.');
-      if (!actor || !purpose || !forWhom) return alert('Please fill in Your name, Purpose, and For (names).');
+      if (!purpose || !forWhom) return alert('Please fill in Purpose and For (names).');
 
       const item = inventory[pending.index];
       const signedDelta = pending.mode === 'add' ? amount : -amount;
@@ -660,52 +535,50 @@
         await updateDoc(doc(db,"inventory", item.id), { qty:newQty, isNew:false });
         await addDoc(colAdjustments, {
           ts: serverTimestamp(),
-          item: item.name,
-          itemId: item.id,
-          delta: signedDelta,
-          actor, purpose, forWhom,
-          qtyAfter: newQty
+          item: item.name, itemId: item.id,
+          delta: signedDelta, actor, purpose, forWhom, qtyAfter: newQty
         });
       } catch(err){ console.error(err); alert('Failed to save adjustment'); }
       closeAdjustDialog();
     });
 
-    /* ===== Delete dialog ===== */
+    // ===== Delete dialog (auto username) =====
     let pendingDeleteIndex = null;
     function openDeleteDialog(index) {
       pendingDeleteIndex = index;
       const item = inventory[index];
       document.getElementById('del-title').textContent = `Delete "${item.name}"`;
       document.getElementById('del-subtitle').textContent = `This will remove the item and log a history entry with -${item.qty ?? 0} (Qty after: 0).`;
-      document.getElementById('del-name').value = '';
+
+      const delName = document.getElementById('del-name');
+      delName.value = CURRENT_USER;
+      delName.readOnly = true;
+
       document.getElementById('del-purpose').value = '';
       document.getElementById('del-for').value = '';
       document.getElementById('deleteModal').classList.add('open');
-      setTimeout(() => document.getElementById('del-name').focus(), 0);
+      setTimeout(() => document.getElementById('del-purpose').focus(), 0);
     }
     function closeDeleteDialog(){ document.getElementById('deleteModal').classList.remove('open'); }
-    window.openDeleteDialog = openDeleteDialog;
+    window.openDeleteDialog=openDeleteDialog;
 
     document.getElementById('del-cancel').addEventListener('click', closeDeleteDialog);
     document.getElementById('deleteModal').addEventListener('click', e => { if (e.target.id === 'deleteModal') closeDeleteDialog(); });
     document.getElementById('deleteModal').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('del-confirm').click(); } });
     document.getElementById('del-confirm').addEventListener('click', async () => {
       if (pendingDeleteIndex === null) return closeDeleteDialog();
-      const actor   = document.getElementById('del-name').value.trim();
+      const actor   = CURRENT_USER; // ← from login
       const purpose = document.getElementById('del-purpose').value.trim();
       const forWhom = document.getElementById('del-for').value.trim();
-      if (!actor || !purpose || !forWhom) return alert('Please fill in Your name, Purpose, and For (names).');
+      if (!purpose || !forWhom) return alert('Please fill in Purpose and For (names).');
 
       const removed = inventory[pendingDeleteIndex];
       const prevQty = removed?.qty ?? 0;
       try{
         await addDoc(colAdjustments, {
           ts: serverTimestamp(),
-          item: removed.name,
-          itemId: removed.id,
-          delta: -prevQty,
-          actor, purpose, forWhom,
-          qtyAfter: 0
+          item: removed.name, itemId: removed.id,
+          delta: -prevQty, actor, purpose, forWhom, qtyAfter: 0
         });
         await deleteDoc(doc(db,"inventory", removed.id));
       } catch(err){ console.error(err); alert('Failed to delete item'); }
@@ -713,7 +586,7 @@
       closeDeleteDialog();
     });
 
-    /* ===== History (filters + render + export + clear) ===== */
+    // ===== History area =====
     function populateHistoryFilters() {
       const sel = document.getElementById('hist-item-filter');
       if (!sel) return;
@@ -729,7 +602,7 @@
       const tbody = document.querySelector('#historyTable tbody');
       if (!tbody) return;
       tbody.innerHTML = '';
-      let rows = adjustments.slice(); // already sorted desc by query(orderBy ts desc)
+      let rows = adjustments.slice();
       const q = (document.getElementById('hist-search').value || '').trim().toLowerCase();
       if (q) rows = rows.filter(r =>
         (r.item||'').toLowerCase().includes(q) ||
@@ -757,7 +630,6 @@
     }
 
     async function exportHistoryCSV(){
-      // ensure we have the latest from Firestore
       const qAdj = query(colAdjustments, orderBy("ts","desc"));
       const snap = await getDocs(qAdj);
       const rows = snap.docs.map(d => ({ id:d.id, ...d.data() }));
@@ -776,12 +648,9 @@
       }
       const blob = new Blob([csvRows.join('\n')], {type:'text/csv;charset=utf-8;'});
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
+      const a = document.createElement('a'); a.href = url;
       a.download = `inventory-history-${new Date().toISOString().slice(0,10)}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }
     window.exportHistoryCSV = exportHistoryCSV;
@@ -789,14 +658,11 @@
     async function clearHistory(){
       if (!confirm('This will permanently delete ALL history records. Continue?')) return;
       try{
-        // Batch delete in chunks (Firestore limits 500 ops/batch)
         let snap = await getDocs(query(colAdjustments));
         while (!snap.empty){
-          const batch = writeBatch(db);
-          let count = 0;
+          const batch = writeBatch(db); let count = 0;
           snap.forEach(docSnap => { if (count<450){ batch.delete(docSnap.ref); count++; } });
           await batch.commit();
-          // fetch again to see if any remain
           snap = await getDocs(query(colAdjustments));
         }
         alert('History cleared.');
@@ -804,13 +670,11 @@
     }
     window.clearHistory = clearHistory;
 
-    /* ===== Initial render (adjust & goals) ===== */
-    function initialRender(){
-      renderTables();
-    }
+    // initial
+    function initialRender(){ renderTables(); }
     initialRender();
 
-    // Wire up modal close on Esc for accessibility
+    // Esc closes modals
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape'){
         document.getElementById('adjustModal').classList.remove('open');
