@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventory Viewer</title>
+  <style>
+    :root{
+      --bg:#f6f7f8; --panel:#ffffff; --ink:#111111; --muted:#6b7280; --line:#e5e7eb;
+      --p-bg:#0f0a1f; --p-card:#1a1233; --p-ink:#e8e3ff; --p-muted:#b8acd9; --p-line:#3b2b66;
+      --p-glow:rgba(109,40,217,.35);
+    }
+    html,body{height:100%} body{margin:0;font-family:Arial, sans-serif;background:var(--bg);color:var(--ink)}
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    h1,h2{margin:10px 0}
+    .tabs{display:flex;gap:8px;margin:10px 0 16px}
+    .tab{padding:8px 12px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer}
+    .tab.active{background:#111;color:#fff;border-color:#111}
+    .section{display:none}
+    .section.show{display:block}
+
+    .grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:16px; }
+    .card{
+      width:210px; height:260px; background:#fff; border-radius:16px; position:relative;
+      box-shadow:0 12px 30px rgba(0,0,0,.07); border:1px solid var(--line); overflow:hidden;
+    }
+    .card__image{ height:110px; background:linear-gradient(180deg,#f3f4f6 0%, #e5e7eb 100%); background-size:cover; background-position:center; }
+    .qty-badge{ position:absolute; top:10px; right:10px; background:#111; color:#fff; font-size:12px; padding:2px 6px; border-radius:999px; opacity:.9; }
+    .badge-low{ position:absolute; top:10px; left:10px; background:#e11d48; color:#fff; font-size:11px; padding:2px 6px; border-radius:999px; }
+    .content{ padding:12px; }
+    .name{ font-weight:700; margin:0 0 6px; }
+    .muted{ color:var(--muted); font-size:12px; }
+
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+    input[type="text"], select{ padding:8px 10px; border-radius:8px; border:1px solid var(--line); }
+    table{ width:100%; border-collapse:collapse; }
+    th,td{ border:1px solid var(--line); padding:8px; text-align:left; }
+    thead th{ background:#f3f4f6; color:var(--muted); }
+    .pill{ padding:2px 8px; border:1px solid var(--line); border-radius:999px; font-size:12px; color:#555; }
+    .info{ font-size:13px; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Inventory (Read-only)</h1>
+    <div class="info">This page signs in anonymously and shows live data. Editing is disabled by design.</div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="inv">Inventory</div>
+      <div class="tab" data-tab="hist">History</div>
+    </div>
+
+    <!-- Inventory -->
+    <section id="inv" class="section show">
+      <div class="toolbar">
+        <input id="inv-search" type="text" placeholder="Search items…" />
+        <span class="pill" id="inv-count">0 items</span>
+      </div>
+      <div id="grid" class="grid"></div>
+    </section>
+
+    <!-- History -->
+    <section id="hist" class="section">
+      <div class="toolbar">
+        <input id="hist-search" type="text" placeholder="Search item/name/purpose…" style="min-width:260px;">
+        <select id="hist-item-filter"><option value="">All items</option></select>
+        <span class="pill" id="hist-count">0 records</span>
+        <div style="flex:1"></div>
+        <button id="export-btn">Export CSV</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Date/Time</th>
+            <th>Item</th>
+            <th>Change</th>
+            <th>Qty After</th>
+            <th>By</th>
+            <th>Purpose</th>
+            <th>For</th>
+          </tr>
+        </thead>
+        <tbody id="hist-body"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <!-- Firebase (read-only) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, collection, onSnapshot, query, orderBy, getDocs
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
+      authDomain: "epedu-inventory-database.firebaseapp.com",
+      projectId: "epedu-inventory-database",
+      storageBucket: "epedu-inventory-database.appspot.com",
+      messagingSenderId: "124437251040",
+      appId: "1:124437251040:web:4989c73efc2f4afbf22185"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    signInAnonymously(auth).catch(console.error);
+
+    const db = getFirestore(app);
+    const colInventory  = collection(db, "inventory");
+    const colAdjustments = collection(db, "adjustments");
+
+    // State
+    let inventory = [];
+    let adjustments = [];
+
+    // Tabs
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(t => t.addEventListener('click', () => {
+      tabs.forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('show'));
+      t.classList.add('active');
+      document.getElementById(t.dataset.tab).classList.add('show');
+    }));
+
+    // Helpers
+    const $ = s => document.querySelector(s);
+    function esc(s){ return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function toLocal(ts){ if(!ts) return ''; const d = ts.toDate ? ts.toDate() : new Date(ts); return isNaN(+d)?'':d.toLocaleString(); }
+    function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }
+
+    // Live listeners (read-only)
+    onSnapshot(colInventory, (snap) => {
+      inventory = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      renderInventory();
+      populateHistoryItemFilter();
+    });
+
+    const qAdj = query(colAdjustments, orderBy("ts","desc"));
+    onSnapshot(qAdj, (snap) => {
+      adjustments = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      renderHistory();
+      populateHistoryItemFilter();
+    });
+
+    // Inventory render
+    $('#inv-search').addEventListener('input', renderInventory);
+    function renderInventory(){
+      const q = ($('#inv-search').value || '').trim().toLowerCase();
+      const rows = !q ? inventory
+                      : inventory.filter(i =>
+                          (i.name||'').toLowerCase().includes(q));
+      $('#inv-count').textContent = `${rows.length} item${rows.length===1?'':'s'}`;
+      const grid = $('#grid'); grid.innerHTML = '';
+      rows.forEach(item => {
+        const low = (item.goal > 0) && ((item.qty ?? 0) <= item.goal);
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card__image" style="${item.img ? `background-image:url('${esc(item.img)}')` : ''}"></div>
+          <span class="qty-badge">Qty: ${item.qty ?? 0}</span>
+          ${low ? `<span class="badge-low">LOW</span>` : ``}
+          <div class="content">
+            <p class="name" title="${esc(item.name)}">${esc(item.name)}</p>
+            <p class="muted">Goal: ${item.goal || 0}</p>
+          </div>`;
+        grid.appendChild(card);
+      });
+    }
+
+    // History render
+    $('#hist-search').addEventListener('input', renderHistory);
+    $('#hist-item-filter').addEventListener('change', renderHistory);
+
+    function populateHistoryItemFilter(){
+      const sel = $('#hist-item-filter');
+      if (!sel) return;
+      const current = sel.value;
+      const names = Array.from(new Set(adjustments.map(a => a.item))).sort((a,b)=>a.localeCompare(b));
+      sel.innerHTML = '<option value="">All items</option>' + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+      if ([...sel.options].some(o => o.value === current)) sel.value = current;
+    }
+
+    function renderHistory(){
+      const tbody = $('#hist-body'); if (!tbody) return;
+      tbody.innerHTML = '';
+      let rows = adjustments.slice(); // already ordered desc by query
+      const q = ($('#hist-search').value || '').trim().toLowerCase();
+      const itemFilter = $('#hist-item-filter').value;
+      if (q) rows = rows.filter(r =>
+        (r.item||'').toLowerCase().includes(q) ||
+        (r.actor||'').toLowerCase().includes(q) ||
+        (r.purpose||'').toLowerCase().includes(q) ||
+        (r.forWhom||'').toLowerCase().includes(q)
+      );
+      if (itemFilter) rows = rows.filter(r => r.item === itemFilter);
+      $('#hist-count').textContent = `${rows.length} record${rows.length===1?'':'s'}`;
+
+      for (const r of rows) {
+        const tr = document.createElement('tr');
+        const deltaStr = (r.delta > 0 ? '+' : '') + r.delta;
+        tr.innerHTML = `
+          <td>${toLocal(r.ts)}</td>
+          <td>${esc(r.item)}</td>
+          <td>${deltaStr}</td>
+          <td>${r.qtyAfter ?? ''}</td>
+          <td>${esc(r.actor ?? '')}</td>
+          <td>${esc(r.purpose ?? '')}</td>
+          <td>${esc(r.forWhom ?? '')}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
+
+    // Export CSV (read-only)
+    document.getElementById('export-btn').addEventListener('click', async ()=>{
+      const snap = await getDocs(qAdj);
+      const rows = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      const header = ['Date/Time','Item','Change','Qty After','By (Name)','Purpose','For (names)'];
+      const csvRows = [header.join(',')];
+      for (const r of rows){
+        csvRows.push([
+          toLocal(r.ts),
+          csvEscape(r.item),
+          (r.delta>0?'+':'') + (r.delta ?? 0),
+          r.qtyAfter ?? '',
+          csvEscape(r.actor ?? ''),
+          csvEscape(r.purpose ?? ''),
+          csvEscape(r.forWhom ?? '')
+        ].join(','));
+      }
+      const blob = new Blob([csvRows.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      a.download = `inventory-history-${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
