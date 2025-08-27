@@ -49,7 +49,7 @@
 
     table{ width:100%; border-collapse:collapse; }
     th,td{ border:1px solid var(--line); padding:8px; text-align:left; }
-    thead th{ background:#f3f4f6; color:var(--muted); }
+    thead th{ background:#f3f4f6; color:#6b7280; }
   </style>
 </head>
 <body>
@@ -82,7 +82,7 @@
     <!-- History -->
     <section id="hist" class="section">
       <div class="toolbar">
-        <input id="hist-search" type="text" placeholder="Search item/name/purpose…" style="min-width:260px;">
+        <input id="hist-search" type="text" placeholder="Search item/name/purpose/location…" style="min-width:260px;">
         <select id="hist-item-filter"><option value="">All items</option></select>
         <span class="pill" id="hist-count">0 records</span>
         <div style="flex:1"></div>
@@ -93,11 +93,12 @@
           <tr>
             <th>Date/Time</th>
             <th>Item</th>
+            <th>Location</th>
             <th>Change</th>
-            <th>Qty After</th>
+            <th>Qty After (Total)</th>
             <th>By</th>
-            <th>Purpose</th>
-            <th>For</th>
+            <th>Purpose / Reason</th>
+            <th>For / Adjusted by</th>
           </tr>
         </thead>
         <tbody id="hist-body"></tbody>
@@ -163,6 +164,7 @@
     function esc(s){ return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function toLocal(ts){ if(!ts) return ''; const d = ts.toDate ? ts.toDate() : new Date(ts); return isNaN(+d)?'':d.toLocaleString(); }
     function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }
+    function totalQty(item){ return (item.qtyOld ?? 0) + (item.qtyNew ?? 0) + (item.qty ?? 0); } // support legacy 'qty'
 
     // Live listeners (read-only)
     onSnapshot(colInventory, (snap) => {
@@ -187,12 +189,13 @@
       $('#inv-count').textContent = `${rows.length} item${rows.length===1?'':'s'}`;
       const grid = $('#grid'); grid.innerHTML = '';
       rows.forEach(item => {
-        const low = (item.goal > 0) && ((item.qty ?? 0) <= item.goal);
+        const total = totalQty(item);
+        const low = (item.goal > 0) && (total <= item.goal);
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
           <div class="card__image" style="${item.img ? `background-image:url('${esc(item.img)}')` : ''}"></div>
-          <span class="qty-badge">Qty: ${item.qty ?? 0}</span>
+          <span class="qty-badge" title="Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}">Qty: ${total}</span>
           ${low ? `<span class="badge-low">LOW</span>` : ``}
           <div class="content">
             <p class="name" title="${esc(item.name)}">${esc(item.name)}</p>
@@ -224,8 +227,9 @@
       if (q) rows = rows.filter(r =>
         (r.item||'').toLowerCase().includes(q) ||
         (r.actor||'').toLowerCase().includes(q) ||
-        (r.purpose||'').toLowerCase().includes(q) ||
-        (r.forWhom||'').toLowerCase().includes(q)
+        (r.purpose||r.reason||'').toLowerCase().includes(q) ||
+        (r.forWhom||r.adjustedBy||'').toLowerCase().includes(q) ||
+        (r.location||'').toLowerCase().includes(q)
       );
       if (itemFilter) rows = rows.filter(r => r.item === itemFilter);
       $('#hist-count').textContent = `${rows.length} record${rows.length===1?'':'s'}`;
@@ -236,11 +240,12 @@
         tr.innerHTML = `
           <td>${toLocal(r.ts)}</td>
           <td>${esc(r.item)}</td>
+          <td>${esc(r.location ?? '')}</td>
           <td>${deltaStr}</td>
           <td>${r.qtyAfter ?? ''}</td>
           <td>${esc(r.actor ?? '')}</td>
-          <td>${esc(r.purpose ?? '')}</td>
-          <td>${esc(r.forWhom ?? '')}</td>`;
+          <td>${esc(r.purpose ?? r.reason ?? '')}</td>
+          <td>${esc(r.forWhom ?? r.adjustedBy ?? '')}</td>`;
         tbody.appendChild(tr);
       }
     }
@@ -249,17 +254,18 @@
     document.getElementById('export-btn').addEventListener('click', async ()=>{
       const snap = await getDocs(qAdj);
       const rows = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-      const header = ['Date/Time','Item','Change','Qty After','By (Name)','Purpose','For (names)'];
+      const header = ['Date/Time','Item','Location','Change','Qty After (Total)','By (Name)','Purpose / Reason','For / Adjusted by'];
       const csvRows = [header.join(',')];
       for (const r of rows){
         csvRows.push([
           toLocal(r.ts),
           csvEscape(r.item),
+          csvEscape(r.location ?? ''),
           (r.delta>0?'+':'') + (r.delta ?? 0),
           r.qtyAfter ?? '',
           csvEscape(r.actor ?? ''),
-          csvEscape(r.purpose ?? ''),
-          csvEscape(r.forWhom ?? '')
+          csvEscape(r.purpose ?? r.reason ?? ''),
+          csvEscape(r.forWhom ?? r.adjustedBy ?? '')
         ].join(','));
       }
       const blob = new Blob([csvRows.join('\n')], {type:'text/csv;charset=utf-8;'});
