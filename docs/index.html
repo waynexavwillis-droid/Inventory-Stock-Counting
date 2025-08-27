@@ -3,269 +3,738 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Inventory Viewer</title>
+  <title>Inventory System with Alerts</title>
+
+  <!-- Auth gate with role check -->
+  <script>
+    const AUTH_OK   = localStorage.getItem('auth_v1') === 'ok';
+    const AUTH_USER = localStorage.getItem('auth_user');
+    const AUTH_ROLE = localStorage.getItem('auth_role'); // 'editor' | 'viewer'
+
+    if (!AUTH_OK || !AUTH_USER) {
+      window.location.replace('login.html');
+    } else if (AUTH_ROLE === 'viewer') {
+      // Viewers cannot access the editor—send them to the read-only page
+      window.location.replace('viewer.html');
+    }
+
+    function logout(){
+      localStorage.removeItem('auth_v1');
+      localStorage.removeItem('auth_user');
+      localStorage.removeItem('auth_role');
+      localStorage.removeItem('auth_time');
+      window.location.replace('login.html');
+    }
+  </script>
+
   <style>
     :root{
+      --nav-w: 260px;
+
+      /* Global theme */
       --bg:#f6f7f8; --panel:#ffffff; --ink:#111111; --muted:#6b7280; --line:#e5e7eb;
+      --accent:#111111; --accent-ink:#ffffff;
+
+      /* Deep Purple theme (Adjust page) */
       --p-bg:#0f0a1f; --p-card:#1a1233; --p-ink:#e8e3ff; --p-muted:#b8acd9; --p-line:#3b2b66;
-      --p-glow:rgba(109,40,217,.35);
+      --p-accent:#6d28d9; --p-accent-ink:#ffffff; --p-glow:rgba(109,40,217,.35);
     }
-    html,body{height:100%}
-    body{margin:0;font-family:Arial, sans-serif;background:var(--bg);color:var(--ink)}
-    .wrap{max-width:1100px;margin:0 auto;padding:18px}
 
-    /* top bar */
-    .bar{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
-    .title{margin:0;font-size:34px;font-weight:800}
-    .info{ margin:6px 0 0; color:var(--muted); }
-    .right{display:flex; align-items:center; gap:10px}
-    .signedas{color:var(--muted); font-size:13px}
-    .logout{padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#111;color:#fff;cursor:pointer}
-    .logout:hover{filter:brightness(.95)}
+    html,body{ height:100%; }
+    body{ margin:0; font-family: Arial, sans-serif; background:var(--bg); color:var(--ink); }
+    h1,h2,h3{ color:var(--ink); }
+    .content{ padding:20px; box-sizing:border-box; min-height:100vh; overflow:auto; }
+    input, button, select{ padding:8px; margin:4px; }
+    table{ width:100%; margin-top:12px; border-collapse:collapse; }
+    table, th, td{ border:1px solid var(--line); }
+    thead th{ background:#f3f4f6; color:var(--muted); }
+    th, td{ padding:8px; text-align:left; vertical-align:top; }
+    .muted{ color:var(--muted); font-size:12px; margin-top:6px; }
+    .toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+    .pill{ display:inline-block; padding:2px 8px; border:1px solid var(--line); border-radius:999px; font-size:12px; color:#555; }
+    .nowrap{ white-space:nowrap; }
 
-    /* tabs & sections */
-    .tabs{display:flex;gap:8px;margin:10px 0 16px}
-    .tab{padding:8px 12px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer}
-    .tab.active{background:#111;color:#fff;border-color:#111}
-    .section{display:none}
-    .section.show{display:block}
+    button{ background:linear-gradient(#fafafa,#f3f4f6); border:1px solid var(--line); color:var(--ink); border-radius:8px; cursor:pointer; }
+    button:hover{ background:#111; color:#fff; border-color:#111; }
 
-    /* inventory grid */
-    .grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:16px; }
-    .card{
-      width:210px; height:260px; background:#fff; border-radius:16px; position:relative;
-      box-shadow:0 12px 30px rgba(0,0,0,.07); border:1px solid var(--line); overflow:hidden;
+    /* Sidebar */
+    #menu-check{ display:none; }
+    .hamburger{ position:fixed; left:12px; top:12px; width:32px; display:flex; flex-direction:column; gap:7px; cursor:pointer; user-select:none; z-index:1200; transition: transform .3s ease; }
+    .hamburger .bar{ height:3px; background:#111; border-radius:10px; transition:transform .35s ease, opacity .25s ease, width .35s ease; }
+    .hamburger .bar.bar1, .hamburger .bar.bar3 { width:18px; }
+    .hamburger .bar.bar2 { width:28px; }
+    #menu-check:checked + label.hamburger{ transform: translateX(var(--nav-w)); }
+    #menu-check:checked + label.hamburger .bar1{ transform: translateY(10px) rotate(45deg); width:28px; }
+    #menu-check:checked + label.hamburger .bar2{ opacity:0; }
+    #menu-check:checked + label.hamburger .bar3{ transform: translateY(-10px) rotate(-45deg); width:28px; }
+
+    .sidebar{ position:fixed; inset:0 auto 0 0; width:var(--nav-w); background:#f3f4f6; padding:20px; box-sizing:border-box; transform:translateX(-100%); transition:transform .3s ease; z-index:1100; overflow:auto; box-shadow:0 10px 30px rgba(0,0,0,.18); border-right:1px solid var(--line); }
+    .sidebar button{ display:block; width:100%; margin-bottom:10px; padding:10px; text-align:left; }
+    .sidebar hr{ margin:12px 0; }
+    #menu-check:checked ~ .sidebar{ transform:translateX(0); }
+    label.overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); opacity:0; visibility:hidden; transition:.3s ease; z-index:1090; }
+    #menu-check:checked ~ label.overlay{ opacity:1; visibility:visible; }
+
+    /* Cards */
+    .grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:16px; }
+    .card{ --card-bg: var(--panel); --card-accent: var(--accent); --card-text: var(--ink); width:190px; height:254px; background:var(--card-bg); border-radius:20px; position:relative; overflow:visible; transition:all .5s cubic-bezier(.16,1,.3,1); box-shadow:0 12px 30px rgba(0,0,0,.07); border:1px solid var(--line); color:var(--card-text); }
+    .card__shine{position:absolute; inset:0; background:linear-gradient(120deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.8) 50%, rgba(255,255,255,0) 60%); opacity:0; transition:opacity .3s; pointer-events:none;}
+    .card__glow{position:absolute; inset:-10px; background:radial-gradient(circle at 50% 0%, rgba(17,17,17,.08) 0%, rgba(17,17,17,0) 70%); opacity:0; transition:opacity .5s; pointer-events:none;}
+    .badge-lowok{position:absolute; top:12px; right:12px; background:#111; color:#fff; padding:.25em .5em; border-radius:999px; font-size:.7em; font-weight:600; transform:scale(.8); opacity:0; transition:all .4s ease .1s;}
+    .badge-new{ position:absolute; top:-10px; right:-10px; background:#e11d48; color:#fff; padding:.35em .55em; border-radius:999px; font-weight:700; font-size:.7em; box-shadow:0 8px 18px rgba(0,0,0,.25); cursor:pointer; }
+
+    .card__image{ width:100%; height:100px; border-radius:12px; background:linear-gradient(180deg,#f3f4f6 0%, #e5e7eb 100%); background-size:cover; background-position:center; position:relative; overflow:hidden; }
+    .img-edit-btn{ position:absolute; top:6px; left:6px; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:14px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.85); cursor:pointer; }
+
+    .qty-badge{position:absolute; bottom:8px; right:8px; background:#111; color:#fff; font-size:12px; padding:2px 6px; border-radius:999px; opacity:.9;}
+    .card__text{display:flex; flex-direction:column; gap:.25em;}
+    .card__title{ font-size:1.1em; margin:0; font-weight:700; transition:all .3s; }
+    .card__description{ color:var(--muted); font-size:.75em; margin:0; opacity:1; transition:all .3s; }
+    .card__actions{ display:flex; justify-content:center; gap:12px; margin-top:8px; }
+    .card__button{ width:28px; height:28px; background:var(--card-accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--accent-ink); cursor:pointer; transition:all .3s; transform:scale(.9); user-select:none; }
+    .card__button--minus{ background:#2b2b2b; }
+    .card__button--trash{ background:transparent; color:var(--ink); border:1px solid var(--ink); border-radius:50%; }
+    .card:hover{ transform:translateY(-8px); border-color:var(--line); }
+    .card:hover .card__shine{ opacity:1; animation:shine 3s infinite; }
+    @keyframes shine { 0%{background-position:-100% 0} 100%{background-position:200% 0} }
+
+    /* Modals */
+    .modal{ position: fixed; inset: 0; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,0.4); z-index: 9999; }
+    .modal.open{ display:flex; }
+    .modal-card{ width:95%; max-width:520px; background:#fff; border-radius:8px; padding:16px 18px; box-shadow:0 20px 40px rgba(0,0,0,.15); border:1px solid var(--line); }
+    .modal-card h3{ margin:0 0 10px; }
+    .modal-card label{ display:block; margin:10px 0 4px; font-size:14px; }
+    .modal-card input, .modal-card select{ width:100%; box-sizing:border-box; padding:8px; }
+    .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:12px; }
+    #adj-confirm, #del-confirm{ background:#111; color:#fff; border-color:#111; border-radius:8px; }
+    #adj-confirm:hover, #del-confirm:hover{ filter:brightness(0.9); }
+
+    /* Fancy input */
+    .input-container{ position: relative; margin: 8px 4px; }
+    .input{ width: 100%; padding: 10px; height: 40px; border: 2px solid var(--ink); border-top:none; border-bottom:none; font-size: 16px; background: transparent; outline:none; box-shadow: 7px 7px 0 0 var(--ink); transition: all 0.5s; box-sizing:border-box; }
+    .input[readonly]{ background:#fafafa; cursor:not-allowed; }
+    .input:focus{ box-shadow:none; transition:all .5s; }
+    .label{ position:absolute; top:10px; left:10px; color:var(--ink); transition: all 0.5s; transform: scale(0); z-index:-1; background:#fff; padding:0 4px; }
+    .input-container .topline, .input-container .underline{ position:absolute; background-color: var(--ink); height:2px; right:0; transition: all 0.5s; }
+    .input-container .topline{ width:0%; top:0; }
+    .input-container .underline{ width:0%; bottom:0; }
+    .input-container input:focus ~ .topline{ width:35%; }
+    .input-container input:focus ~ .underline{ width:100%; }
+    .input-container input:focus ~ .label{ top:-10px; transform: scale(1); }
+
+    /* Add page layout */
+    #addPage{ max-width: 900px; margin: 0 auto; }
+    #addPage .input-container{ max-width: 560px; }
+    #addPage input[type="number"]{ width: 140px; box-sizing: border-box; }
+    .add-row{ display:grid; grid-template-columns: minmax(260px, 1fr) 160px minmax(200px, 1fr) auto; gap: 12px; align-items:center; max-width:900px; }
+    .add-row .input-container, .add-row .input{ width:100%; }
+    @media (max-width: 640px){ .add-row{ grid-template-columns: 1fr; } }
+
+    /* Purple theming for Adjust */
+    #adjustPage.theme-purple{
+      --card-bg: var(--p-card); --card-accent: var(--p-accent); --card-text: var(--p-ink);
+      --accent-ink: var(--p-accent-ink); --line: var(--p-line); --muted: var(--p-muted);
+      background: radial-gradient(60% 80% at 10% -10%, rgba(109,40,217,.2), transparent 60%),
+                  radial-gradient(50% 60% at 100% 10%, rgba(76,29,149,.25), transparent 60%),
+                  var(--p-bg);
+      border-radius: 16px; padding: 16px; color: var(--p-ink);
     }
-    .card__image{ height:110px; background:linear-gradient(180deg,#f3f4f6 0%, #e5e7eb 100%); background-size:cover; background-position:center; }
-    .qty-badge{ position:absolute; top:10px; right:10px; background:#111; color:#fff; font-size:12px; padding:2px 6px; border-radius:999px; opacity:.9; }
-    .badge-low{ position:absolute; top:10px; left:10px; background:#e11d48; color:#fff; font-size:11px; padding:2px 6px; border-radius:999px; }
-    .content{ padding:12px; }
-    .name{ font-weight:700; margin:0 0 6px; }
-    .muted{ color:var(--muted); font-size:12px; }
-
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
-    input[type="text"], select{ padding:8px 10px; border-radius:8px; border:1px solid var(--line); }
-    .pill{ padding:2px 8px; border:1px solid var(--line); border-radius:999px; font-size:12px; color:#555; }
-
-    table{ width:100%; border-collapse:collapse; }
-    th,td{ border:1px solid var(--line); padding:8px; text-align:left; }
-    thead th{ background:#f3f4f6; color:#6b7280; }
+    #adjustPage.theme-purple h2{ color: var(--p-ink); }
+    #adjustPage.theme-purple .card{ box-shadow: 0 20px 45px var(--p-glow), 0 8px 20px rgba(0,0,0,.25); border-color: var(--p-line); }
+    #adjustPage.theme-purple .card__description{ color: var(--p-muted); }
+    #adjustPage.theme-purple .card__button--trash{ color: var(--p-ink); border-color: var(--p-ink); }
+    #adjustPage.theme-purple .badge-lowok{ background: var(--p-accent); }
+    #adjustPage.theme-purple .qty-badge{ background:#0b0720; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="bar">
-      <div>
-        <h1 class="title">Inventory (Read-only)</h1>
-        <p class="info">This page signs in anonymously and shows live data. Editing is disabled by design.</p>
-      </div>
-      <div class="right">
-        <span id="signedAs" class="signedas"></span>
-        <button id="logoutBtn" class="logout">Logout</button>
-      </div>
-    </div>
 
-    <div class="tabs">
-      <div class="tab active" data-tab="inv">Inventory</div>
-      <div class="tab" data-tab="hist">History</div>
-    </div>
+  <!-- Toggle checkbox + hamburger -->
+  <input id="menu-check" type="checkbox" />
+  <label for="menu-check" class="hamburger" aria-label="Toggle menu" aria-controls="side">
+    <span class="bar bar1"></span>
+    <span class="bar bar2"></span>
+    <span class="bar bar3"></span>
+  </label>
 
-    <!-- Inventory -->
-    <section id="inv" class="section show">
-      <div class="toolbar">
-        <input id="inv-search" type="text" placeholder="Search items…" />
-        <span class="pill" id="inv-count">0 items</span>
+  <!-- Off-canvas sidebar -->
+  <nav class="sidebar" id="side" role="navigation" aria-label="Main">
+    <button onclick="document.getElementById('menu-check').checked=false; showPage('addPage')">Add New Stock</button>
+    <button onclick="document.getElementById('menu-check').checked=false; showPage('adjustPage')">Adjust Stock</button>
+    <button onclick="document.getElementById('menu-check').checked=false; showPage('goalPage')">Set Stock Count Goal</button>
+    <button onclick="document.getElementById('menu-check').checked=false; showPage('historyPage')">History</button>
+    <hr>
+    <button onclick="logout()">Logout</button>
+  </nav>
+
+  <!-- Click-away overlay -->
+  <label class="overlay" for="menu-check" aria-hidden="true"></label>
+
+  <main class="content">
+    <!-- Add New Stock Page -->
+    <section id="addPage">
+      <h2>Add New Item</h2>
+      <div class="add-row">
+        <div class="input-container">
+          <input type="text" id="newItemName" class="input" placeholder=" " />
+          <span class="topline"></span><span class="underline"></span>
+          <label for="newItemName" class="label">Item Name</label>
+        </div>
+
+        <input type="number" id="newItemQty" placeholder="Quantity">
+
+        <!-- NEW: Location field -->
+        <div class="input-container">
+          <input type="text" id="newItemLoc" class="input" placeholder=" ">
+          <span class="topline"></span><span class="underline"></span>
+          <label for="newItemLoc" class="label">Location (Old warehouse / New warehouse)</label>
+        </div>
+
+        <button onclick="addNewItem()">Add Item</button>
       </div>
-      <div id="grid" class="grid"></div>
+      <div class="muted">Signed in as <strong id="signedAs"></strong>. Data syncs via Firebase (Firestore + Storage).</div>
     </section>
 
-    <!-- History -->
-    <section id="hist" class="section">
+    <!-- Adjust Stock Page -->
+    <section id="adjustPage" class="theme-purple" style="display:none;">
+      <h2>Adjust Stock</h2>
+      <div id="stockGrid" class="grid"></div>
+    </section>
+
+    <!-- Goal Settings Page -->
+    <section id="goalPage" style="display:none;">
+      <h2>Set Stock Count Goal</h2>
+      <table id="goalTable">
+        <thead>
+          <tr><th>Item Name</th><th>Current Goal</th><th>New Goal</th><th>Action</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- History Page -->
+    <section id="historyPage" style="display:none;">
+      <h2>History</h2>
       <div class="toolbar">
-        <input id="hist-search" type="text" placeholder="Search item/name/purpose/location…" style="min-width:260px;">
+        <div class="input-container" style="flex:1; min-width:260px;">
+          <input id="hist-search" type="text" class="input" placeholder=" ">
+          <span class="topline"></span><span class="underline"></span>
+          <label for="hist-search" class="label">Search item / name / reason / location…</label>
+        </div>
         <select id="hist-item-filter"><option value="">All items</option></select>
         <span class="pill" id="hist-count">0 records</span>
         <div style="flex:1"></div>
-        <button id="export-btn">Export CSV</button>
+        <button onclick="exportHistoryCSV()">Export CSV</button>
+        <button onclick="clearHistory()">Clear History</button>
       </div>
-      <table>
+      <table id="historyTable">
         <thead>
           <tr>
-            <th>Date/Time</th>
+            <th class="nowrap">Date/Time</th>
             <th>Item</th>
             <th>Location</th>
-            <th>Change</th>
+            <th class="nowrap">Change</th>
             <th>Qty After (Total)</th>
-            <th>By</th>
-            <th>Purpose / Reason</th>
-            <th>For / Adjusted by</th>
+            <th>By (Name)</th>
+            <th>Reason</th>
+            <th>Adjusted by (name)</th>
           </tr>
         </thead>
-        <tbody id="hist-body"></tbody>
+        <tbody></tbody>
       </table>
+      <div class="muted">History syncs across devices (Firestore). “Clear” deletes all adjustment records.</div>
     </section>
+  </main>
+
+  <!-- Adjust dialog -->
+  <div id="adjustModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adj-title">
+    <div class="modal-card">
+      <h3 id="adj-title">Adjust Stock</h3>
+      <div id="adj-subtitle" class="muted"></div>
+
+      <label for="adj-amount">Amount</label>
+      <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount">
+
+      <!-- NEW: Location dropdown -->
+      <label for="adj-location">Location</label>
+      <select id="adj-location">
+        <option>Old warehouse</option>
+        <option>New warehouse</option>
+      </select>
+
+      <div class="input-container">
+        <input id="adj-name" type="text" class="input" placeholder=" " readonly>
+        <span class="topline"></span><span class="underline"></span>
+        <label for="adj-name" class="label">Your name (auto)</label>
+      </div>
+
+      <div class="input-container">
+        <input id="adj-reason" type="text" class="input" placeholder=" ">
+        <span class="topline"></span><span class="underline"></span>
+        <label for="adj-reason" class="label">Reason</label>
+      </div>
+
+      <div class="input-container">
+        <input id="adj-by" type="text" class="input" placeholder=" ">
+        <span class="topline"></span><span class="underline"></span>
+        <label for="adj-by" class="label">Adjusted by (name)</label>
+      </div>
+
+      <div class="modal-actions">
+        <button id="adj-cancel">Cancel</button>
+        <button id="adj-confirm">Confirm</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Firebase (read-only) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import {
-      getFirestore, collection, onSnapshot, query, orderBy, getDocs
-    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  <!-- Delete dialog -->
+  <div id="deleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="del-title">
+    <div class="modal-card">
+      <h3 id="del-title">Delete Item</h3>
+      <div id="del-subtitle" class="muted"></div>
 
+      <div class="input-container">
+        <input id="del-name" type="text" class="input" placeholder=" " readonly>
+        <span class="topline"></span><span class="underline"></span>
+        <label for="del-name" class="label">Your name (auto)</label>
+      </div>
+
+      <div class="input-container">
+        <input id="del-reason" type="text" class="input" placeholder=" ">
+        <span class="topline"></span><span class="underline"></span>
+        <label for="del-reason" class="label">Reason (e.g., discontinued)</label>
+      </div>
+
+      <div class="input-container">
+        <input id="del-by" type="text" class="input" placeholder=" ">
+        <span class="topline"></span><span class="underline"></span>
+        <label for="del-by" class="label">Adjusted by (name)</label>
+      </div>
+
+      <div class="modal-actions">
+        <button id="del-cancel">Cancel</button>
+        <button id="del-confirm" style="background:#111827;color:#fff;">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden file picker -->
+  <input type="file" id="hiddenFileInput" accept="image/*" style="display:none" />
+
+  <!-- Firebase + App Logic -->
+  <script type="module">
+    /* Firebase SDKs (modular) */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+      onSnapshot, serverTimestamp, query, orderBy, getDocs, writeBatch
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import {
+      getStorage, ref as storageRef, uploadBytes, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+
+    /* Firebase config */
     const firebaseConfig = {
       apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
       authDomain: "epedu-inventory-database.firebaseapp.com",
       projectId: "epedu-inventory-database",
       storageBucket: "epedu-inventory-database.appspot.com",
       messagingSenderId: "124437251040",
-      appId: "1:124437251040:web:4989c73efc2f4afbf22185"
+      appId: "1:124437251040:web:4989c73efc2f4afbf22185",
+      measurementId: "G-GFEEP49VRP"
     };
 
     const app = initializeApp(firebaseConfig);
+    try { getAnalytics(app); } catch(e) {}
     const auth = getAuth(app);
+    const db   = getFirestore(app);
+    const st   = getStorage(app);
+
+    // Signed-in (anonymous) so Firestore rules with request.auth != null work
     signInAnonymously(auth).catch(console.error);
 
-    // logout button
-    const CURRENT_USER = localStorage.getItem('auth_user') || 'Viewer';
-    const signedAsEl = document.getElementById('signedAs');
-    signedAsEl.textContent = `Signed in as ${CURRENT_USER}`;
+    // Current user (set by login.html)
+    const CURRENT_USER = localStorage.getItem('auth_user') || 'Unknown';
+    const signedAs = document.getElementById('signedAs');
+    if (signedAs) signedAs.textContent = CURRENT_USER;
 
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      try { await signOut(auth); } catch(e) { /* ignore */ }
-      localStorage.removeItem('auth_v1');
-      localStorage.removeItem('auth_user');
-      localStorage.removeItem('auth_role');
-      localStorage.removeItem('auth_time');
-      location.replace('login.html');
-    });
-
-    // Firestore
-    const db = getFirestore(app);
-    const colInventory  = collection(db, "inventory");
+    // Collections
+    const colInventory   = collection(db, "inventory");
     const colAdjustments = collection(db, "adjustments");
+
+    // Utils
+    function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
+    function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    function toLocalDateTime(ts){ if (!ts) return ''; const d = ts.toDate ? ts.toDate() : new Date(ts); return isNaN(+d)?'':d.toLocaleString(); }
+    function normLoc(raw){
+      const s=(raw||'').trim().toLowerCase();
+      if (s.startsWith('old')) return 'Old warehouse';
+      if (s.startsWith('new')) return 'New warehouse';
+      return null;
+    }
+    function totalQty(item){
+      return (item.qtyOld ?? 0) + (item.qtyNew ?? 0) + (item.qty ?? 0); // support legacy 'qty'
+    }
+
+    // Hamburger aria
+    const menuCheck = document.getElementById('menu-check');
+    const hamb = document.querySelector('label.hamburger');
+    function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
+    menuCheck.addEventListener('change', syncAria); syncAria();
 
     // State
     let inventory = [];
     let adjustments = [];
 
-    // Tabs
-    const tabs = document.querySelectorAll('.tab');
-    tabs.forEach(t => t.addEventListener('click', () => {
-      tabs.forEach(x => x.classList.remove('active'));
-      document.querySelectorAll('.section').forEach(s => s.classList.remove('show'));
-      t.classList.add('active');
-      document.getElementById(t.dataset.tab).classList.add('show');
-    }));
-
-    // Helpers
-    const $ = s => document.querySelector(s);
-    function esc(s){ return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-    function toLocal(ts){ if(!ts) return ''; const d = ts.toDate ? ts.toDate() : new Date(ts); return isNaN(+d)?'':d.toLocaleString(); }
-    function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }
-    function totalQty(item){ return (item.qtyOld ?? 0) + (item.qtyNew ?? 0) + (item.qty ?? 0); }
-
-    // Live listeners (read-only)
+    // Live listeners
     onSnapshot(colInventory, (snap) => {
       inventory = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-      renderInventory();
-      populateHistoryItemFilter();
+      renderTables();
     });
 
-    const qAdj = query(colAdjustments, orderBy("ts","desc"));
-    onSnapshot(qAdj, (snap) => {
-      adjustments = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-      renderHistory();
-      populateHistoryItemFilter();
-    });
+    let unsubHistory=null;
+    function attachHistoryListener(){
+      if (unsubHistory) return;
+      const qAdj = query(colAdjustments, orderBy("ts","desc"));
+      unsubHistory = onSnapshot(qAdj, (snap) => {
+        adjustments = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+        populateHistoryFilters();
+        renderHistory();
+      });
+    }
 
-    // Inventory render
-    $('#inv-search').addEventListener('input', renderInventory);
-    function renderInventory(){
-      const q = ($('#inv-search').value || '').trim().toLowerCase();
-      const rows = !q ? inventory
-                      : inventory.filter(i => (i.name||'').toLowerCase().includes(q));
-      $('#inv-count').textContent = `${rows.length} item${rows.length===1?'':'s'}`;
-      const grid = $('#grid'); grid.innerHTML = '';
-      rows.forEach(item => {
+    // Routing
+    function showPage(pageId) {
+      ['addPage','adjustPage','goalPage','historyPage'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      const target = document.getElementById(pageId);
+      if (target) target.style.display = 'block';
+      if (pageId === 'adjustPage' || pageId === 'goalPage') renderTables();
+      if (pageId === 'historyPage') attachHistoryListener();
+    }
+    window.showPage = showPage;
+
+    // Add item
+    async function addNewItem() {
+      const name = document.getElementById('newItemName').value.trim();
+      const qty  = parseInt(document.getElementById('newItemQty').value,10);
+      const locRaw = document.getElementById('newItemLoc').value;
+      const location = normLoc(locRaw);
+
+      if (!name || isNaN(qty) || qty <= 0) return alert("Enter valid name and quantity");
+      if (!location) return alert('Location must be "Old warehouse" or "New warehouse". You can just type "Old" or "New".');
+
+      const existing = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
+      if (existing) {
+        const incOld = location === 'Old warehouse' ? qty : 0;
+        const incNew = location === 'New warehouse' ? qty : 0;
+        const newOld = (existing.qtyOld ?? 0) + incOld;
+        const newNew = (existing.qtyNew ?? 0) + incNew;
+        await updateDoc(doc(db, "inventory", existing.id), {
+          qtyOld: newOld, qtyNew: newNew, qty: newOld + newNew, isNew:true
+        });
+      } else {
+        const qtyOld = location === 'Old warehouse' ? qty : 0;
+        const qtyNew = location === 'New warehouse' ? qty : 0;
+        await addDoc(colInventory, {
+          name, qtyOld, qtyNew, qty: qtyOld + qtyNew,
+          goal:0, img:null, isNew:true, createdAt: serverTimestamp()
+        });
+      }
+      alert(`Item "${name}" added to ${location}.`);
+      document.getElementById('newItemName').value = '';
+      document.getElementById('newItemQty').value = '';
+      document.getElementById('newItemLoc').value = '';
+    }
+    window.addNewItem = addNewItem;
+
+    // Renderers
+    function renderTables(){ renderStockGrid(); renderGoalTable(); checkLowStockAlerts(); }
+
+    function renderStockGrid() {
+      const grid = document.getElementById('stockGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      inventory.forEach((item, index) => {
         const total = totalQty(item);
         const low = (item.goal > 0) && (total <= item.goal);
         const card = document.createElement('div');
         card.className = 'card';
+        const bgStyle = item.img ? `style="background-image:url('${escapeHtml(item.img)}')"` : '';
         card.innerHTML = `
-          <div class="card__image" style="${item.img ? `background-image:url('${esc(item.img)}')` : ''}"></div>
-          <span class="qty-badge" title="Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}">Qty: ${total}</span>
-          ${low ? `<span class="badge-low">LOW</span>` : ``}
-          <div class="content">
-            <p class="name" title="${esc(item.name)}">${esc(item.name)}</p>
-            <p class="muted">Goal: ${item.goal || 0}</p>
+          <div class="card__shine"></div>
+          <div class="card__glow"></div>
+          <div class="badge-lowok" style="${low ? 'opacity:1; transform:scale(1);' : ''}">
+            ${low ? 'LOW' : 'OK'}
+          </div>
+          ${item.isNew ? `<div class="badge-new" title="Dismiss">NEW</div>` : ''}
+          <div class="card__content">
+            <div class="card__image" ${bgStyle}>
+              <button class="img-edit-btn" title="Set image">🖼</button>
+              <span class="qty-badge" title="Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}">Qty: ${total}</span>
+            </div>
+            <div class="card__text">
+              <h3 class="card__title" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</h3>
+              <p class="card__description">Goal: ${item.goal || 0}</p>
+            </div>
+            <div class="card__actions">
+              <div class="card__button" title="Add (Shift-click to set image)" data-plus>+</div>
+              <div class="card__button card__button--minus" title="Minus" data-minus>–</div>
+              <div class="card__button card__button--trash" title="Delete item" data-del>🗑</div>
+            </div>
           </div>`;
+        card.querySelector('.img-edit-btn').addEventListener('click', () => openImagePicker(index));
+        if (item.isNew) card.querySelector('.badge-new').addEventListener('click', async () => {
+          await updateDoc(doc(db, "inventory", item.id), { isNew:false });
+        });
+        card.querySelector('[data-plus]').addEventListener('click', (e) => { if (e.shiftKey){ openImagePicker(index); return; } openAdjustDialog(index,'add'); });
+        card.querySelector('[data-minus]').addEventListener('click', () => openAdjustDialog(index,'sub'));
+        card.querySelector('[data-del]').addEventListener('click', () => openDeleteDialog(index));
         grid.appendChild(card);
       });
     }
 
-    // History render
-    $('#hist-search').addEventListener('input', renderHistory);
-    $('#hist-item-filter').addEventListener('change', renderHistory);
+    function renderGoalTable() {
+      const tbody = document.querySelector('#goalTable tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      inventory.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${escapeHtml(item.name)}</td>
+          <td>${item.goal || 0}</td>
+          <td><input type="number" id="newGoal-${index}" placeholder="New Goal"></td>
+          <td><button data-update-goal="${index}">Update</button></td>`;
+        tbody.appendChild(row);
+      });
+      tbody.querySelectorAll('button[data-update-goal]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const idx = parseInt(e.currentTarget.getAttribute('data-update-goal'),10);
+          const el = document.getElementById(`newGoal-${idx}`);
+          const newGoal = parseInt(el.value,10);
+          if (isNaN(newGoal) || newGoal < 0) return alert("Enter valid stock goal");
+          const item = inventory[idx];
+          await updateDoc(doc(db, "inventory", item.id), { goal:newGoal });
+          alert(`Stock goal updated for ${item.name}`);
+        });
+      });
+    }
 
-    function populateHistoryItemFilter(){
-      const sel = $('#hist-item-filter');
+    function checkLowStockAlerts() {
+      inventory.forEach(item => {
+        const total = totalQty(item);
+        if (item.goal > 0 && total <= item.goal) alert(`Low stock for "${item.name}" (Total: ${total}, Goal: ${item.goal})`);
+      });
+    }
+
+    // Image picker
+    let imgTargetIndex=null;
+    const fileInput=document.getElementById('hiddenFileInput');
+    function openImagePicker(index){
+      imgTargetIndex=index;
+      const choice=prompt("Set image:\n- Paste an image URL and press OK, OR\n- Leave blank to choose a file (uploads to Firebase Storage).");
+      if (choice && choice.trim()){ setItemImageFromURL(choice.trim()); } else { fileInput.click(); }
+    }
+    window.openImagePicker=openImagePicker;
+
+    fileInput.addEventListener('change', async (e)=>{
+      const file=e.target.files && e.target.files[0]; e.target.value='';
+      if(!file || imgTargetIndex===null) return;
+      const item=inventory[imgTargetIndex];
+      try{
+        const path=`itemImages/${item.id}/${Date.now()}_${file.name}`;
+        const ref=storageRef(st,path);
+        await uploadBytes(ref,file);
+        const url=await getDownloadURL(ref);
+        await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true });
+      }catch(err){ console.error(err); alert('Upload failed'); }
+      imgTargetIndex=null;
+    });
+
+    async function setItemImageFromURL(url){
+      if(imgTargetIndex===null) return;
+      const item=inventory[imgTargetIndex];
+      try{ await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true }); }
+      catch(err){ console.error(err); alert('Failed to set image URL'); }
+      imgTargetIndex=null;
+    }
+    window.setItemImageFromURL=setItemImageFromURL;
+
+    // Adjust dialog (auto username)
+    let pending = { index:null, mode:'add' };
+    function openAdjustDialog(index, mode) {
+      pending = { index, mode };
+      const item = inventory[index];
+      const total = totalQty(item);
+      document.getElementById('adj-title').textContent = `${mode === 'add' ? 'Add to' : 'Minus from'} "${item.name}"`;
+      document.getElementById('adj-subtitle').textContent = `Current total: ${total} (Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0})`;
+      document.getElementById('adj-amount').value = '1';
+
+      const nameInput = document.getElementById('adj-name');
+      nameInput.value = CURRENT_USER;
+      nameInput.readOnly = true;
+
+      document.getElementById('adj-location').value = 'Old warehouse';
+      document.getElementById('adj-reason').value = '';
+      document.getElementById('adj-by').value = '';
+      document.getElementById('adjustModal').classList.add('open');
+      setTimeout(() => document.getElementById('adj-amount').focus(), 0);
+    }
+    function closeAdjustDialog(){ document.getElementById('adjustModal').classList.remove('open'); }
+    window.openAdjustDialog=openAdjustDialog;
+
+    document.getElementById('adj-cancel').addEventListener('click', closeAdjustDialog);
+    document.getElementById('adjustModal').addEventListener('click', e => { if (e.target.id === 'adjustModal') closeAdjustDialog(); });
+    document.getElementById('adjustModal').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('adj-confirm').click(); } });
+    document.getElementById('adj-confirm').addEventListener('click', async () => {
+      const amount = parseInt(document.getElementById('adj-amount').value, 10);
+      const location = document.getElementById('adj-location').value;
+      const actor   = CURRENT_USER;
+      const reason  = document.getElementById('adj-reason').value.trim();
+      const adjustedBy = document.getElementById('adj-by').value.trim();
+      if (!Number.isInteger(amount) || amount <= 0) return alert('Enter a valid positive amount.');
+      if (!reason || !adjustedBy) return alert('Please fill in Reason and Adjusted by (name).');
+
+      const item = inventory[pending.index];
+      const signedDelta = pending.mode === 'add' ? amount : -amount;
+
+      const old = item.qtyOld ?? 0;
+      const neu = item.qtyNew ?? 0;
+      let newOld = old, newNew = neu;
+      if (location === 'Old warehouse') newOld = Math.max(0, old + signedDelta);
+      else newNew = Math.max(0, neu + signedDelta);
+
+      const newTotal = newOld + newNew;
+
+      try{
+        await updateDoc(doc(db,"inventory", item.id), { qtyOld:newOld, qtyNew:newNew, qty:newTotal, isNew:false });
+        await addDoc(colAdjustments, {
+          ts: serverTimestamp(),
+          item: item.name, itemId: item.id,
+          location,
+          delta: signedDelta, actor, reason, adjustedBy,
+          qtyAfterOld: newOld, qtyAfterNew: newNew, qtyAfter: newTotal
+        });
+      } catch(err){ console.error(err); alert('Failed to save adjustment'); }
+      closeAdjustDialog();
+    });
+
+    // Delete dialog (auto username)
+    let pendingDeleteIndex = null;
+    function openDeleteDialog(index) {
+      pendingDeleteIndex = index;
+      const item = inventory[index];
+      const total = totalQty(item);
+      document.getElementById('del-title').textContent = `Delete "${item.name}"`;
+      document.getElementById('del-subtitle').textContent = `This will remove the item and log a history entry with -${total} (Qty after: 0).`;
+
+      const delName = document.getElementById('del-name');
+      delName.value = CURRENT_USER;
+      delName.readOnly = true;
+
+      document.getElementById('del-reason').value = '';
+      document.getElementById('del-by').value = '';
+      document.getElementById('deleteModal').classList.add('open');
+      setTimeout(() => document.getElementById('del-reason').focus(), 0);
+    }
+    function closeDeleteDialog(){ document.getElementById('deleteModal').classList.remove('open'); }
+    window.openDeleteDialog=openDeleteDialog;
+
+    document.getElementById('del-cancel').addEventListener('click', closeDeleteDialog);
+    document.getElementById('deleteModal').addEventListener('click', e => { if (e.target.id === 'deleteModal') closeDeleteDialog(); });
+    document.getElementById('deleteModal').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('del-confirm').click(); } });
+    document.getElementById('del-confirm').addEventListener('click', async () => {
+      if (pendingDeleteIndex === null) return closeDeleteDialog();
+      const actor   = CURRENT_USER;
+      const reason  = document.getElementById('del-reason').value.trim();
+      const adjustedBy = document.getElementById('del-by').value.trim();
+      if (!reason || !adjustedBy) return alert('Please fill in Reason and Adjusted by (name).');
+
+      const removed = inventory[pendingDeleteIndex];
+      const prevTotal = totalQty(removed);
+      try{
+        await addDoc(colAdjustments, {
+          ts: serverTimestamp(),
+          item: removed.name, itemId: removed.id,
+          location: 'ALL',
+          delta: -prevTotal, actor, reason, adjustedBy,
+          qtyAfterOld: 0, qtyAfterNew: 0, qtyAfter: 0
+        });
+        await deleteDoc(doc(db,"inventory", removed.id));
+      } catch(err){ console.error(err); alert('Failed to delete item'); }
+      pendingDeleteIndex = null;
+      closeDeleteDialog();
+    });
+
+    // History area
+    function populateHistoryFilters() {
+      const sel = document.getElementById('hist-item-filter');
       if (!sel) return;
       const current = sel.value;
       const names = Array.from(new Set(adjustments.map(a => a.item))).sort((a,b)=>a.localeCompare(b));
-      sel.innerHTML = '<option value="">All items</option>' + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+      sel.innerHTML = '<option value="">All items</option>' + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
       if ([...sel.options].some(o => o.value === current)) sel.value = current;
+      sel.onchange = renderHistory;
+      document.getElementById('hist-search').oninput = renderHistory;
     }
 
-    function renderHistory(){
-      const tbody = $('#hist-body'); if (!tbody) return;
+    function renderHistory() {
+      const tbody = document.querySelector('#historyTable tbody');
+      if (!tbody) return;
       tbody.innerHTML = '';
-      let rows = adjustments.slice(); // already ordered desc
-      const q = ($('#hist-search').value || '').trim().toLowerCase();
-      const itemFilter = $('#hist-item-filter').value;
+      let rows = adjustments.slice();
+      const q = (document.getElementById('hist-search').value || '').trim().toLowerCase();
       if (q) rows = rows.filter(r =>
         (r.item||'').toLowerCase().includes(q) ||
         (r.actor||'').toLowerCase().includes(q) ||
-        (r.purpose||r.reason||'').toLowerCase().includes(q) ||
-        (r.forWhom||r.adjustedBy||'').toLowerCase().includes(q) ||
-        (r.location||'').toLowerCase().includes(q)
+        ((r.reason ?? r.purpose ?? '').toLowerCase().includes(q)) ||
+        ((r.adjustedBy ?? r.forWhom ?? '').toLowerCase().includes(q)) ||
+        ((r.location ?? '').toLowerCase().includes(q))
       );
+      const itemFilter = document.getElementById('hist-item-filter').value;
       if (itemFilter) rows = rows.filter(r => r.item === itemFilter);
-      $('#hist-count').textContent = `${rows.length} record${rows.length===1?'':'s'}`;
-
+      document.getElementById('hist-count').textContent = `${rows.length} record${rows.length===1?'':'s'}`;
       for (const r of rows) {
         const tr = document.createElement('tr');
+        const dtStr = toLocalDateTime(r.ts);
         const deltaStr = (r.delta > 0 ? '+' : '') + r.delta;
+        const reason = r.reason ?? r.purpose ?? '';
+        const adjustedBy = r.adjustedBy ?? r.forWhom ?? '';
         tr.innerHTML = `
-          <td>${toLocal(r.ts)}</td>
-          <td>${esc(r.item)}</td>
-          <td>${esc(r.location ?? '')}</td>
-          <td>${deltaStr}</td>
+          <td>${dtStr}</td>
+          <td>${escapeHtml(r.item)}</td>
+          <td>${escapeHtml(r.location ?? '')}</td>
+          <td class="nowrap">${deltaStr}</td>
           <td>${r.qtyAfter ?? ''}</td>
-          <td>${esc(r.actor ?? '')}</td>
-          <td>${esc(r.purpose ?? r.reason ?? '')}</td>
-          <td>${esc(r.forWhom ?? r.adjustedBy ?? '')}</td>`;
+          <td>${escapeHtml(r.actor ?? '')}</td>
+          <td>${escapeHtml(reason)}</td>
+          <td>${escapeHtml(adjustedBy)}</td>`;
         tbody.appendChild(tr);
       }
     }
 
-    // Export CSV (read-only)
-    document.getElementById('export-btn').addEventListener('click', async ()=>{
+    async function exportHistoryCSV(){
+      const qAdj = query(colAdjustments, orderBy("ts","desc"));
       const snap = await getDocs(qAdj);
       const rows = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-      const header = ['Date/Time','Item','Location','Change','Qty After (Total)','By (Name)','Purpose / Reason','For / Adjusted by'];
+      const header = ['Date/Time','Item','Location','Change','Qty After (Total)','By (Name)','Reason','Adjusted by (name)'];
       const csvRows = [header.join(',')];
       for (const r of rows){
+        const reason = r.reason ?? r.purpose ?? '';
+        const adjustedBy = r.adjustedBy ?? r.forWhom ?? '';
         csvRows.push([
-          toLocal(r.ts),
+          toLocalDateTime(r.ts),
           csvEscape(r.item),
           csvEscape(r.location ?? ''),
           (r.delta>0?'+':'') + (r.delta ?? 0),
           r.qtyAfter ?? '',
           csvEscape(r.actor ?? ''),
-          csvEscape(r.purpose ?? r.reason ?? ''),
-          csvEscape(r.forWhom ?? r.adjustedBy ?? '')
+          csvEscape(reason),
+          csvEscape(adjustedBy)
         ].join(','));
       }
       const blob = new Blob([csvRows.join('\n')], {type:'text/csv;charset=utf-8;'});
@@ -274,8 +743,33 @@
       a.download = `inventory-history-${new Date().toISOString().slice(0,10)}.csv`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
+    }
+    window.exportHistoryCSV = exportHistoryCSV;
+
+    async function clearHistory(){
+      if (!confirm('This will permanently delete ALL history records. Continue?')) return;
+      try{
+        let snap = await getDocs(query(colAdjustments));
+        while (!snap.empty){
+          const batch = writeBatch(db); let count = 0;
+          snap.forEach(docSnap => { if (count<450){ batch.delete(docSnap.ref); count++; } });
+          await batch.commit();
+          snap = await getDocs(query(colAdjustments));
+        }
+        alert('History cleared.');
+      } catch(err){ console.error(err); alert('Failed to clear history'); }
+    }
+    window.clearHistory = clearHistory;
+
+    // Initial render + Esc to close modals
+    function initialRender(){ renderTables(); }
+    initialRender();
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape'){
+        document.getElementById('adjustModal').classList.remove('open');
+        document.getElementById('deleteModal').classList.remove('open');
+      }
     });
   </script>
 </body>
 </html>
-
