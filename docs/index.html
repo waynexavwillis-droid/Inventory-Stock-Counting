@@ -35,7 +35,7 @@
       --bg:#f6f7f8; --panel:#ffffff; --ink:#111111; --muted:#6b7280; --line:#e5e7eb;
       --accent:#111111; --accent-ink:#ffffff;
 
-      /* Deep Purple theme (Adjust page) */
+      /* Deep Purple theme (Adjust/Location pages) */
       --p-bg:#0f0a1f; --p-card:#1a1233; --p-ink:#e8e3ff; --p-muted:#b8acd9; --p-line:#3b2b66;
       --p-accent:#6d28d9; --p-accent-ink:#ffffff; --p-glow:rgba(109,40,217,.35);
     }
@@ -44,14 +44,8 @@
     body{ margin:0; font-family: Arial, sans-serif; background:var(--bg); color:var(--ink); }
     h1,h2,h3{ color:var(--ink); }
 
-    /* ⬇️ Added extra top padding so content sits below fixed hamburger */
-    .content{
-      padding:20px;
-      padding-top:80px; /* was just 20px */
-      box-sizing:border-box;
-      min-height:100vh;
-      overflow:auto;
-    }
+    /* Keep content clear of fixed hamburger */
+    .content{ padding:20px; padding-top:80px; box-sizing:border-box; min-height:100vh; overflow:auto; }
 
     input, button, select{ padding:8px; margin:4px; }
     table{ width:100%; margin-top:12px; border-collapse:collapse; }
@@ -113,7 +107,7 @@
     .modal-card{ width:95%; max-width:520px; background:#fff; border-radius:8px; padding:16px 18px; box-shadow:0 20px 40px rgba(0,0,0,.15); border:1px solid var(--line); }
     .modal-card h3{ margin:0 0 10px; }
     .modal-card label{ display:block; margin:10px 0 4px; font-size:14px; }
-    .modal-card input, .modal-card select{ width:100%; box-sizing:border-box; padding:8px; }
+    .modal-card input, .modal-card select, .modal-card textarea{ width:100%; box-sizing:border-box; padding:8px; }
     .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:12px; }
     #adj-confirm, #del-confirm{ background:#111; color:#fff; border-color:#111; border-radius:8px; }
     #adj-confirm:hover, #del-confirm:hover{ filter:brightness(0.9); }
@@ -139,8 +133,9 @@
     .add-row .input-container, .add-row .input{ width:100%; }
     @media (max-width: 640px){ .add-row{ grid-template-columns: 1fr; } }
 
-    /* Purple theming for Adjust */
-    #adjustPage.theme-purple{
+    /* Purple theming for Adjust + Location */
+    #adjustPage.theme-purple,
+    #locationPage.theme-purple{
       --card-bg: var(--p-card); --card-accent: var(--p-accent); --card-text: var(--p-ink);
       --accent-ink: var(--p-accent-ink); --line: var(--p-line); --muted: var(--p-muted);
       background: radial-gradient(60% 80% at 10% -10%, rgba(109,40,217,.2), transparent 60%),
@@ -148,12 +143,20 @@
                   var(--p-bg);
       border-radius: 16px; padding: 16px; color: var(--p-ink);
     }
-    #adjustPage.theme-purple h2{ color: var(--p-ink); }
-    #adjustPage.theme-purple .card{ box-shadow: 0 20px 45px var(--p-glow), 0 8px 20px rgba(0,0,0,.25); border-color: var(--p-line); }
-    #adjustPage.theme-purple .card__description{ color: var(--p-muted); }
-    #adjustPage.theme-purple .card__button--trash{ color: var(--p-ink); border-color: var(--p-ink); }
+    #adjustPage.theme-purple h2,
+    #locationPage.theme-purple h2{ color: var(--p-ink); }
+    #adjustPage.theme-purple .card,
+    #locationPage.theme-purple .card{ box-shadow: 0 20px 45px var(--p-glow), 0 8px 20px rgba(0,0,0,.25); border-color: var(--p-line); }
+    #adjustPage.theme-purple .card__description,
+    #locationPage.theme-purple .card__description{ color: var(--p-muted); }
+    #adjustPage.theme-purple .card__button--trash,
+    #locationPage.theme-purple .card__button--trash{ color: var(--p-ink); border-color: var(--p-ink); }
     #adjustPage.theme-purple .badge-lowok{ background: var(--p-accent); }
     #adjustPage.theme-purple .qty-badge{ background:#0b0720; }
+
+    /* Add-card tile styling (used on Location page) */
+    .card--add{ display:flex; align-items:center; justify-content:center; cursor:pointer; border:2px dashed var(--p-line); }
+    .card--add .big-plus{ width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:28px; }
   </style>
 </head>
 <body>
@@ -170,6 +173,7 @@
   <nav class="sidebar" id="side" role="navigation" aria-label="Main">
     <button onclick="document.getElementById('menu-check').checked=false; showPage('addPage')">Add New Stock</button>
     <button onclick="document.getElementById('menu-check').checked=false; showPage('adjustPage')">Adjust Stock</button>
+    <button onclick="document.getElementById('menu-check').checked=false; showPage('locationPage')">Location</button>
     <button onclick="document.getElementById('menu-check').checked=false; showPage('goalPage')">Set Stock Count Goal</button>
     <button onclick="document.getElementById('menu-check').checked=false; showPage('historyPage')">History</button>
     <hr>
@@ -208,6 +212,12 @@
     <section id="adjustPage" class="theme-purple" style="display:none;">
       <h2>Adjust Stock</h2>
       <div id="stockGrid" class="grid"></div>
+    </section>
+
+    <!-- Location Page (new) -->
+    <section id="locationPage" class="theme-purple" style="display:none;">
+      <h2>Location</h2>
+      <div id="locationGrid" class="grid"></div>
     </section>
 
     <!-- Goal Settings Page -->
@@ -296,6 +306,29 @@
     </div>
   </div>
 
+  <!-- Add Location dialog (new) -->
+  <div id="locAddModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="loc-title">
+    <div class="modal-card">
+      <h3 id="loc-title">Add Location Card</h3>
+
+      <div class="input-container">
+        <input id="loc-item-name" type="text" class="input" placeholder=" ">
+        <span class="topline"></span><span class="underline"></span>
+        <label for="loc-item-name" class="label">Item name</label>
+      </div>
+
+      <label for="loc-desc">Details / placement notes</label>
+      <textarea id="loc-desc" rows="4" placeholder="e.g., Rack A3, top shelf, behind boxes"></textarea>
+
+      <div class="muted">After creating, tap the 🖼 button on the card to add a photo (camera/gallery) or paste an image URL.</div>
+
+      <div class="modal-actions">
+        <button id="loc-add-cancel">Cancel</button>
+        <button id="loc-add-confirm">Create</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Delete dialog -->
   <div id="deleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="del-title">
     <div class="modal-card">
@@ -327,8 +360,10 @@
     </div>
   </div>
 
-  <!-- Hidden file picker -->
+  <!-- Hidden file pickers -->
   <input type="file" id="hiddenFileInput" accept="image/*" style="display:none" />
+  <!-- For Location page, camera-friendly -->
+  <input type="file" id="hiddenLocationFileInput" accept="image/*" capture="environment" style="display:none" />
 
   <!-- Firebase + App Logic -->
   <script type="module">
@@ -372,6 +407,7 @@
     // Collections
     const colInventory   = collection(db, "inventory");
     const colAdjustments = collection(db, "adjustments");
+    const colLocations   = collection(db, "locations");  // NEW
 
     // Utils
     function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
@@ -383,9 +419,7 @@
       if (s.startsWith('new')) return 'New warehouse';
       return null;
     }
-    function totalQty(item){
-      return (item.qtyOld ?? 0) + (item.qtyNew ?? 0) + (item.qty ?? 0); // support legacy 'qty'
-    }
+    function totalQty(item){ return (item.qtyOld ?? 0) + (item.qtyNew ?? 0) + (item.qty ?? 0); }
 
     // Hamburger aria
     const menuCheck = document.getElementById('menu-check');
@@ -396,11 +430,17 @@
     // State
     let inventory = [];
     let adjustments = [];
+    let locations = []; // NEW
 
     // Live listeners
     onSnapshot(colInventory, (snap) => {
       inventory = snap.docs.map(d => ({ id:d.id, ...d.data() }));
       renderTables();
+    });
+
+    onSnapshot(colLocations, (snap) => {
+      locations = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      renderLocationGrid();
     });
 
     let unsubHistory=null;
@@ -416,13 +456,14 @@
 
     // Routing
     function showPage(pageId) {
-      ['addPage','adjustPage','goalPage','historyPage'].forEach(id => {
+      ['addPage','adjustPage','locationPage','goalPage','historyPage'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
       });
       const target = document.getElementById(pageId);
       if (target) target.style.display = 'block';
       if (pageId === 'adjustPage' || pageId === 'goalPage') renderTables();
+      if (pageId === 'locationPage') renderLocationGrid();
       if (pageId === 'historyPage') attachHistoryListener();
     }
     window.showPage = showPage;
@@ -540,7 +581,7 @@
       });
     }
 
-    // Image picker
+    /* ---------- Inventory image picker (existing) ---------- */
     let imgTargetIndex=null;
     const fileInput=document.getElementById('hiddenFileInput');
     function openImagePicker(index){
@@ -573,7 +614,112 @@
     }
     window.setItemImageFromURL=setItemImageFromURL;
 
-    // Adjust dialog (auto username)
+    /* ---------- Location page logic (NEW) ---------- */
+    function renderLocationGrid(){
+      const grid = document.getElementById('locationGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      // Add-card tile first
+      const addCard = document.createElement('div');
+      addCard.className = 'card card--add';
+      addCard.innerHTML = `<div class="big-plus card__button" title="Add location card">+</div>`;
+      addCard.addEventListener('click', openAddLocationDialog);
+      grid.appendChild(addCard);
+
+      // Location cards
+      locations.forEach((loc, index) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const bgStyle = loc.img ? `style="background-image:url('${escapeHtml(loc.img)}')"` : '';
+        card.innerHTML = `
+          <div class="card__shine"></div>
+          <div class="card__glow"></div>
+          ${loc.isNew ? `<div class="badge-new" title="Dismiss">NEW</div>` : ''}
+          <div class="card__content">
+            <div class="card__image" ${bgStyle}>
+              <button class="img-edit-btn" title="Set image (camera/gallery)">🖼</button>
+            </div>
+            <div class="card__text">
+              <h3 class="card__title" title="${escapeHtml(loc.name)}">${escapeHtml(loc.name)}</h3>
+              <p class="card__description">${escapeHtml(loc.description || '')}</p>
+            </div>
+            <div class="card__actions">
+              <div class="card__button card__button--trash" title="Delete card" data-del>🗑</div>
+            </div>
+          </div>`;
+        card.querySelector('.img-edit-btn').addEventListener('click', () => openLocationImagePicker(index));
+        if (loc.isNew) card.querySelector('.badge-new').addEventListener('click', async () => {
+          await updateDoc(doc(db,"locations", loc.id), { isNew:false });
+        });
+        card.querySelector('[data-del]').addEventListener('click', async () => {
+          if (!confirm(`Delete location card "${loc.name}"?`)) return;
+          try { await deleteDoc(doc(db,"locations",loc.id)); }
+          catch(err){ console.error(err); alert('Failed to delete'); }
+        });
+        grid.appendChild(card);
+      });
+    }
+
+    function openAddLocationDialog(){
+      document.getElementById('loc-item-name').value = '';
+      document.getElementById('loc-desc').value = '';
+      document.getElementById('locAddModal').classList.add('open');
+      setTimeout(()=>document.getElementById('loc-item-name').focus(), 0);
+    }
+    function closeAddLocationDialog(){
+      document.getElementById('locAddModal').classList.remove('open');
+    }
+    document.getElementById('loc-add-cancel').addEventListener('click', closeAddLocationDialog);
+    document.getElementById('locAddModal').addEventListener('click', e => { if (e.target.id === 'locAddModal') closeAddLocationDialog(); });
+
+    document.getElementById('loc-add-confirm').addEventListener('click', async ()=>{
+      const name = document.getElementById('loc-item-name').value.trim();
+      const description = document.getElementById('loc-desc').value.trim();
+      if (!name) return alert('Please enter an item name.');
+      try{
+        await addDoc(colLocations, {
+          name, description, img:null, createdAt:serverTimestamp(), isNew:true, actor: CURRENT_USER
+        });
+      }catch(err){ console.error(err); alert('Failed to create card'); }
+      closeAddLocationDialog();
+    });
+
+    // Image picker for Location cards
+    let locImgTargetIndex = null;
+    const locFileInput = document.getElementById('hiddenLocationFileInput');
+
+    function openLocationImagePicker(index){
+      locImgTargetIndex = index;
+      const choice=prompt("Set image for this location:\n- Paste an image URL and press OK, OR\n- Leave blank to take/select a photo (uploads to Firebase Storage).");
+      if (choice && choice.trim()){ setLocationImageFromURL(choice.trim()); } else { locFileInput.click(); }
+    }
+    window.openLocationImagePicker = openLocationImagePicker;
+
+    locFileInput.addEventListener('change', async (e)=>{
+      const file = e.target.files && e.target.files[0]; e.target.value='';
+      if (!file || locImgTargetIndex===null) return;
+      const loc = locations[locImgTargetIndex];
+      try{
+        const path=`locationImages/${loc.id}/${Date.now()}_${file.name}`;
+        const ref=storageRef(st,path);
+        await uploadBytes(ref,file);
+        const url=await getDownloadURL(ref);
+        await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false });
+      }catch(err){ console.error(err); alert('Upload failed'); }
+      locImgTargetIndex=null;
+    });
+
+    async function setLocationImageFromURL(url){
+      if (locImgTargetIndex===null) return;
+      const loc = locations[locImgTargetIndex];
+      try{ await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false }); }
+      catch(err){ console.error(err); alert('Failed to set image URL'); }
+      locImgTargetIndex=null;
+    }
+    window.setLocationImageFromURL = setLocationImageFromURL;
+
+    /* ---------- Adjust dialog + delete logic (existing) ---------- */
     let pending = { index:null, mode:'add' };
     function openAdjustDialog(index, mode) {
       pending = { index, mode };
@@ -771,12 +917,13 @@
     window.clearHistory = clearHistory;
 
     // Initial render + Esc to close modals
-    function initialRender(){ renderTables(); }
+    function initialRender(){ renderTables(); renderLocationGrid(); }
     initialRender();
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape'){
         document.getElementById('adjustModal').classList.remove('open');
         document.getElementById('deleteModal').classList.remove('open');
+        document.getElementById('locAddModal').classList.remove('open');
       }
     });
   </script>
