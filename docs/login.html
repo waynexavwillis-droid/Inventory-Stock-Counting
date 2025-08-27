@@ -36,11 +36,13 @@
     // username -> { hash: <SHA-256 hex of password>, role: 'editor' | 'viewer' }
     const ACCOUNTS = {
       // EPEDU : EPEDU2025SECURELOGIN
-      "EPEDU":    { hash: "dcb29d675b72d042c839362546f63501afd9130965b0193b1718c2e6bd99ca80", role: "editor" },
+      "EPEDU":     { hash: "dcb29d675b72d042c839362546f63501afd9130965b0193b1718c2e6bd99ca80", role: "editor" },
       // gwenntan : EPasia!234
-      "gwenntan": { hash: "9440524470c0fd7f13b67eeb3a56354a46158c04f82b660f50fa96da3b481b48", role: "editor" },
-      // EPSUPPORT : EPSUPPORTISTHEBEST2025
-      "EPSUPPORT":{ hash: "844bfaecdd264b1422e6ccb9bd789757fe34c358d76edf2d0790e0b0997882e3", role: "viewer" }
+      "gwenntan":  { hash: "9440524470c0fd7f13b67eeb3a56354a46158c04f82b660f50fa96da3b481b48", role: "editor" },
+      // EPSUPPORT : EPSUPPORTISTHEBEST2025  -> viewer
+      "EPSUPPORT": { hash: "844bfaecdd264b1422e6ccb9bd789757fe34c358d76edf2d0790e0b0997882e3", role: "viewer" },
+      // NEW — Sally Kan : Epasia0507  -> editor (change to "viewer" if you prefer)
+      "Sally Kan": { hash: "d3dc9ee2aecc08b4b60b1258449a96c5b0ee80bb61964915f2918a4b36dbe39b", role: "editor" }
     };
 
     async function sha256Hex(text) {
