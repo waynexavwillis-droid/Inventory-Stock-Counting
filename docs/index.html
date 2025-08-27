@@ -43,7 +43,16 @@
     html,body{ height:100%; }
     body{ margin:0; font-family: Arial, sans-serif; background:var(--bg); color:var(--ink); }
     h1,h2,h3{ color:var(--ink); }
-    .content{ padding:20px; box-sizing:border-box; min-height:100vh; overflow:auto; }
+
+    /* ⬇️ Added extra top padding so content sits below fixed hamburger */
+    .content{
+      padding:20px;
+      padding-top:80px; /* was just 20px */
+      box-sizing:border-box;
+      min-height:100vh;
+      overflow:auto;
+    }
+
     input, button, select{ padding:8px; margin:4px; }
     table{ width:100%; margin-top:12px; border-collapse:collapse; }
     table, th, td{ border:1px solid var(--line); }
