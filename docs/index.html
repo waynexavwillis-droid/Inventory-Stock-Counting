@@ -114,7 +114,7 @@
       --card-text: var(--ink);
 
       width:190px; height:254px; background:var(--card-bg);
-      border-radius:20px; position:relative; overflow:visible; /* allow badges outside */
+      border-radius:20px; position:relative; overflow:visible;
       transition:all .5s cubic-bezier(.16,1,.3,1);
       box-shadow:0 12px 30px rgba(0,0,0,.07);
       border:1px solid var(--line);
@@ -255,7 +255,7 @@
         <input type="number" id="newItemQty" placeholder="Quantity">
         <button onclick="addNewItem()">Add Item</button>
       </div>
-      <div class="muted">Tip: data is saved in this browser using localStorage.</div>
+      <div class="muted">Data now syncs via Firebase (Firestore + Storage).</div>
     </section>
 
     <!-- Adjust Stock Page (purple theme) -->
@@ -280,11 +280,11 @@
       <h2>History</h2>
       <div class="toolbar">
         <div class="input-container" style="flex:1; min-width:260px;">
-          <input id="hist-search" type="text" class="input" placeholder=" " oninput="renderHistory()">
+          <input id="hist-search" type="text" class="input" placeholder=" ">
           <span class="topline"></span><span class="underline"></span>
           <label for="hist-search" class="label">Search item / name / purpose…</label>
         </div>
-        <select id="hist-item-filter" onchange="renderHistory()">
+        <select id="hist-item-filter">
           <option value="">All items</option>
         </select>
         <span class="pill" id="hist-count">0 records</span>
@@ -306,7 +306,7 @@
         </thead>
         <tbody></tbody>
       </table>
-      <div class="muted">Only this device/browser can see this history (localStorage).</div>
+      <div class="muted">History syncs across devices (Firestore). Clear = deletes all adjustment records.</div>
     </section>
   </main>
 
@@ -378,20 +378,69 @@
   <!-- Hidden file picker (used by image set) -->
   <input type="file" id="hiddenFileInput" accept="image/*" style="display:none" />
 
-  <script>
-    // keep aria-expanded in sync for the hamburger
+  <!-- ============================= -->
+  <!-- Firebase + App Logic (module) -->
+  <!-- ============================= -->
+  <script type="module">
+    /* ===== Firebase SDKs (modular v9+) ===== */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, collection, doc, addDoc, setDoc, getDoc, updateDoc, deleteDoc,
+      onSnapshot, serverTimestamp, query, orderBy, getDocs, writeBatch
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import {
+      getStorage, ref as storageRef, uploadBytes, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+
+    /* ===== Your Firebase config ===== */
+    const firebaseConfig = {
+      apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
+      authDomain: "epedu-inventory-database.firebaseapp.com",
+      projectId: "epedu-inventory-database",
+      storageBucket: "epedu-inventory-database.appspot.com",
+      messagingSenderId: "124437251040",
+      appId: "1:124437251040:web:4989c73efc2f4afbf22185",
+      measurementId: "G-GFEEP49VRP"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    try { getAnalytics(app); } catch(e) { /* analytics needs https; ignore in dev */ }
+
+    /* ===== Firebase services ===== */
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+    const st   = getStorage(app);
+
+    /* ===== Anonymous sign-in for Firestore/Storage rules ===== */
+    signInAnonymously(auth).catch(console.error);
+
+    /* ===== Realtime state ===== */
+    let inventory = [];     // array of {id, name, qty, goal, img, isNew}
+    let adjustments = [];   // array of history docs
+
+    /* ===== Collections ===== */
+    const colInventory  = collection(db, "inventory");
+    const colAdjustments = collection(db, "adjustments");
+
+    /* ===== Accessibility for hamburger ===== */
     const menuCheck = document.getElementById('menu-check');
     const hamb = document.querySelector('label.hamburger');
     function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
     menuCheck.addEventListener('change', syncAria); syncAria();
 
-    // ===== Data in localStorage =====
-    let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
-    let adjustments = JSON.parse(localStorage.getItem('adjustments')) || [];
+    /* ===== Utilities ===== */
+    function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
+    function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    function toLocalDateTime(ts){
+      if (!ts) return '';
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
+      if (isNaN(+d)) return '';
+      return d.toLocaleString();
+    }
 
-    function saveInventory(){ localStorage.setItem('inventory', JSON.stringify(inventory)); }
-    function saveAdjustments(){ localStorage.setItem('adjustments', JSON.stringify(adjustments)); }
-
+    /* ===== Page routing ===== */
     function showPage(pageId) {
       ['addPage','adjustPage','goalPage','historyPage'].forEach(id => {
         const el = document.getElementById(id);
@@ -401,39 +450,61 @@
       if (target) target.style.display = 'block';
 
       if (pageId === 'adjustPage' || pageId === 'goalPage') renderTables();
-      if (pageId === 'historyPage') { populateHistoryFilters(); renderHistory(); }
+      if (pageId === 'historyPage') { attachHistoryListener(); }
+    }
+    window.showPage = showPage;
+
+    /* ===== Realtime listeners ===== */
+    // Inventory: always live
+    onSnapshot(colInventory, (snap) => {
+      inventory = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      renderTables();
+    });
+
+    // Adjustments (history): attach only when viewing history
+    let unsubHistory = null;
+    function attachHistoryListener(){
+      if (unsubHistory) return; // already attached
+      const qAdj = query(colAdjustments, orderBy("ts","desc"));
+      unsubHistory = onSnapshot(qAdj, (snap) => {
+        adjustments = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+        populateHistoryFilters();
+        renderHistory();
+      });
     }
 
-    // Add new item (mark as NEW)
-    function addNewItem() {
+    /* ===== Add new item ===== */
+    async function addNewItem() {
       const name = document.getElementById('newItemName').value.trim();
-      const qty  = parseInt(document.getElementById('newItemQty').value);
+      const qty  = parseInt(document.getElementById('newItemQty').value,10);
       if (!name || isNaN(qty) || qty <= 0) return alert("Enter valid name and quantity");
 
       const existing = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
       if (existing) {
-        existing.qty += qty;
-        existing.isNew = true; // re-flag as new on add
+        await updateDoc(doc(db, "inventory", existing.id), {
+          qty: (existing.qty || 0) + qty,
+          isNew: true
+        });
       } else {
-        inventory.push({ name, qty, goal: 0, img:null, isNew:true });
+        await addDoc(colInventory, {
+          name, qty, goal: 0, img: null, isNew: true, createdAt: serverTimestamp()
+        });
       }
-
-      saveInventory();
       alert(`Item "${name}" added.`);
       document.getElementById('newItemName').value = '';
       document.getElementById('newItemQty').value = '';
     }
+    window.addNewItem = addNewItem;
 
-    // Render both adjust grid + goal table
+    /* ===== Renderers ===== */
     function renderTables(){ renderStockGrid(); renderGoalTable(); checkLowStockAlerts(); }
 
-    // Adjust grid
     function renderStockGrid() {
       const grid = document.getElementById('stockGrid');
       if (!grid) return;
       grid.innerHTML = '';
       inventory.forEach((item, index) => {
-        const low = item.goal > 0 && item.qty <= item.goal;
+        const low = (item.goal > 0) && (item.qty <= item.goal);
         const card = document.createElement('div');
         card.className = 'card';
         const bgStyle = item.img ? `style="background-image:url('${escapeHtml(item.img)}')"` : '';
@@ -447,7 +518,7 @@
           <div class="card__content">
             <div class="card__image" ${bgStyle}>
               <button class="img-edit-btn" title="Set image">🖼</button>
-              <span class="qty-badge">Qty: ${item.qty}</span>
+              <span class="qty-badge">Qty: ${item.qty ?? 0}</span>
             </div>
             <div class="card__text">
               <h3 class="card__title" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</h3>
@@ -459,11 +530,14 @@
               <div class="card__button card__button--trash" title="Delete item" data-del>🗑</div>
             </div>
           </div>`;
-        // event wiring
+
+        // events
         card.querySelector('.img-edit-btn').addEventListener('click', () => openImagePicker(index));
-        if (item.isNew) card.querySelector('.badge-new').addEventListener('click', () => { item.isNew = false; saveInventory(); renderStockGrid(); });
+        if (item.isNew) card.querySelector('.badge-new').addEventListener('click', async () => {
+          await updateDoc(doc(db, "inventory", item.id), { isNew:false });
+        });
         card.querySelector('[data-plus]').addEventListener('click', (e) => {
-          if (e.shiftKey) { openImagePicker(index); return; } // SHIFT+click to set image
+          if (e.shiftKey) { openImagePicker(index); return; }
           openAdjustDialog(index, 'add');
         });
         card.querySelector('[data-minus]').addEventListener('click', () => openAdjustDialog(index, 'sub'));
@@ -473,7 +547,6 @@
       });
     }
 
-    // Goal table
     function renderGoalTable() {
       const tbody = document.querySelector('#goalTable tbody');
       if (!tbody) return;
@@ -482,73 +555,82 @@
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${escapeHtml(item.name)}</td>
-          <td>${item.goal}</td>
+          <td>${item.goal || 0}</td>
           <td><input type="number" id="newGoal-${index}" placeholder="New Goal"></td>
-          <td><button onclick="updateGoal(${index})">Update</button></td>`;
+          <td><button data-update-goal="${index}">Update</button></td>`;
         tbody.appendChild(row);
+      });
+
+      // attach listeners for update buttons
+      tbody.querySelectorAll('button[data-update-goal]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const idx = parseInt(e.currentTarget.getAttribute('data-update-goal'),10);
+          const el = document.getElementById(`newGoal-${idx}`);
+          const newGoal = parseInt(el.value,10);
+          if (isNaN(newGoal) || newGoal < 0) return alert("Enter valid stock goal");
+          const item = inventory[idx];
+          await updateDoc(doc(db, "inventory", item.id), { goal:newGoal });
+          alert(`Stock goal updated for ${item.name}`);
+        });
       });
     }
 
-    function updateGoal(index) {
-      const el = document.getElementById(`newGoal-${index}`);
-      const newGoal = parseInt(el.value);
-      if (isNaN(newGoal) || newGoal < 0) return alert("Enter valid stock goal");
-      inventory[index].goal = newGoal;
-      saveInventory(); renderGoalTable();
-      alert(`Stock goal updated for ${inventory[index].name}`);
-    }
-
+    // Alert once per render per item when low
     function checkLowStockAlerts() {
       inventory.forEach(item => {
-        if (item.goal > 0 && item.qty <= item.goal) {
+        if (item.goal > 0 && (item.qty ?? 0) <= item.goal) {
           alert(`Low stock for "${item.name}"`);
         }
       });
     }
 
-    // ===== Image picker (file or URL) =====
+    /* ===== Image picker (file or URL) ===== */
     let imgTargetIndex = null;
     const fileInput = document.getElementById('hiddenFileInput');
 
     function openImagePicker(index){
       imgTargetIndex = index;
-      const choice = prompt("Set image:\n- Paste an image URL and press OK, OR\n- Leave blank to choose a file from your device.");
+      const choice = prompt("Set image:\n- Paste an image URL and press OK, OR\n- Leave blank to choose a file from your device (uploads to Firebase Storage).");
       if (choice && choice.trim()){
         setItemImageFromURL(choice.trim());
       } else {
         fileInput.click();
       }
     }
+    window.openImagePicker = openImagePicker;
 
     fileInput.addEventListener('change', async (e) => {
       const file = e.target.files && e.target.files[0];
       e.target.value = '';
       if (!file || imgTargetIndex === null) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        inventory[imgTargetIndex].img = reader.result; // Data URL
-        inventory[imgTargetIndex].isNew = true; // re-flag
-        saveInventory(); renderStockGrid();
-        imgTargetIndex = null;
-      };
-      reader.readAsDataURL(file);
+      const item = inventory[imgTargetIndex];
+      try{
+        const path = `itemImages/${item.id}/${Date.now()}_${file.name}`;
+        const ref = storageRef(st, path);
+        await uploadBytes(ref, file);
+        const url = await getDownloadURL(ref);
+        await updateDoc(doc(db,"inventory", item.id), { img:url, isNew:true });
+      } catch(err){ console.error(err); alert('Upload failed'); }
+      imgTargetIndex = null;
     });
 
-    function setItemImageFromURL(url){
+    async function setItemImageFromURL(url){
       if (imgTargetIndex === null) return;
-      inventory[imgTargetIndex].img = url; // store URL directly
-      inventory[imgTargetIndex].isNew = true;
-      saveInventory(); renderStockGrid();
+      const item = inventory[imgTargetIndex];
+      try{
+        await updateDoc(doc(db,"inventory", item.id), { img:url, isNew:true });
+      } catch(err){ console.error(err); alert('Failed to set image URL'); }
       imgTargetIndex = null;
     }
+    window.setItemImageFromURL = setItemImageFromURL;
 
-    // ===== Adjust dialog =====
+    /* ===== Adjust dialog ===== */
     let pending = { index:null, mode:'add' };
     function openAdjustDialog(index, mode) {
       pending = { index, mode };
       const item = inventory[index];
       document.getElementById('adj-title').textContent = `${mode === 'add' ? 'Add to' : 'Minus from'} "${item.name}"`;
-      document.getElementById('adj-subtitle').textContent = `Current qty: ${item.qty}`;
+      document.getElementById('adj-subtitle').textContent = `Current qty: ${item.qty ?? 0}`;
       document.getElementById('adj-amount').value = '1';
       document.getElementById('adj-name').value = '';
       document.getElementById('adj-purpose').value = '';
@@ -557,10 +639,12 @@
       setTimeout(() => document.getElementById('adj-amount').focus(), 0);
     }
     function closeAdjustDialog(){ document.getElementById('adjustModal').classList.remove('open'); }
+    window.openAdjustDialog = openAdjustDialog;
+
     document.getElementById('adj-cancel').addEventListener('click', closeAdjustDialog);
     document.getElementById('adjustModal').addEventListener('click', e => { if (e.target.id === 'adjustModal') closeAdjustDialog(); });
     document.getElementById('adjustModal').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('adj-confirm').click(); } });
-    document.getElementById('adj-confirm').addEventListener('click', () => {
+    document.getElementById('adj-confirm').addEventListener('click', async () => {
       const amount = parseInt(document.getElementById('adj-amount').value, 10);
       const actor   = document.getElementById('adj-name').value.trim();
       const purpose = document.getElementById('adj-purpose').value.trim();
@@ -570,22 +654,29 @@
 
       const item = inventory[pending.index];
       const signedDelta = pending.mode === 'add' ? amount : -amount;
-      item.qty += signedDelta; if (item.qty < 0) item.qty = 0;
+      const newQty = Math.max(0, (item.qty ?? 0) + signedDelta);
 
-      adjustments.push({ ts:new Date().toISOString(), item:item.name, delta:signedDelta, actor, purpose, forWhom, qtyAfter:item.qty });
-      saveInventory(); saveAdjustments();
-      renderStockGrid(); renderGoalTable();
-      if (document.getElementById('historyPage').style.display !== 'none') { populateHistoryFilters(); renderHistory(); }
-      checkLowStockAlerts(); closeAdjustDialog();
+      try{
+        await updateDoc(doc(db,"inventory", item.id), { qty:newQty, isNew:false });
+        await addDoc(colAdjustments, {
+          ts: serverTimestamp(),
+          item: item.name,
+          itemId: item.id,
+          delta: signedDelta,
+          actor, purpose, forWhom,
+          qtyAfter: newQty
+        });
+      } catch(err){ console.error(err); alert('Failed to save adjustment'); }
+      closeAdjustDialog();
     });
 
-    // ===== Delete dialog =====
+    /* ===== Delete dialog ===== */
     let pendingDeleteIndex = null;
     function openDeleteDialog(index) {
       pendingDeleteIndex = index;
       const item = inventory[index];
       document.getElementById('del-title').textContent = `Delete "${item.name}"`;
-      document.getElementById('del-subtitle').textContent = `This will remove the item and log a history entry with -${item.qty} (Qty after: 0).`;
+      document.getElementById('del-subtitle').textContent = `This will remove the item and log a history entry with -${item.qty ?? 0} (Qty after: 0).`;
       document.getElementById('del-name').value = '';
       document.getElementById('del-purpose').value = '';
       document.getElementById('del-for').value = '';
@@ -593,10 +684,12 @@
       setTimeout(() => document.getElementById('del-name').focus(), 0);
     }
     function closeDeleteDialog(){ document.getElementById('deleteModal').classList.remove('open'); }
+    window.openDeleteDialog = openDeleteDialog;
+
     document.getElementById('del-cancel').addEventListener('click', closeDeleteDialog);
     document.getElementById('deleteModal').addEventListener('click', e => { if (e.target.id === 'deleteModal') closeDeleteDialog(); });
     document.getElementById('deleteModal').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('del-confirm').click(); } });
-    document.getElementById('del-confirm').addEventListener('click', () => {
+    document.getElementById('del-confirm').addEventListener('click', async () => {
       if (pendingDeleteIndex === null) return closeDeleteDialog();
       const actor   = document.getElementById('del-name').value.trim();
       const purpose = document.getElementById('del-purpose').value.trim();
@@ -605,14 +698,22 @@
 
       const removed = inventory[pendingDeleteIndex];
       const prevQty = removed?.qty ?? 0;
-      adjustments.push({ ts:new Date().toISOString(), item:removed.name, delta:-prevQty, actor, purpose, forWhom, qtyAfter:0 });
-      inventory.splice(pendingDeleteIndex, 1); pendingDeleteIndex = null;
-      saveInventory(); saveAdjustments();
-      renderStockGrid(); renderGoalTable(); populateHistoryFilters(); renderHistory();
+      try{
+        await addDoc(colAdjustments, {
+          ts: serverTimestamp(),
+          item: removed.name,
+          itemId: removed.id,
+          delta: -prevQty,
+          actor, purpose, forWhom,
+          qtyAfter: 0
+        });
+        await deleteDoc(doc(db,"inventory", removed.id));
+      } catch(err){ console.error(err); alert('Failed to delete item'); }
+      pendingDeleteIndex = null;
       closeDeleteDialog();
     });
 
-    // ===== History =====
+    /* ===== History (filters + render + export + clear) ===== */
     function populateHistoryFilters() {
       const sel = document.getElementById('hist-item-filter');
       if (!sel) return;
@@ -620,12 +721,15 @@
       const names = Array.from(new Set(adjustments.map(a => a.item))).sort((a,b)=>a.localeCompare(b));
       sel.innerHTML = '<option value="">All items</option>' + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
       if ([...sel.options].some(o => o.value === current)) sel.value = current;
+      sel.onchange = renderHistory;
+      document.getElementById('hist-search').oninput = renderHistory;
     }
+
     function renderHistory() {
       const tbody = document.querySelector('#historyTable tbody');
       if (!tbody) return;
       tbody.innerHTML = '';
-      let rows = adjustments.slice().sort((a,b)=> (a.ts < b.ts ? 1 : -1));
+      let rows = adjustments.slice(); // already sorted desc by query(orderBy ts desc)
       const q = (document.getElementById('hist-search').value || '').trim().toLowerCase();
       if (q) rows = rows.filter(r =>
         (r.item||'').toLowerCase().includes(q) ||
@@ -638,26 +742,81 @@
       document.getElementById('hist-count').textContent = `${rows.length} record${rows.length===1?'':'s'}`;
       for (const r of rows) {
         const tr = document.createElement('tr');
-        const dt = new Date(r.ts);
-        const dtStr = isNaN(+dt) ? r.ts : dt.toLocaleString();
+        const dtStr = toLocalDateTime(r.ts);
+        const deltaStr = (r.delta > 0 ? '+' : '') + r.delta;
         tr.innerHTML = `
           <td>${dtStr}</td>
           <td>${escapeHtml(r.item)}</td>
-          <td class="nowrap">${r.delta > 0 ? '+' : ''}${r.delta}</td>
-          <td>${r.qtyAfter}</td>
-          <td>${escapeHtml(r.actor)}</td>
-          <td>${escapeHtml(r.purpose)}</td>
-          <td>${escapeHtml(r.forWhom)}</td>`;
+          <td class="nowrap">${deltaStr}</td>
+          <td>${r.qtyAfter ?? ''}</td>
+          <td>${escapeHtml(r.actor ?? '')}</td>
+          <td>${escapeHtml(r.purpose ?? '')}</td>
+          <td>${escapeHtml(r.forWhom ?? '')}</td>`;
         tbody.appendChild(tr);
       }
     }
 
-    // ===== Utils =====
-    function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }
-    function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    async function exportHistoryCSV(){
+      // ensure we have the latest from Firestore
+      const qAdj = query(colAdjustments, orderBy("ts","desc"));
+      const snap = await getDocs(qAdj);
+      const rows = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      const header = ['Date/Time','Item','Change','Qty After','By (Name)','Purpose','For (names)'];
+      const csvRows = [header.join(',')];
+      for (const r of rows){
+        csvRows.push([
+          toLocalDateTime(r.ts),
+          csvEscape(r.item),
+          (r.delta>0?'+':'') + (r.delta ?? 0),
+          r.qtyAfter ?? '',
+          csvEscape(r.actor ?? ''),
+          csvEscape(r.purpose ?? ''),
+          csvEscape(r.forWhom ?? '')
+        ].join(','));
+      }
+      const blob = new Blob([csvRows.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `inventory-history-${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    window.exportHistoryCSV = exportHistoryCSV;
 
-    // Initial render
-    renderTables();
+    async function clearHistory(){
+      if (!confirm('This will permanently delete ALL history records. Continue?')) return;
+      try{
+        // Batch delete in chunks (Firestore limits 500 ops/batch)
+        let snap = await getDocs(query(colAdjustments));
+        while (!snap.empty){
+          const batch = writeBatch(db);
+          let count = 0;
+          snap.forEach(docSnap => { if (count<450){ batch.delete(docSnap.ref); count++; } });
+          await batch.commit();
+          // fetch again to see if any remain
+          snap = await getDocs(query(colAdjustments));
+        }
+        alert('History cleared.');
+      } catch(err){ console.error(err); alert('Failed to clear history'); }
+    }
+    window.clearHistory = clearHistory;
+
+    /* ===== Initial render (adjust & goals) ===== */
+    function initialRender(){
+      renderTables();
+    }
+    initialRender();
+
+    // Wire up modal close on Esc for accessibility
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape'){
+        document.getElementById('adjustModal').classList.remove('open');
+        document.getElementById('deleteModal').classList.remove('open');
+      }
+    });
   </script>
 </body>
 </html>
