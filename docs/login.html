@@ -5,62 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sign in</title>
   <style>
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      font-family: system-ui, Arial;
-      background-color: #f9f9f9;
-    }
-    .card {
-      width: min(420px, 92vw);
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, .06);
-      background: #fff;
-    }
-    h1 {
-      margin: 0 0 4px;
-      text-align: center;
-    }
-    .muted {
-      color: #667085;
-      font-size: 14px;
-      margin: 0 0 16px;
-      text-align: center;
-    }
-    label {
-      font-size: 14px;
-      display: block;
-      margin: .5rem 0 .25rem;
-    }
-    input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-    button {
-      margin-top: 14px;
-      width: 100%;
-      padding: 10px 12px;
-      border: 0;
-      border-radius: 8px;
-      background: #0B2447;
-      color: #fff;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    .err {
-      color: #b91c1c;
-      font-size: 14px;
-      min-height: 18px;
-      margin-top: 8px;
-      text-align: center;
-    }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; font-family:system-ui, Arial; background:#f9f9f9; }
+    .card { width:min(420px,92vw); border:1px solid #e5e7eb; border-radius:12px; padding:24px; box-shadow:0 6px 20px rgba(0,0,0,.06); background:#fff; }
+    h1 { margin:0 0 4px; text-align:center; }
+    .muted { color:#667085; font-size:14px; margin:0 0 16px; text-align:center; }
+    label { font-size:14px; display:block; margin:.5rem 0 .25rem; }
+    input { width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:16px; }
+    button { margin-top:14px; width:100%; padding:10px 12px; border:0; border-radius:8px; background:#0B2447; color:#fff; font-size:16px; cursor:pointer; }
+    .err { color:#b91c1c; font-size:14px; min-height:18px; margin-top:8px; text-align:center; }
   </style>
 </head>
 <body>
@@ -70,10 +22,10 @@
 
     <form id="login-form">
       <label for="username">Username</label>
-      <input id="username" type="text" required placeholder="Enter username" />
+      <input id="username" type="text" required placeholder="Enter username" autocomplete="username" />
 
       <label for="pw">Password</label>
-      <input id="pw" type="password" autocomplete="current-password" required placeholder="Enter password" />
+      <input id="pw" type="password" required placeholder="Enter password" autocomplete="current-password" />
 
       <button type="submit">Sign in</button>
       <div id="err" class="err"></div>
@@ -81,44 +33,49 @@
   </div>
 
   <script>
-    // === STORED CREDENTIALS ===
-    const VALID_USERNAME = "EPEDU";
-    // New SHA-256 hash for password: EPEDU2025SECURELOGIN
-const STORED_SHA256_HEX = "dcb29d675b72d042c839362546f63501afd9130965b0193b1718c2e6bd99ca80";
-
+    // === Users (username -> SHA-256 of password) ===
+    // EPEDU password = "EPEDU2025SECURELOGIN"
+    // gwenntan password = "EPasia!234"
+    const ACCOUNTS = {
+      "EPEDU":    "dcb29d675b72d042c839362546f63501afd9130965b0193b1718c2e6bd99ca80",
+      "gwenntan": "9440524470c0fd7f13b67eeb3a56354a46158c04f82b660f50fa96da3b481b48"
+    };
 
     async function sha256Hex(text) {
       const enc = new TextEncoder().encode(text);
       const hash = await crypto.subtle.digest('SHA-256', enc);
-      return Array.from(new Uint8Array(hash))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
+      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
     }
 
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const username = document.getElementById('username').value.trim();
-      const pw = document.getElementById('pw').value.trim();
+    const form = document.getElementById('login-form');
+    const err  = document.getElementById('err');
 
-      // Validate username first
-      if (username !== VALID_USERNAME) {
-        document.getElementById('err').textContent = "Invalid username.";
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err.textContent = '';
+
+      const username = document.getElementById('username').value.trim();
+      const pw       = document.getElementById('pw').value;
+
+      const expectedHash = ACCOUNTS[username];
+      if (!expectedHash) {
+        err.textContent = 'Invalid username.';
+        return;
+      }
+      const givenHash = await sha256Hex(pw);
+      if (givenHash !== expectedHash) {
+        err.textContent = 'Invalid password.';
         return;
       }
 
-      // Validate password (hashed)
-      const hex = await sha256Hex(pw);
-      if (hex === STORED_SHA256_HEX) {
-        localStorage.setItem('auth_v1', 'ok');
-        localStorage.setItem('auth_user', username);
-        localStorage.setItem('auth_time', String(Date.now()));
-        location.href = 'index.html';
-      } else {
-        document.getElementById('err').textContent = "Invalid password.";
-      }
+      // success — store auth + username, then go to app
+      localStorage.setItem('auth_v1','ok');
+      localStorage.setItem('auth_user', username);
+      localStorage.setItem('auth_time', String(Date.now()));
+      location.href = 'index.html';
     });
 
-    // If already authenticated, skip login
+    // already authenticated? jump to app
     if (localStorage.getItem('auth_v1') === 'ok') {
       location.replace('index.html');
     }
