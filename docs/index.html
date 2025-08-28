@@ -14,7 +14,6 @@
     if (!AUTH_OK || !AUTH_USER) {
       window.location.replace('login.html');
     } else if (AUTH_ROLE === 'viewer') {
-      // Viewers cannot access the editor—send them to the read-only page
       window.location.replace('viewer.html');
     }
 
@@ -30,8 +29,6 @@
   <style>
     :root{
       --nav-w: 260px;
-
-      /* Global theme */
       --bg:#f6f7f8; --panel:#ffffff; --ink:#111111; --muted:#6b7280; --line:#e5e7eb;
       --accent:#111111; --accent-ink:#ffffff;
 
@@ -44,7 +41,6 @@
     body{ margin:0; font-family: Arial, sans-serif; background:var(--bg); color:var(--ink); }
     h1,h2,h3{ color:var(--ink); }
 
-    /* Keep content clear of fixed hamburger */
     .content{ padding:20px; padding-top:80px; box-sizing:border-box; min-height:100vh; overflow:auto; }
 
     input, button, select{ padding:8px; margin:4px; }
@@ -88,7 +84,6 @@
 
     .card__image{ width:100%; height:100px; border-radius:12px; background:linear-gradient(180deg,#f3f4f6 0%, #e5e7eb 100%); background-size:cover; background-position:center; position:relative; overflow:hidden; }
     .img-edit-btn{ position:absolute; top:6px; left:6px; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:14px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.85); cursor:pointer; }
-    /* View Image button */
     .img-view-btn{ position:absolute; top:6px; right:6px; height:26px; display:flex; align-items:center; justify-content:center; font-size:12px; padding:0 8px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.9); cursor:pointer; }
 
     .qty-badge{position:absolute; bottom:8px; right:8px; background:#111; color:#fff; font-size:12px; padding:2px 6px; border-radius:999px; opacity:.9;}
@@ -135,18 +130,16 @@
     .add-row .input-container, .add-row .input{ width:100%; }
     @media (max-width: 640px){ .add-row{ grid-template-columns: 1fr; } }
 
-    /* Purple theming for Adjust + Location */
+    /* Purple theming */
     #adjustPage.theme-purple,
     #locationPage.theme-purple{
       --card-bg: var(--p-card); --card-accent: var(--p-accent); --card-text: var(--p-ink);
       --accent-ink: var(--p-accent-ink); --line: var(--p-line); --muted: var(--p-muted);
       background: radial-gradient(60% 80% at 10% -10%, rgba(109,40,217,.2), transparent 60%),
-                  radial-gradient(50% 60% at 100% 10%, rgba(76,29,149,.25), transparent 60%),
-                  var(--p-bg);
+                  radial-gradient(50% 60% at 100% 10%, rgba(76,29,149,.25), transparent 60%);
+      background-color: var(--p-bg);
       border-radius: 16px; padding: 16px; color: var(--p-ink);
     }
-    #adjustPage.theme-purple h2,
-    #locationPage.theme-purple h2{ color: var(--p-ink); }
     #adjustPage.theme-purple .card,
     #locationPage.theme-purple .card{ box-shadow: 0 20px 45px var(--p-glow), 0 8px 20px rgba(0,0,0,.25); border-color: var(--p-line); }
     #adjustPage.theme-purple .card__description,
@@ -156,7 +149,6 @@
     #adjustPage.theme-purple .badge-lowok{ background: var(--p-accent); }
     #adjustPage.theme-purple .qty-badge{ background:#0b0720; }
 
-    /* Add-card tile styling (used on Location page) */
     .card--add{ display:flex; align-items:center; justify-content:center; cursor:pointer; border:2px dashed var(--p-line); }
     .card--add .big-plus{ width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:28px; }
   </style>
@@ -198,7 +190,6 @@
 
         <input type="number" id="newItemQty" placeholder="Quantity">
 
-        <!-- NEW: Location field -->
         <div class="input-container">
           <input type="text" id="newItemLoc" class="input" placeholder=" ">
           <span class="topline"></span><span class="underline"></span>
@@ -276,7 +267,6 @@
       <label for="adj-amount">Amount</label>
       <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount">
 
-      <!-- Location dropdown -->
       <label for="adj-location">Location</label>
       <select id="adj-location">
         <option>Old warehouse</option>
@@ -375,9 +365,22 @@
   </div>
 
   <!-- Hidden file pickers -->
-  <input type="file" id="hiddenFileInput" accept="image/*" style="display:none" />
-  <!-- For Location page, camera-friendly -->
-  <input type="file" id="hiddenLocationFileInput" accept="image/*" capture="environment" style="display:none" />
+  <!-- Inventory: allow camera + gallery, broad extensions -->
+  <input
+    type="file"
+    id="hiddenFileInput"
+    accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.heif"
+    capture="environment"
+    style="display:none"
+  />
+  <!-- Location: allow camera + gallery, broad extensions -->
+  <input
+    type="file"
+    id="hiddenLocationFileInput"
+    accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.heif"
+    capture="environment"
+    style="display:none"
+  />
 
   <!-- Firebase + App Logic -->
   <script type="module">
@@ -410,15 +413,12 @@
     const db   = getFirestore(app);
     const st   = getStorage(app);
 
-    // Signed-in (anonymous) so Firestore rules with request.auth != null work
     signInAnonymously(auth).catch(console.error);
 
-    // Current user (set by login.html)
     const CURRENT_USER = localStorage.getItem('auth_user') || 'Unknown';
     const signedAs = document.getElementById('signedAs');
     if (signedAs) signedAs.textContent = CURRENT_USER;
 
-    // Collections
     const colInventory   = collection(db, "inventory");
     const colAdjustments = collection(db, "adjustments");
     const colLocations   = collection(db, "locations");
@@ -435,38 +435,77 @@
     }
     function totalQty(item){ return (item.qtyOld ?? 0) + (item.qtyNew ?? 0) + (item.qty ?? 0); }
 
-    // ✅ Supported image MIME types
+    /* Supported types + helpers */
     const SUPPORTED_IMAGE_TYPES = [
-      "image/jpeg", "image/jpg", "image/png",
-      "image/gif", "image/webp",
-      "image/bmp", "image/heic", "image/heif"
+      "image/jpeg","image/jpg","image/png","image/gif","image/webp","image/bmp","image/heic","image/heif"
     ];
-    // Helper: check if file is supported image
     function isSupportedImage(file){
       if (!file) return false;
       if (file.type && SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) return true;
-      // Fallback check by extension (for browsers that omit type)
       const name = (file.name || "").toLowerCase();
       return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/.test(name);
     }
+    function guessContentType(file){
+      const byType = (file && file.type) ? file.type : "";
+      if (byType) return byType;
+      const name = (file?.name || "").toLowerCase();
+      if (/\.jpe?g$/.test(name)) return "image/jpeg";
+      if (/\.png$/.test(name))   return "image/png";
+      if (/\.gif$/.test(name))   return "image/gif";
+      if (/\.webp$/.test(name))  return "image/webp";
+      if (/\.bmp$/.test(name))   return "image/bmp";
+      if (/\.heic$/.test(name))  return "image/heic";
+      if (/\.heif$/.test(name))  return "image/heif";
+      return "application/octet-stream";
+    }
+    async function uploadFileWithPreview({file, pathPrefix, title, afterSet}){
+      // Quick preview before upload
+      const localURL = URL.createObjectURL(file);
+      openImageViewer(localURL, title);
 
-    // Hamburger aria
+      const fileNameSafe = (file.name || ('photo_' + Date.now())).replace(/[^\w.\-]+/g,'_');
+      const path = `${pathPrefix}/${Date.now()}_${fileNameSafe}`;
+      const ref  = storageRef(st, path);
+      const contentType = guessContentType(file);
+
+      await uploadBytes(ref, file, { contentType });  // <- ensure correct Content-Type on Storage
+      const url = await getDownloadURL(ref);
+
+      // Try loading the saved URL; if it fails, keep the local preview visible
+      await ensureImageLoads(url).catch(() => {
+        alert('Image uploaded but failed to load from storage right now. It should appear shortly.');
+      });
+
+      await afterSet(url);
+      // Swap viewer to the cloud URL
+      openImageViewer(url, title);
+
+      URL.revokeObjectURL(localURL);
+    }
+    function ensureImageLoads(url){
+      return new Promise((resolve, reject)=>{
+        const img = new Image();
+        img.onload = ()=>resolve();
+        img.onerror = ()=>reject(new Error('load-failed'));
+        img.src = url;
+      });
+    }
+
+    /* Menu aria */
     const menuCheck = document.getElementById('menu-check');
     const hamb = document.querySelector('label.hamburger');
     function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
     menuCheck.addEventListener('change', syncAria); syncAria();
 
-    // State
+    /* State */
     let inventory = [];
     let adjustments = [];
     let locations = [];
 
-    // Live listeners
     onSnapshot(colInventory, (snap) => {
       inventory = snap.docs.map(d => ({ id:d.id, ...d.data() }));
       renderTables();
     });
-
     onSnapshot(colLocations, (snap) => {
       locations = snap.docs.map(d => ({ id:d.id, ...d.data() }));
       renderLocationGrid();
@@ -483,7 +522,6 @@
       });
     }
 
-    // Routing
     function showPage(pageId) {
       ['addPage','adjustPage','locationPage','goalPage','historyPage'].forEach(id => {
         const el = document.getElementById(id);
@@ -497,7 +535,6 @@
     }
     window.showPage = showPage;
 
-    // Add item
     async function addNewItem() {
       const name = document.getElementById('newItemName').value.trim();
       const qty  = parseInt(document.getElementById('newItemQty').value,10);
@@ -531,7 +568,6 @@
     }
     window.addNewItem = addNewItem;
 
-    // Renderers
     function renderTables(){ renderStockGrid(); renderGoalTable(); checkLowStockAlerts(); }
 
     function renderStockGrid() {
@@ -615,35 +651,44 @@
       });
     }
 
-    /* ---------- Inventory image picker ---------- */
+    /* -------- Inventory image picker -------- */
     let imgTargetIndex=null;
     const fileInput=document.getElementById('hiddenFileInput');
     function openImagePicker(index){
       imgTargetIndex=index;
-      const choice=prompt("Set image:\n- Paste an image URL and press OK, OR\n- Leave blank to choose a file (uploads to Firebase Storage).");
-      if (choice && choice.trim()){ setItemImageFromURL(choice.trim()); } else { fileInput.click(); }
+      const choice=prompt("Set image:\n- Paste an image URL (http/https) and press OK, OR\n- Leave blank to take/select a photo (uploads to Firebase Storage).");
+      if (choice && choice.trim()){
+        const url = choice.trim();
+        if (!/^https?:\/\//i.test(url) && !/^data:image\//i.test(url)){
+          alert('That looks like a local path. Please use the file picker to upload the picture.');
+          imgTargetIndex = null;
+          return;
+        }
+        setItemImageFromURL(url);
+      } else {
+        fileInput.click();
+      }
     }
     window.openImagePicker=openImagePicker;
 
-    // UPDATED: Validate image format for inventory
     fileInput.addEventListener('change', async (e)=>{
       const file=e.target.files && e.target.files[0]; e.target.value='';
       if(!file || imgTargetIndex===null) return;
 
       if (!isSupportedImage(file)) {
-        alert(`Unsupported image format: ${file.type || file.name}\n\nSupported: JPG, JPEG, PNG, GIF, WEBP, BMP, HEIC, HEIF`);
+        alert(`Unsupported image:\n${file.type || file.name}\n\nSupported: JPG, JPEG, PNG, GIF, WEBP, BMP, HEIC, HEIF`);
         imgTargetIndex = null;
         return;
       }
 
       const item=inventory[imgTargetIndex];
       try{
-        const path=`itemImages/${item.id}/${Date.now()}_${file.name}`;
-        const ref=storageRef(st,path);
-        await uploadBytes(ref,file);
-        const url=await getDownloadURL(ref);
-        await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true });
-        openImageViewer(url, `Item: ${item.name}`);
+        await uploadFileWithPreview({
+          file,
+          pathPrefix: `itemImages/${item.id}`,
+          title: `Item: ${item.name}`,
+          afterSet: async (url)=>updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true })
+        });
       }catch(err){ console.error(err); alert('Upload failed'); }
       imgTargetIndex=null;
     });
@@ -654,26 +699,23 @@
       try{
         await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true });
         openImageViewer(url, `Item: ${item.name}`);
-      }
-      catch(err){ console.error(err); alert('Failed to set image URL'); }
+      }catch(err){ console.error(err); alert('Failed to set image URL'); }
       imgTargetIndex=null;
     }
     window.setItemImageFromURL=setItemImageFromURL;
 
-    /* ---------- Location page logic ---------- */
+    /* -------- Location page logic -------- */
     function renderLocationGrid(){
       const grid = document.getElementById('locationGrid');
       if (!grid) return;
       grid.innerHTML = '';
 
-      // Add-card tile first
       const addCard = document.createElement('div');
       addCard.className = 'card card--add';
       addCard.innerHTML = `<div class="big-plus card__button" title="Add location card">+</div>`;
       addCard.addEventListener('click', openAddLocationDialog);
       grid.appendChild(addCard);
 
-      // Location cards
       locations.forEach((loc, index) => {
         const card = document.createElement('div');
         card.className = 'card';
@@ -736,36 +778,42 @@
       closeAddLocationDialog();
     });
 
-    // Image picker for Location cards
     let locImgTargetIndex = null;
     const locFileInput = document.getElementById('hiddenLocationFileInput');
 
     function openLocationImagePicker(index){
       locImgTargetIndex = index;
       const choice=prompt("Set image for this location:\n- Paste an image URL and press OK, OR\n- Leave blank to take/select a photo (uploads to Firebase Storage).");
-      if (choice && choice.trim()){ setLocationImageFromURL(choice.trim()); } else { locFileInput.click(); }
+      if (choice && choice.trim()){
+        const url = choice.trim();
+        if (!/^https?:\/\//i.test(url) && !/^data:image\//i.test(url)){
+          alert('That looks like a local path. Please use the file picker to upload the picture.');
+          locImgTargetIndex = null;
+          return;
+        }
+        setLocationImageFromURL(url);
+      } else { locFileInput.click(); }
     }
     window.openLocationImagePicker = openLocationImagePicker;
 
-    // UPDATED: Validate image format for location
     locFileInput.addEventListener('change', async (e)=>{
       const file = e.target.files && e.target.files[0]; e.target.value='';
       if (!file || locImgTargetIndex===null) return;
 
       if (!isSupportedImage(file)) {
-        alert(`Unsupported image format: ${file.type || file.name}\n\nSupported: JPG, JPEG, PNG, GIF, WEBP, BMP, HEIC, HEIF`);
+        alert(`Unsupported image:\n${file.type || file.name}\n\nSupported: JPG, JPEG, PNG, GIF, WEBP, BMP, HEIC, HEIF`);
         locImgTargetIndex = null;
         return;
       }
 
       const loc = locations[locImgTargetIndex];
       try{
-        const path=`locationImages/${loc.id}/${Date.now()}_${file.name}`;
-        const ref=storageRef(st,path);
-        await uploadBytes(ref,file);
-        const url=await getDownloadURL(ref);
-        await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false });
-        openImageViewer(url, `Location: ${loc.name}`);
+        await uploadFileWithPreview({
+          file,
+          pathPrefix: `locationImages/${loc.id}`,
+          title: `Location: ${loc.name}`,
+          afterSet: async (url)=>updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false })
+        });
       }catch(err){ console.error(err); alert('Upload failed'); }
       locImgTargetIndex=null;
     });
@@ -773,13 +821,15 @@
     async function setLocationImageFromURL(url){
       if (locImgTargetIndex===null) return;
       const loc = locations[locImgTargetIndex];
-      try{ await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false }); openImageViewer(url, `Location: ${loc.name}`); }
-      catch(err){ console.error(err); alert('Failed to set image URL'); }
+      try{
+        await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false });
+        openImageViewer(url, `Location: ${loc.name}`);
+      }catch(err){ console.error(err); alert('Failed to set image URL'); }
       locImgTargetIndex=null;
     }
     window.setLocationImageFromURL = setLocationImageFromURL;
 
-    /* ---------- Image viewer ---------- */
+    /* Image viewer */
     const imageModal   = document.getElementById('imageModal');
     const imgView      = document.getElementById('img-view');
     const imgTitle     = document.getElementById('img-title');
@@ -802,7 +852,7 @@
     imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
     window.openImageViewer = openImageViewer;
 
-    /* ---------- Adjust dialog + delete logic ---------- */
+    /* Adjust + delete */
     let pending = { index:null, mode:'add' };
     function openAdjustDialog(index, mode) {
       pending = { index, mode };
@@ -861,7 +911,6 @@
       closeAdjustDialog();
     });
 
-    // Delete dialog
     let pendingDeleteIndex = null;
     function openDeleteDialog(index) {
       pendingDeleteIndex = index;
@@ -908,7 +957,6 @@
       closeDeleteDialog();
     });
 
-    // History area
     function populateHistoryFilters() {
       const sel = document.getElementById('hist-item-filter');
       if (!sel) return;
@@ -999,7 +1047,6 @@
     }
     window.clearHistory = clearHistory;
 
-    // Initial render + Esc to close modals
     function initialRender(){ renderTables(); renderLocationGrid(); }
     initialRender();
     window.addEventListener('keydown', (e) => {
