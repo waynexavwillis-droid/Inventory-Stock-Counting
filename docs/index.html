@@ -88,6 +88,8 @@
 
     .card__image{ width:100%; height:100px; border-radius:12px; background:linear-gradient(180deg,#f3f4f6 0%, #e5e7eb 100%); background-size:cover; background-position:center; position:relative; overflow:hidden; }
     .img-edit-btn{ position:absolute; top:6px; left:6px; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:14px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.85); cursor:pointer; }
+    /* NEW: View Image button */
+    .img-view-btn{ position:absolute; top:6px; right:6px; height:26px; display:flex; align-items:center; justify-content:center; font-size:12px; padding:0 8px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.9); cursor:pointer; }
 
     .qty-badge{position:absolute; bottom:8px; right:8px; background:#111; color:#fff; font-size:12px; padding:2px 6px; border-radius:999px; opacity:.9;}
     .card__text{display:flex; flex-direction:column; gap:.25em;}
@@ -360,6 +362,18 @@
     </div>
   </div>
 
+  <!-- NEW: Image viewer modal -->
+  <div id="imageModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="img-title">
+    <div class="modal-card">
+      <h3 id="img-title">Image</h3>
+      <img id="img-view" src="" alt="" style="width:100%; max-height:70vh; object-fit:contain; border:1px solid var(--line); border-radius:8px;" />
+      <div class="modal-actions">
+        <a id="img-open" href="#" target="_blank" rel="noopener" style="margin-right:auto;">Open in new tab</a>
+        <button id="img-close">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Hidden file pickers -->
   <input type="file" id="hiddenFileInput" accept="image/*" style="display:none" />
   <!-- For Location page, camera-friendly -->
@@ -525,6 +539,8 @@
           <div class="card__content">
             <div class="card__image" ${bgStyle}>
               <button class="img-edit-btn" title="Set image">🖼</button>
+              <!-- NEW: View Image button -->
+              <button class="img-view-btn" title="View image">View Image</button>
               <span class="qty-badge" title="Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}">Qty: ${total}</span>
             </div>
             <div class="card__text">
@@ -538,6 +554,10 @@
             </div>
           </div>`;
         card.querySelector('.img-edit-btn').addEventListener('click', () => openImagePicker(index));
+        card.querySelector('.img-view-btn').addEventListener('click', () => {
+          if (!item.img) { alert('No image set yet. Click 🖼 to add one.'); return; }
+          openImageViewer(item.img, `Item: ${item.name}`);
+        });
         if (item.isNew) card.querySelector('.badge-new').addEventListener('click', async () => {
           await updateDoc(doc(db, "inventory", item.id), { isNew:false });
         });
@@ -601,6 +621,7 @@
         await uploadBytes(ref,file);
         const url=await getDownloadURL(ref);
         await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true });
+        openImageViewer(url, `Item: ${item.name}`);
       }catch(err){ console.error(err); alert('Upload failed'); }
       imgTargetIndex=null;
     });
@@ -608,7 +629,10 @@
     async function setItemImageFromURL(url){
       if(imgTargetIndex===null) return;
       const item=inventory[imgTargetIndex];
-      try{ await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true }); }
+      try{
+        await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true });
+        openImageViewer(url, `Item: ${item.name}`);
+      }
       catch(err){ console.error(err); alert('Failed to set image URL'); }
       imgTargetIndex=null;
     }
@@ -639,6 +663,8 @@
           <div class="card__content">
             <div class="card__image" ${bgStyle}>
               <button class="img-edit-btn" title="Set image (camera/gallery)">🖼</button>
+              <!-- NEW: View Image button -->
+              <button class="img-view-btn" title="View image">View Image</button>
             </div>
             <div class="card__text">
               <h3 class="card__title" title="${escapeHtml(loc.name)}">${escapeHtml(loc.name)}</h3>
@@ -649,6 +675,10 @@
             </div>
           </div>`;
         card.querySelector('.img-edit-btn').addEventListener('click', () => openLocationImagePicker(index));
+        card.querySelector('.img-view-btn').addEventListener('click', () => {
+          if (!loc.img) { alert('No image set yet. Click 🖼 to add one.'); return; }
+          openImageViewer(loc.img, `Location: ${loc.name}`);
+        });
         if (loc.isNew) card.querySelector('.badge-new').addEventListener('click', async () => {
           await updateDoc(doc(db,"locations", loc.id), { isNew:false });
         });
@@ -706,6 +736,7 @@
         await uploadBytes(ref,file);
         const url=await getDownloadURL(ref);
         await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false });
+        openImageViewer(url, `Location: ${loc.name}`);
       }catch(err){ console.error(err); alert('Upload failed'); }
       locImgTargetIndex=null;
     });
@@ -713,11 +744,37 @@
     async function setLocationImageFromURL(url){
       if (locImgTargetIndex===null) return;
       const loc = locations[locImgTargetIndex];
-      try{ await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false }); }
+      try{
+        await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false });
+        openImageViewer(url, `Location: ${loc.name}`);
+      }
       catch(err){ console.error(err); alert('Failed to set image URL'); }
       locImgTargetIndex=null;
     }
     window.setLocationImageFromURL = setLocationImageFromURL;
+
+    /* ---------- Image viewer (NEW) ---------- */
+    const imageModal   = document.getElementById('imageModal');
+    const imgView      = document.getElementById('img-view');
+    const imgTitle     = document.getElementById('img-title');
+    const imgOpenLink  = document.getElementById('img-open');
+    const imgCloseBtn  = document.getElementById('img-close');
+
+    function openImageViewer(url, title='Image'){
+      imgView.src = url;
+      imgView.alt = title;
+      imgTitle.textContent = title;
+      imgOpenLink.href = url;
+      imageModal.classList.add('open');
+    }
+    function closeImageViewer(){
+      imageModal.classList.remove('open');
+      imgView.src = '';
+      imgView.alt = '';
+    }
+    imgCloseBtn.addEventListener('click', closeImageViewer);
+    imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
+    window.openImageViewer = openImageViewer;
 
     /* ---------- Adjust dialog + delete logic (existing) ---------- */
     let pending = { index:null, mode:'add' };
@@ -924,6 +981,7 @@
         document.getElementById('adjustModal').classList.remove('open');
         document.getElementById('deleteModal').classList.remove('open');
         document.getElementById('locAddModal').classList.remove('open');
+        document.getElementById('imageModal').classList.remove('open'); // NEW: close viewer on Esc
       }
     });
   </script>
