@@ -14,7 +14,6 @@
     if (!AUTH_OK || !AUTH_USER) {
       window.location.replace('login.html');
     } else if (AUTH_ROLE === 'viewer') {
-      // Viewers cannot access the editor—send them to the read-only page
       window.location.replace('viewer.html');
     }
 
@@ -30,8 +29,6 @@
   <style>
     :root{
       --nav-w: 260px;
-
-      /* Global theme */
       --bg:#f6f7f8; --panel:#ffffff; --ink:#111111; --muted:#6b7280; --line:#e5e7eb;
       --accent:#111111; --accent-ink:#ffffff;
 
@@ -44,9 +41,7 @@
     body{ margin:0; font-family: Arial, sans-serif; background:var(--bg); color:var(--ink); }
     h1,h2,h3{ color:var(--ink); }
 
-    /* Keep content clear of fixed hamburger */
     .content{ padding:20px; padding-top:80px; box-sizing:border-box; min-height:100vh; overflow:auto; }
-
     input, button, select{ padding:8px; margin:4px; }
     table{ width:100%; margin-top:12px; border-collapse:collapse; }
     table, th, td{ border:1px solid var(--line); }
@@ -88,7 +83,6 @@
 
     .card__image{ width:100%; height:100px; border-radius:12px; background:linear-gradient(180deg,#f3f4f6 0%, #e5e7eb 100%); background-size:cover; background-position:center; position:relative; overflow:hidden; }
     .img-edit-btn{ position:absolute; top:6px; left:6px; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:14px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.85); cursor:pointer; }
-    /* View Image button */
     .img-view-btn{ position:absolute; top:6px; right:6px; height:26px; display:flex; align-items:center; justify-content:center; font-size:12px; padding:0 8px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.9); cursor:pointer; }
 
     .qty-badge{position:absolute; bottom:8px; right:8px; background:#111; color:#fff; font-size:12px; padding:2px 6px; border-radius:999px; opacity:.9;}
@@ -156,7 +150,6 @@
     #adjustPage.theme-purple .badge-lowok{ background: var(--p-accent); }
     #adjustPage.theme-purple .qty-badge{ background:#0b0720; }
 
-    /* Add-card tile styling (used on Location page) */
     .card--add{ display:flex; align-items:center; justify-content:center; cursor:pointer; border:2px dashed var(--p-line); }
     .card--add .big-plus{ width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:28px; }
   </style>
@@ -198,7 +191,6 @@
 
         <input type="number" id="newItemQty" placeholder="Quantity">
 
-        <!-- NEW: Location field -->
         <div class="input-container">
           <input type="text" id="newItemLoc" class="input" placeholder=" ">
           <span class="topline"></span><span class="underline"></span>
@@ -216,7 +208,7 @@
       <div id="stockGrid" class="grid"></div>
     </section>
 
-    <!-- Location Page (new) -->
+    <!-- Location Page -->
     <section id="locationPage" class="theme-purple" style="display:none;">
       <h2>Location</h2>
       <div id="locationGrid" class="grid"></div>
@@ -276,7 +268,6 @@
       <label for="adj-amount">Amount</label>
       <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount">
 
-      <!-- NEW: Location dropdown -->
       <label for="adj-location">Location</label>
       <select id="adj-location">
         <option>Old warehouse</option>
@@ -308,7 +299,7 @@
     </div>
   </div>
 
-  <!-- Add Location dialog (new) -->
+  <!-- Add Location dialog -->
   <div id="locAddModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="loc-title">
     <div class="modal-card">
       <h3 id="loc-title">Add Location Card</h3>
@@ -366,7 +357,7 @@
   <div id="imageModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="img-title">
     <div class="modal-card">
       <h3 id="img-title">Image</h3>
-      <img id="img-view" src="" alt="" style="width:100%; max-height:70vh; object-fit:contain; border:1px solid var(--line); border-radius:8px;" />
+    <img id="img-view" src="" alt="" style="width:100%; max-height:70vh; object-fit:contain; border:1px solid var(--line); border-radius:8px;" />
       <div class="modal-actions">
         <a id="img-open" href="#" target="_blank" rel="noopener" style="margin-right:auto;">Open in new tab</a>
         <button id="img-close">Close</button>
@@ -420,8 +411,6 @@
     const auth = getAuth(app);
     const db   = getFirestore(app);
     const st   = getStorage(app);
-
-    // Signed-in (anonymous) so Firestore rules with request.auth != null work
     signInAnonymously(auth).catch(console.error);
 
     // Current user (set by login.html)
@@ -432,7 +421,7 @@
     // Collections
     const colInventory   = collection(db, "inventory");
     const colAdjustments = collection(db, "adjustments");
-    const colLocations   = collection(db, "locations");  // NEW
+    const colLocations   = collection(db, "locations");
 
     // Utils
     function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
@@ -446,17 +435,22 @@
     }
     function totalQty(item){ return (item.qtyOld ?? 0) + (item.qtyNew ?? 0) + (item.qty ?? 0); }
 
-    // ✅ Supported image MIME types
+    // NEW: Cache-buster helper
+    function withCacheBuster(url){
+      if (!url) return url;
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}v=${Date.now()}`;
+    }
+
+    // Supported image MIME types
     const SUPPORTED_IMAGE_TYPES = [
       "image/jpeg", "image/jpg", "image/png",
       "image/gif", "image/webp",
       "image/bmp", "image/heic", "image/heif"
     ];
-    // Helper: check if file is supported image
     function isSupportedImage(file){
       if (!file) return false;
       if (file.type && SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) return true;
-      // Fallback check by extension (for browsers that omit type)
       const name = (file.name || "").toLowerCase();
       return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/.test(name);
     }
@@ -474,7 +468,6 @@
       return "application/octet-stream";
     }
     async function uploadFileWithPreview({file, pathPrefix, title, afterSet}){
-      // Quick preview before upload
       const localURL = URL.createObjectURL(file);
       openImageViewer(localURL, title);
 
@@ -483,16 +476,14 @@
       const ref  = storageRef(st, path);
       const contentType = guessContentType(file);
 
-      await uploadBytes(ref, file, { contentType });  // ensure correct Content-Type on Storage
+      await uploadBytes(ref, file, { contentType });
       const url = await getDownloadURL(ref);
 
-      // Persist URL to Firestore via provided callback
       await afterSet(url);
 
-      // Swap viewer to the cloud URL (cache-bust to avoid stale caches)
-      openImageViewer(url + `#${Date.now()}`, title);
+      // Use query-param cache buster so View Image always refreshes
+      openImageViewer(withCacheBuster(url), title);
 
-      // Clean local preview URL
       URL.revokeObjectURL(localURL);
     }
 
@@ -505,7 +496,7 @@
     // State
     let inventory = [];
     let adjustments = [];
-    let locations = []; // NEW
+    let locations = [];
 
     // Live listeners
     onSnapshot(colInventory, (snap) => {
@@ -589,7 +580,8 @@
         const low = (item.goal > 0) && (total <= item.goal);
         const card = document.createElement('div');
         card.className = 'card';
-        const bgStyle = item.img ? `style="background-image:url('${escapeHtml(item.img)}')"` : '';
+        const bgUrl = item.img ? withCacheBuster(item.img) : '';
+        const bgStyle = bgUrl ? `style="background-image:url('${escapeHtml(bgUrl)}')"` : '';
         card.innerHTML = `
           <div class="card__shine"></div>
           <div class="card__glow"></div>
@@ -614,11 +606,10 @@
             </div>
           </div>`;
         card.querySelector('.img-edit-btn').addEventListener('click', () => openImagePicker(index));
-        // ✅ Always fetch the latest item from state when viewing the image
         card.querySelector('.img-view-btn').addEventListener('click', () => {
           const current = inventory[index];
           if (!current || !current.img) { alert('No image set yet. Click 🖼 to add one.'); return; }
-          openImageViewer(current.img, `Item: ${current.name}`);
+          openImageViewer(withCacheBuster(current.img), `Item: ${current.name}`);
         });
         if (item.isNew) card.querySelector('.badge-new').addEventListener('click', async () => {
           await updateDoc(doc(db, "inventory", item.id), { isNew:false });
@@ -663,7 +654,7 @@
       });
     }
 
-    /* ---------- Inventory image picker (updated) ---------- */
+    /* ---------- Inventory image picker ---------- */
     let imgTargetIndex=null;
     const fileInput=document.getElementById('hiddenFileInput');
 
@@ -705,31 +696,30 @@
       const item=inventory[imgTargetIndex];
       try{
         await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true });
-        openImageViewer(url, `Item: ${item.name}`);
+        openImageViewer(withCacheBuster(url), `Item: ${item.name}`);
       }
       catch(err){ console.error(err); alert('Failed to set image URL'); }
       imgTargetIndex=null;
     }
     window.setItemImageFromURL=setItemImageFromURL;
 
-    /* ---------- Location page logic (NEW, same upload/URL flow) ---------- */
+    /* ---------- Location page logic ---------- */
     function renderLocationGrid(){
       const grid = document.getElementById('locationGrid');
       if (!grid) return;
       grid.innerHTML = '';
 
-      // Add-card tile first
       const addCard = document.createElement('div');
       addCard.className = 'card card--add';
       addCard.innerHTML = `<div class="big-plus card__button" title="Add location card">+</div>`;
       addCard.addEventListener('click', openAddLocationDialog);
       grid.appendChild(addCard);
 
-      // Location cards
       locations.forEach((loc, index) => {
         const card = document.createElement('div');
         card.className = 'card';
-        const bgStyle = loc.img ? `style="background-image:url('${escapeHtml(loc.img)}')"` : '';
+        const bgUrl = loc.img ? withCacheBuster(loc.img) : '';
+        const bgStyle = bgUrl ? `style="background-image:url('${escapeHtml(bgUrl)}')"` : '';
         card.innerHTML = `
           <div class="card__shine"></div>
           <div class="card__glow"></div>
@@ -748,11 +738,10 @@
             </div>
           </div>`;
         card.querySelector('.img-edit-btn').addEventListener('click', () => openLocationImagePicker(index));
-        // ✅ Always fetch the latest location from state when viewing the image
         card.querySelector('.img-view-btn').addEventListener('click', () => {
           const currentLoc = locations[index];
           if (!currentLoc || !currentLoc.img) { alert('No image set yet. Click 🖼 to add one.'); return; }
-          openImageViewer(currentLoc.img, `Location: ${currentLoc.name}`);
+          openImageViewer(withCacheBuster(currentLoc.img), `Location: ${currentLoc.name}`);
         });
         if (loc.isNew) card.querySelector('.badge-new').addEventListener('click', async () => {
           await updateDoc(doc(db,"locations", loc.id), { isNew:false });
@@ -790,7 +779,7 @@
       closeAddLocationDialog();
     });
 
-    // Image picker for Location cards
+    // Location image picker
     let locImgTargetIndex = null;
     const locFileInput = document.getElementById('hiddenLocationFileInput');
 
@@ -828,7 +817,7 @@
       const loc = locations[locImgTargetIndex];
       try{
         await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false });
-        openImageViewer(url, `Location: ${loc.name}`);
+        openImageViewer(withCacheBuster(url), `Location: ${loc.name}`);
       }catch(err){ console.error(err); alert('Failed to set image URL'); }
       locImgTargetIndex=null;
     }
@@ -857,7 +846,7 @@
     imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
     window.openImageViewer = openImageViewer;
 
-    /* ---------- Adjust dialog + delete logic (existing) ---------- */
+    /* ---------- Adjust + delete logic ---------- */
     let pending = { index:null, mode:'add' };
     function openAdjustDialog(index, mode) {
       pending = { index, mode };
@@ -916,7 +905,7 @@
       closeAdjustDialog();
     });
 
-    // Delete dialog (auto username)
+    // Delete dialog
     let pendingDeleteIndex = null;
     function openDeleteDialog(index) {
       pendingDeleteIndex = index;
