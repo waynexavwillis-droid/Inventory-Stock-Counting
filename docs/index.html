@@ -88,7 +88,7 @@
 
     .card__image{ width:100%; height:100px; border-radius:12px; background:linear-gradient(180deg,#f3f4f6 0%, #e5e7eb 100%); background-size:cover; background-position:center; position:relative; overflow:hidden; }
     .img-edit-btn{ position:absolute; top:6px; left:6px; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:14px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.85); cursor:pointer; }
-    /* NEW: View Image button */
+    /* View Image button */
     .img-view-btn{ position:absolute; top:6px; right:6px; height:26px; display:flex; align-items:center; justify-content:center; font-size:12px; padding:0 8px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.9); cursor:pointer; }
 
     .qty-badge{position:absolute; bottom:8px; right:8px; background:#111; color:#fff; font-size:12px; padding:2px 6px; border-radius:999px; opacity:.9;}
@@ -216,7 +216,7 @@
       <div id="stockGrid" class="grid"></div>
     </section>
 
-    <!-- Location Page (new) -->
+    <!-- Location Page -->
     <section id="locationPage" class="theme-purple" style="display:none;">
       <h2>Location</h2>
       <div id="locationGrid" class="grid"></div>
@@ -276,7 +276,7 @@
       <label for="adj-amount">Amount</label>
       <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount">
 
-      <!-- NEW: Location dropdown -->
+      <!-- Location dropdown -->
       <label for="adj-location">Location</label>
       <select id="adj-location">
         <option>Old warehouse</option>
@@ -308,7 +308,7 @@
     </div>
   </div>
 
-  <!-- Add Location dialog (new) -->
+  <!-- Add Location dialog -->
   <div id="locAddModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="loc-title">
     <div class="modal-card">
       <h3 id="loc-title">Add Location Card</h3>
@@ -362,7 +362,7 @@
     </div>
   </div>
 
-  <!-- NEW: Image viewer modal -->
+  <!-- Image viewer modal -->
   <div id="imageModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="img-title">
     <div class="modal-card">
       <h3 id="img-title">Image</h3>
@@ -421,7 +421,7 @@
     // Collections
     const colInventory   = collection(db, "inventory");
     const colAdjustments = collection(db, "adjustments");
-    const colLocations   = collection(db, "locations");  // NEW
+    const colLocations   = collection(db, "locations");
 
     // Utils
     function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
@@ -435,6 +435,21 @@
     }
     function totalQty(item){ return (item.qtyOld ?? 0) + (item.qtyNew ?? 0) + (item.qty ?? 0); }
 
+    // ✅ Supported image MIME types
+    const SUPPORTED_IMAGE_TYPES = [
+      "image/jpeg", "image/jpg", "image/png",
+      "image/gif", "image/webp",
+      "image/bmp", "image/heic", "image/heif"
+    ];
+    // Helper: check if file is supported image
+    function isSupportedImage(file){
+      if (!file) return false;
+      if (file.type && SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) return true;
+      // Fallback check by extension (for browsers that omit type)
+      const name = (file.name || "").toLowerCase();
+      return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/.test(name);
+    }
+
     // Hamburger aria
     const menuCheck = document.getElementById('menu-check');
     const hamb = document.querySelector('label.hamburger');
@@ -444,7 +459,7 @@
     // State
     let inventory = [];
     let adjustments = [];
-    let locations = []; // NEW
+    let locations = [];
 
     // Live listeners
     onSnapshot(colInventory, (snap) => {
@@ -539,7 +554,6 @@
           <div class="card__content">
             <div class="card__image" ${bgStyle}>
               <button class="img-edit-btn" title="Set image">🖼</button>
-              <!-- NEW: View Image button -->
               <button class="img-view-btn" title="View image">View Image</button>
               <span class="qty-badge" title="Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}">Qty: ${total}</span>
             </div>
@@ -601,7 +615,7 @@
       });
     }
 
-    /* ---------- Inventory image picker (existing) ---------- */
+    /* ---------- Inventory image picker ---------- */
     let imgTargetIndex=null;
     const fileInput=document.getElementById('hiddenFileInput');
     function openImagePicker(index){
@@ -611,9 +625,17 @@
     }
     window.openImagePicker=openImagePicker;
 
+    // UPDATED: Validate image format for inventory
     fileInput.addEventListener('change', async (e)=>{
       const file=e.target.files && e.target.files[0]; e.target.value='';
       if(!file || imgTargetIndex===null) return;
+
+      if (!isSupportedImage(file)) {
+        alert(`Unsupported image format: ${file.type || file.name}\n\nSupported: JPG, JPEG, PNG, GIF, WEBP, BMP, HEIC, HEIF`);
+        imgTargetIndex = null;
+        return;
+      }
+
       const item=inventory[imgTargetIndex];
       try{
         const path=`itemImages/${item.id}/${Date.now()}_${file.name}`;
@@ -638,7 +660,7 @@
     }
     window.setItemImageFromURL=setItemImageFromURL;
 
-    /* ---------- Location page logic (NEW) ---------- */
+    /* ---------- Location page logic ---------- */
     function renderLocationGrid(){
       const grid = document.getElementById('locationGrid');
       if (!grid) return;
@@ -663,7 +685,6 @@
           <div class="card__content">
             <div class="card__image" ${bgStyle}>
               <button class="img-edit-btn" title="Set image (camera/gallery)">🖼</button>
-              <!-- NEW: View Image button -->
               <button class="img-view-btn" title="View image">View Image</button>
             </div>
             <div class="card__text">
@@ -726,9 +747,17 @@
     }
     window.openLocationImagePicker = openLocationImagePicker;
 
+    // UPDATED: Validate image format for location
     locFileInput.addEventListener('change', async (e)=>{
       const file = e.target.files && e.target.files[0]; e.target.value='';
       if (!file || locImgTargetIndex===null) return;
+
+      if (!isSupportedImage(file)) {
+        alert(`Unsupported image format: ${file.type || file.name}\n\nSupported: JPG, JPEG, PNG, GIF, WEBP, BMP, HEIC, HEIF`);
+        locImgTargetIndex = null;
+        return;
+      }
+
       const loc = locations[locImgTargetIndex];
       try{
         const path=`locationImages/${loc.id}/${Date.now()}_${file.name}`;
@@ -744,16 +773,13 @@
     async function setLocationImageFromURL(url){
       if (locImgTargetIndex===null) return;
       const loc = locations[locImgTargetIndex];
-      try{
-        await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false });
-        openImageViewer(url, `Location: ${loc.name}`);
-      }
+      try{ await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false }); openImageViewer(url, `Location: ${loc.name}`); }
       catch(err){ console.error(err); alert('Failed to set image URL'); }
       locImgTargetIndex=null;
     }
     window.setLocationImageFromURL = setLocationImageFromURL;
 
-    /* ---------- Image viewer (NEW) ---------- */
+    /* ---------- Image viewer ---------- */
     const imageModal   = document.getElementById('imageModal');
     const imgView      = document.getElementById('img-view');
     const imgTitle     = document.getElementById('img-title');
@@ -776,7 +802,7 @@
     imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
     window.openImageViewer = openImageViewer;
 
-    /* ---------- Adjust dialog + delete logic (existing) ---------- */
+    /* ---------- Adjust dialog + delete logic ---------- */
     let pending = { index:null, mode:'add' };
     function openAdjustDialog(index, mode) {
       pending = { index, mode };
@@ -835,7 +861,7 @@
       closeAdjustDialog();
     });
 
-    // Delete dialog (auto username)
+    // Delete dialog
     let pendingDeleteIndex = null;
     function openDeleteDialog(index) {
       pendingDeleteIndex = index;
@@ -981,7 +1007,7 @@
         document.getElementById('adjustModal').classList.remove('open');
         document.getElementById('deleteModal').classList.remove('open');
         document.getElementById('locAddModal').classList.remove('open');
-        document.getElementById('imageModal').classList.remove('open'); // NEW: close viewer on Esc
+        document.getElementById('imageModal').classList.remove('open');
       }
     });
   </script>
