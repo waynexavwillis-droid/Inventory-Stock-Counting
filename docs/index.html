@@ -663,13 +663,18 @@
       });
     }
 
-    /* ---------- Inventory image picker (existing) ---------- */
+    /* ---------- Inventory image picker (updated) ---------- */
     let imgTargetIndex=null;
     const fileInput=document.getElementById('hiddenFileInput');
+
     function openImagePicker(index){
       imgTargetIndex=index;
       const choice=prompt("Set image:\n- Paste an image URL and press OK, OR\n- Leave blank to choose a file (uploads to Firebase Storage).");
-      if (choice && choice.trim()){ setItemImageFromURL(choice.trim()); } else { fileInput.click(); }
+      if (choice && choice.trim()){
+        setItemImageFromURL(choice.trim());
+      } else {
+        fileInput.click();
+      }
     }
     window.openImagePicker=openImagePicker;
 
@@ -707,7 +712,7 @@
     }
     window.setItemImageFromURL=setItemImageFromURL;
 
-    /* ---------- Location page logic (NEW) ---------- */
+    /* ---------- Location page logic (NEW, same upload/URL flow) ---------- */
     function renderLocationGrid(){
       const grid = document.getElementById('locationGrid');
       if (!grid) return;
