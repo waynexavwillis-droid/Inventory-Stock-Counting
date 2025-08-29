@@ -22,11 +22,14 @@
   :root{
     --nav-w:260px; --bg:#f6f7f8; --s-card:#fff; --s-ink:#0f172a; --s-muted:#6b7280; --s-line:#e5e7eb; --s-badge:#e2e8f0;
   }
-  html,body{height:100%} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--s-ink)}
-  h2{color:var(--s-ink)} .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--s-ink)}
+  h2{color:var(--s-ink)}
+  .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
   input,button,select,textarea{padding:8px;margin:4px;font-family:inherit}
   button{background:#111827;border:1px solid #111827;color:#fff;border-radius:8px;cursor:pointer}
   button:hover{filter:brightness(.93)}
+  /* hamburger + sidebar */
   #menu-check{display:none}
   .hamburger{position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;cursor:pointer;user-select:none;z-index:1200;transition:transform .3s}
   .hamburger .bar{height:3px;background:#111;border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
@@ -43,7 +46,7 @@
   #menu-check:checked~label.overlay{opacity:1;visibility:visible}
 
   .status-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 16px}
-  .input-container{position:relative;margin:8px 4px;min-width:280px}
+  .input-container{position:relative;margin:8px 4px;min-width:280px;flex:1}
   .input{width:100%;padding:10px;height:40px;border:2px solid #111;border-top:none;border-bottom:none;font-size:16px;background:transparent;outline:none;box-shadow:7px 7px 0 0 #111;transition:.5s;box-sizing:border-box}
   .topline,.underline{position:absolute;background-color:#111;height:2px;right:0;transition:.5s}
   .topline{width:0;top:0}.underline{width:0;bottom:0}
@@ -102,7 +105,7 @@
     <h2 id="statusPageTitle">Status</h2>
 
     <div class="status-toolbar">
-      <div class="input-container" style="flex:1;min-width:280px">
+      <div class="input-container">
         <input id="status-search" type="text" class="input" placeholder=" ">
         <span class="topline"></span><span class="underline"></span>
         <label for="status-search" class="label">Search order / item / remarks…</label>
@@ -142,5 +145,137 @@
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
   import { getFirestore, collection, doc, addDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-  const
+  /* ---------- Firebase ---------- */
+  const firebaseConfig = {
+    apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
+    authDomain: "epedu-inventory-database.firebaseapp.com",
+    projectId: "epedu-inventory-database",
+    storageBucket: "epedu-inventory-database.appspot.com",
+    messagingSenderId: "124437251040",
+    appId: "1:124437251040:web:4989c73efc2f4afbf22185",
+    measurementId: "G-GFEEP49VRP"
+  };
+  const app = initializeApp(firebaseConfig);
+  try { getAnalytics(app); } catch(e) {}
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+  signInAnonymously(auth).catch(console.error);
 
+  const CURRENT_USER = localStorage.getItem('auth_user') || 'Unknown';
+
+  /* ---------- Sidebar ARIA ---------- */
+  const menuCheck = document.getElementById('menu-check');
+  const hamb = document.querySelector('label.hamburger');
+  function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
+  menuCheck.addEventListener('change', syncAria); syncAria();
+
+  /* ---------- Toasts ---------- */
+  const toastWrap = document.getElementById('toast-wrap');
+  function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  function notify(msg, type='info', timeout=3200){
+    const el = document.createElement('div');
+    el.className = 'toast' + (type==='warn' ? ' toast--warn' : type==='error' ? ' toast--error' : '');
+    el.innerHTML = `${escapeHtml(msg)} <span class="toast__close" aria-label="Dismiss" role="button">×</span>`;
+    toastWrap.appendChild(el);
+    const close = ()=>{ if (el && el.parentNode) el.parentNode.removeChild(el); };
+    el.querySelector('.toast__close').addEventListener('click', close);
+    if (timeout>0) setTimeout(close, timeout);
+  }
+
+  /* ---------- Firestore ---------- */
+  const colStatuses = collection(db, "statuses");
+
+  /* ---------- State & live updates ---------- */
+  let statuses = [];
+  onSnapshot(query(colStatuses, orderBy("ts","desc")), (snap) => {
+    statuses = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderStatuses();
+  });
+
+  /* ---------- UI wiring ---------- */
+  const statusModal = document.getElementById('statusModal');
+  const stOpenBtn   = document.getElementById('status-add-btn');
+  const stCancel    = document.getElementById('st-cancel');
+  const stSave      = document.getElementById('st-save');
+  const stSearch    = document.getElementById('status-search');
+
+  function openStatusModal(){
+    document.getElementById('st-order').value   = '';
+    document.getElementById('st-item').value    = '';
+    document.getElementById('st-qty').value     = '1';
+    document.getElementById('st-type').value    = 'Loan';
+    document.getElementById('st-remarks').value = '';
+    statusModal.classList.add('open');
+    setTimeout(()=>document.getElementById('st-order').focus(),0);
+  }
+  function closeStatusModal(){ statusModal.classList.remove('open'); }
+
+  stOpenBtn.addEventListener('click', openStatusModal);
+  stCancel.addEventListener('click', closeStatusModal);
+  statusModal.addEventListener('click', e => { if (e.target.id === 'statusModal') closeStatusModal(); });
+  statusModal.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); stSave.click(); } });
+
+  stSave.addEventListener('click', async ()=>{
+    const order   = document.getElementById('st-order').value.trim();
+    const item    = document.getElementById('st-item').value.trim();
+    const qty     = parseInt(document.getElementById('st-qty').value,10);
+    const stype   = document.getElementById('st-type').value; // Loan | Rent
+    const remarks = document.getElementById('st-remarks').value.trim();
+    if (!order || !item || !Number.isInteger(qty) || qty<=0){
+      notify('Please fill Order ID, Item Name, and a positive Quantity.','warn'); return;
+    }
+    try{
+      await addDoc(colStatuses, { ts:serverTimestamp(), order, item, qty, status:stype, remarks, actor:CURRENT_USER });
+      notify('Status saved'); closeStatusModal();
+    }catch(err){ console.error(err); notify('Failed to save status','error'); }
+  });
+
+  /* ---------- Render ---------- */
+  function renderStatuses(){
+    const wrap = document.getElementById('statusList'); if (!wrap) return;
+    wrap.innerHTML = '';
+    let rows = statuses.slice();
+    const q = (stSearch?.value || '').trim().toLowerCase();
+    if (q) rows = rows.filter(r =>
+      (r.order||'').toLowerCase().includes(q) ||
+      (r.item||'').toLowerCase().includes(q) ||
+      (r.remarks||'').toLowerCase().includes(q)
+    );
+    for (const r of rows){
+      const div = document.createElement('div'); div.className='status-card';
+      const dt = r.ts?.toDate ? r.ts.toDate().toLocaleString() : (r.ts ? new Date(r.ts).toLocaleString() : '');
+      const chipClass = (r.status||'').toLowerCase()==='rent' ? 'chip--rent' : 'chip--loan';
+      div.innerHTML = `
+        <div class="status-card__top">
+          <span>${escapeHtml(dt || '')}</span>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span class="status-chip ${chipClass}">${escapeHtml(r.status || '')}</span>
+            <button class="status-del" data-status-del="${r.id}" title="Delete">🗑</button>
+          </div>
+        </div>
+        <div class="status-card__title">Order: ${escapeHtml(r.order || '')}</div>
+        <div class="status-meta">
+          <div>Item Name</div><div>${escapeHtml(r.item || '')}</div>
+          <div>Quantities</div><div class="status-amt">${r.qty ?? ''}</div>
+        </div>
+        ${r.remarks ? `<div class="status-row"><div style="color:var(--s-muted);">Remarks</div><div>${escapeHtml(r.remarks)}</div></div>` : ''}`;
+      wrap.appendChild(div);
+    }
+    // wire delete
+    wrap.querySelectorAll('[data-status-del]').forEach(btn=>{
+      btn.onclick = async (e)=>{
+        const id = e.currentTarget.getAttribute('data-status-del');
+        if (!id) return;
+        if (!confirm('Delete this status record?')) return;
+        try{ await deleteDoc(doc(db,'statuses',id)); notify('Status deleted'); }
+        catch(err){ console.error(err); notify('Failed to delete status','error'); }
+      };
+    });
+  }
+  stSearch?.addEventListener('input', renderStatuses);
+
+  /* ---------- ESC closes modal ---------- */
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape'){ statusModal.classList.remove('open'); }});
+</script>
+</body>
+</html>
