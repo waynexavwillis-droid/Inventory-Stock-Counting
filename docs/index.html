@@ -196,8 +196,8 @@
     .status-meta{ font-size:12px; color:var(--s-muted); display:grid; grid-template-columns:auto auto; gap:4px 14px; }
     .status-row{ display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px dashed var(--s-line); padding-top:8px; }
     .status-chip{ background:var(--s-badge); border-radius:999px; padding:2px 8px; font-size:12px; }
-    .chip--loan{ background:#dcfce7; color:#065f46; }  /* green */
-    .chip--rent{ background:#fef3c7; color:#92400e; }  /* yellow */
+    .chip--loan{ background:#dcfce7; color:#065f46; }
+    .chip--rent{ background:#fef3c7; color:#92400e; }
     .status-del{ background:transparent; border:1px solid var(--s-line); border-radius:8px; padding:4px 8px; font-size:12px; cursor:pointer; color:#374151; }
     .status-del:hover{ background:#f9fafb; }
     .status-amt{ font-weight:800; }
@@ -658,6 +658,81 @@
         card.querySelector('[data-del-id]').addEventListener('click', ()=> openDeleteDialogById(item.id));
         grid.appendChild(card);
       });
+    }
+
+    /* ----- Goal table + low-stock alerts (NEW) ----- */
+    function renderGoalTable(){
+      const tbody = document.querySelector('#goalTable tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      const rows = inventory.slice().sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+
+      for (const item of rows){
+        const currentGoal = Number.isFinite(item.goal) ? item.goal : 0;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(item.name || '')}</td>
+          <td>${currentGoal}</td>
+          <td>
+            <input type="number" min="0" step="1" value="${currentGoal}"
+                   style="width:120px" inputmode="numeric" data-goal-input="${item.id}">
+          </td>
+          <td>
+            <button data-save-goal="${item.id}">Save</button>
+            <button data-clear-goal="${item.id}" title="Set goal to 0">Clear</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      tbody.querySelectorAll('[data-save-goal]').forEach(btn=>{
+        btn.addEventListener('click', async e=>{
+          const id = e.currentTarget.getAttribute('data-save-goal');
+          const input = tbody.querySelector(`[data-goal-input="${id}"]`);
+          const raw = (input?.value ?? '').trim();
+          const val = Math.max(0, parseInt(raw,10) || 0);
+          try{
+            await updateDoc(doc(db,'inventory', id), { goal: val });
+            notify('Goal saved');
+          }catch(err){ console.error(err); notify('Failed to save goal','error'); }
+        });
+      });
+
+      tbody.querySelectorAll('[data-clear-goal]').forEach(btn=>{
+        btn.addEventListener('click', async e=>{
+          const id = e.currentTarget.getAttribute('data-clear-goal');
+          try{
+            await updateDoc(doc(db,'inventory', id), { goal: 0 });
+            notify('Goal cleared');
+          }catch(err){ console.error(err); notify('Failed to clear goal','error'); }
+        });
+      });
+
+      tbody.querySelectorAll('[data-goal-input]').forEach(inp=>{
+        inp.addEventListener('keydown', e=>{
+          if (e.key === 'Enter'){
+            e.preventDefault();
+            const id = e.currentTarget.getAttribute('data-goal-input');
+            tbody.querySelector(`[data-save-goal="${id}"]`)?.click();
+          }
+        });
+      });
+    }
+
+    function checkLowStockAlerts(){
+      for (const item of inventory){
+        const goal = Number.isFinite(item.goal) ? item.goal : 0;
+        const total = totalQty(item);
+        const isLow = goal > 0 && total <= goal;
+
+        const prev = lowState.get(item.id) || false;
+        if (isLow && !prev){
+          notify(`LOW: "${item.name}" at ${total} (goal ${goal}).`, 'warn', 6000);
+        }
+        lowState.set(item.id, isLow);
+      }
     }
 
     /* Map helpers by ID */
