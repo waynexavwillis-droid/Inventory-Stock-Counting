@@ -73,7 +73,7 @@
     label.overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); opacity:0; visibility:hidden; transition:.3s ease; z-index:1090; }
     #menu-check:checked ~ label.overlay{ opacity:1; visibility:visible; }
 
-    /* Cards */
+    /* Stock/Location Cards */
     .grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:16px; }
     .card{ --card-bg: var(--panel); --card-accent: var(--accent); --card-text: var(--ink); width:190px; height:254px; background:var(--card-bg); border-radius:20px; position:relative; overflow:visible; transition:all .5s cubic-bezier(.16,1,.3,1); box-shadow:0 12px 30px rgba(0,0,0,.07); border:1px solid var(--line); color:var(--card-text); }
     .card__shine{position:absolute; inset:0; background:linear-gradient(120deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.8) 50%, rgba(255,255,255,0) 60%); opacity:0; transition:opacity .3s; pointer-events:none;}
@@ -122,7 +122,7 @@
     .input-container input:focus ~ .label{ top:-10px; transform: scale(1); }
 
     /* Add page layout */
-    #addPage{ max-width: 900px; margin: 0 auto; }
+    #addPage{ max-width: 1000px; margin: 0 auto; }
     #addPage .input-container{ max-width: 560px; }
     #addPage input[type="number"]{ width: 140px; box-sizing: border-box; }
     .add-row{ display:grid; grid-template-columns: minmax(260px, 1fr) 160px minmax(200px, 1fr) auto; gap: 12px; align-items:center; max-width:900px; }
@@ -159,6 +159,61 @@
     .toast--warn{ background:#b45309; }
     .toast--error{ background:#991b1b; }
     .toast__close{ margin-left:12px; cursor:pointer; font-weight:700; }
+
+    /* --- Your provided “card” design (used for imgbb helper) --- */
+    .helper-row{
+      display:grid;
+      grid-template-columns: 1fr 280px;
+      gap:16px;
+      align-items:start;
+      margin-top:12px;
+    }
+    @media (max-width: 900px){
+      .helper-row{ grid-template-columns: 1fr; }
+    }
+    .card.helper{
+      width: 100%;
+      height: auto;
+      border-radius: 15px;
+      box-shadow: 1px 5px 60px 0px #100a;
+      background: #0f0a1f; /* darker to match theme */
+      color: #fff;
+      padding: 16px;
+    }
+    .card.helper .card-border-top{
+      width: 60%;
+      height: 3px;
+      background: #6d28d9;
+      margin: 6px auto 10px;
+      border-radius: 0 0 15px 15px;
+    }
+    .card.helper span{
+      font-weight: 600;
+      color: #fff;
+      text-align: center;
+      display: block;
+      padding-top: 6px;
+      font-size: 16px;
+    }
+    .card.helper .job{
+      font-weight: 400;
+      color: #e8e3ff;
+      display: block;
+      text-align: center;
+      padding-top: 3px;
+      font-size: 12px;
+      opacity:.85;
+    }
+    .card.helper .img{
+      width: 70px; height: 70px; background:#1a1233; border-radius: 15px; margin: 14px auto 6px;
+      display:flex; align-items:center; justify-content:center; font-size:24px;
+    }
+    .card.helper button{
+      padding: 10px 16px; display:block; margin:12px auto 6px; border-radius:8px; border:1px solid #6d28d9;
+      background:#6d28d9; color:#fff; font-weight:600; cursor:pointer;
+    }
+    .card.helper button:hover{ filter:brightness(.92); }
+    .helper-note{ text-align:center; font-size:12px; color:#b8acd9; margin-top:4px; }
   </style>
 </head>
 <body>
@@ -192,6 +247,7 @@
     <!-- Add New Stock Page -->
     <section id="addPage" aria-labelledby="addPageTitle">
       <h2 id="addPageTitle">Add New Item</h2>
+
       <div class="add-row">
         <div class="input-container">
           <input type="text" id="newItemName" class="input" placeholder=" " autocomplete="off" />
@@ -209,6 +265,25 @@
 
         <button onclick="addNewItem()" aria-label="Add Item">Add Item</button>
       </div>
+
+      <!-- New: Image URL + imgbb helper -->
+      <div class="helper-row">
+        <div class="input-container" style="max-width:560px;">
+          <input id="newItemImgUrl" type="url" class="input" placeholder=" ">
+          <span class="topline"></span><span class="underline"></span>
+          <label for="newItemImgUrl" class="label">Image URL (paste from imgbb or any https link)</label>
+        </div>
+
+        <div class="card helper" aria-label="Image Helper">
+          <div class="card-border-top"></div>
+          <div class="img">🖼️</div>
+          <span>Need an image URL?</span>
+          <span class="job">Upload to imgbb, copy the link, paste it here.</span>
+          <button type="button" onclick="openImgbb()">Open imgbb.com</button>
+          <div class="helper-note">Tip: choose “Direct link” if available.</div>
+        </div>
+      </div>
+
       <div class="muted">Signed in as <strong id="signedAs"></strong>. Data syncs via Firebase (Firestore + Storage).</div>
     </section>
 
@@ -438,13 +513,13 @@
     function toast(msg, type='info', timeout=3200){
       const el = document.createElement('div');
       el.className = 'toast' + (type==='warn' ? ' toast--warn' : type==='error' ? ' toast--error' : '');
-      el.innerHTML = \`\${escapeHtml(msg)} <span class="toast__close" aria-label="Dismiss" role="button">×</span>\`;
+      el.innerHTML = `${escapeHtml(msg)} <span class="toast__close" aria-label="Dismiss" role="button">×</span>`;
       toastWrap.appendChild(el);
       const close = ()=>{ if (el && el.parentNode) el.parentNode.removeChild(el); };
       el.querySelector('.toast__close').addEventListener('click', close);
       if (timeout>0) setTimeout(close, timeout);
     }
-    const notify = toast; // alias for readability
+    const notify = toast;
 
     // Utils
     function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
@@ -467,7 +542,7 @@
     function withCacheBuster(url){
       if (!url) return url;
       const sep = url.includes('?') ? '&' : '?';
-      return \`\${url}\${sep}v=\${Date.now()}\`;
+      return `${url}${sep}v=${Date.now()}`;
     }
 
     // Image type helpers
@@ -504,7 +579,7 @@
       openImageViewer(localURL, title);
 
       const fileNameSafe = (file.name || ('photo_' + Date.now())).replace(/[^\w.\-]+/g,'_');
-      const path = \`\${pathPrefix}/\${Date.now()}_\${fileNameSafe}\`;
+      const path = `${pathPrefix}/${Date.now()}_${fileNameSafe}`;
       const ref  = storageRef(st, path);
       const contentType = guessContentType(file);
 
@@ -528,7 +603,7 @@
     let adjustments = [];
     let locations = [];
 
-    // Track low-stock to avoid spammy alerts (only on state change from OK -> LOW)
+    // Track low-stock to avoid spammy alerts
     const lowState = new Map(); // itemId -> boolean LOW
 
     // Live listeners
@@ -567,16 +642,23 @@
     }
     window.showPage = showPage;
 
-    // Add item
+    // NEW: open imgbb
+    window.openImgbb = function(){
+      window.open('https://imgbb.com', '_blank', 'noopener');
+    };
+
+    // Add item (now supports optional image URL)
     async function addNewItem() {
       const nameRaw = document.getElementById('newItemName').value;
       const name = (nameRaw || '').trim().replace(/\s+/g,' ');
       const qty  = parseInt(document.getElementById('newItemQty').value,10);
       const locRaw = document.getElementById('newItemLoc').value;
+      const imgUrlRaw = document.getElementById('newItemImgUrl').value.trim();
       const location = normLoc(locRaw);
 
       if (!name || isNaN(qty) || qty <= 0) { notify("Enter a valid name and a quantity ≥ 1","warn"); return; }
       if (!location) { notify('Location must be "Old warehouse" or "New warehouse". Tip: type "Old" or "New".', "warn"); return; }
+      if (imgUrlRaw && !isLikelyHttpUrl(imgUrlRaw)) { notify("Image URL must start with http(s) or be a data:image URL.","warn"); return; }
 
       const existing = inventory.find(i => (i.name||'').toLowerCase() === name.toLowerCase());
       try{
@@ -585,23 +667,24 @@
           const incNew = location === 'New warehouse' ? qty : 0;
           const newOld = Math.max(0, (existing.qtyOld ?? 0) + incOld);
           const newNew = Math.max(0, (existing.qtyNew ?? 0) + incNew);
-          await updateDoc(doc(db, "inventory", existing.id), {
-            qtyOld: newOld, qtyNew: newNew, qty: newOld + newNew, isNew:true
-          });
+          const data = { qtyOld: newOld, qtyNew: newNew, qty: newOld + newNew, isNew:true };
+          if (imgUrlRaw) data.img = imgUrlRaw;
+          await updateDoc(doc(db, "inventory", existing.id), data);
         } else {
           const qtyOld = location === 'Old warehouse' ? qty : 0;
           const qtyNew = location === 'New warehouse' ? qty : 0;
           await addDoc(colInventory, {
             name, qtyOld, qtyNew, qty: qtyOld + qtyNew,
-            goal:0, img:null, isNew:true, createdAt: serverTimestamp()
+            goal:0, img: imgUrlRaw || null, isNew:true, createdAt: serverTimestamp()
           });
         }
-        notify(\`Item "\${name}" added to \${location}.\`);
+        notify(`Item "${name}" added to ${location}.`);
       } catch(err){ console.error(err); notify('Failed to add item','error'); }
 
       document.getElementById('newItemName').value = '';
       document.getElementById('newItemQty').value = '';
       document.getElementById('newItemLoc').value = '';
+      document.getElementById('newItemImgUrl').value = '';
     }
     window.addNewItem = addNewItem;
 
@@ -618,7 +701,7 @@
         const card = document.createElement('div');
         card.className = 'card';
         const bgUrl = item.img ? withCacheBuster(item.img) : '';
-        const safeBgUrl = bgUrl.replace(/"/g,'%22').replace(/'/g,'%27');
+        const safeBgUrl = bgUrl ? bgUrl.replace(/"/g,'%22').replace(/'/g,'%27') : '';
         const bgStyle = bgUrl ? `style="background-image:url('${safeBgUrl}')"` : '';
         card.innerHTML = `
           <div class="card__shine"></div>
@@ -685,7 +768,6 @@
         };
         btn.addEventListener('click', () => onSave(parseInt(btn.getAttribute('data-update-goal'),10)));
       });
-      // Enter to save
       tbody.querySelectorAll('input[id^="newGoal-"]').forEach((inp, i) => {
         inp.addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); tbody.querySelector(`button[data-update-goal="${i}"]`)?.click(); } });
       });
@@ -769,7 +851,7 @@
         const card = document.createElement('div');
         card.className = 'card';
         const bgUrl = loc.img ? withCacheBuster(loc.img) : '';
-        const safeBgUrl = bgUrl.replace(/"/g,'%22').replace(/'/g,'%27');
+        const safeBgUrl = bgUrl ? bgUrl.replace(/"/g,'%22').replace(/'/g,'%27') : '';
         const bgStyle = bgUrl ? `style="background-image:url('${safeBgUrl}')"` : '';
         card.innerHTML = `
           <div class="card__shine"></div>
