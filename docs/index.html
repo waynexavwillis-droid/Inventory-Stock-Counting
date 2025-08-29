@@ -42,7 +42,7 @@
     h1,h2,h3{ color:var(--ink); }
 
     .content{ padding:20px; padding-top:80px; box-sizing:border-box; min-height:100vh; overflow:auto; }
-    input, button, select{ padding:8px; margin:4px; }
+    input, button, select, textarea{ padding:8px; margin:4px; font-family: inherit; }
     table{ width:100%; margin-top:12px; border-collapse:collapse; }
     table, th, td{ border:1px solid var(--line); }
     thead th{ background:#f3f4f6; color:var(--muted); }
@@ -152,13 +152,20 @@
 
     .card--add{ display:flex; align-items:center; justify-content:center; cursor:pointer; border:2px dashed var(--p-line); }
     .card--add .big-plus{ width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:28px; }
+
+    /* Toasts */
+    .toast-wrap{ position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:8px; z-index:10000; }
+    .toast{ background:#111; color:#fff; padding:10px 12px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,.2); max-width: 86vw; }
+    .toast--warn{ background:#b45309; }
+    .toast--error{ background:#991b1b; }
+    .toast__close{ margin-left:12px; cursor:pointer; font-weight:700; }
   </style>
 </head>
 <body>
 
   <!-- Toggle checkbox + hamburger -->
   <input id="menu-check" type="checkbox" />
-  <label for="menu-check" class="hamburger" aria-label="Toggle menu" aria-controls="side">
+  <label for="menu-check" class="hamburger" aria-label="Toggle menu" aria-controls="side" role="button" tabindex="0">
     <span class="bar bar1"></span>
     <span class="bar bar2"></span>
     <span class="bar bar3"></span>
@@ -178,45 +185,48 @@
   <!-- Click-away overlay -->
   <label class="overlay" for="menu-check" aria-hidden="true"></label>
 
+  <!-- Toast container -->
+  <div class="toast-wrap" id="toast-wrap" aria-live="polite" aria-atomic="true"></div>
+
   <main class="content">
     <!-- Add New Stock Page -->
-    <section id="addPage">
-      <h2>Add New Item</h2>
+    <section id="addPage" aria-labelledby="addPageTitle">
+      <h2 id="addPageTitle">Add New Item</h2>
       <div class="add-row">
         <div class="input-container">
-          <input type="text" id="newItemName" class="input" placeholder=" " />
+          <input type="text" id="newItemName" class="input" placeholder=" " autocomplete="off" />
           <span class="topline"></span><span class="underline"></span>
           <label for="newItemName" class="label">Item Name</label>
         </div>
 
-        <input type="number" id="newItemQty" placeholder="Quantity">
+        <input type="number" id="newItemQty" placeholder="Quantity" min="1" inputmode="numeric" aria-label="Quantity">
 
         <div class="input-container">
-          <input type="text" id="newItemLoc" class="input" placeholder=" ">
+          <input type="text" id="newItemLoc" class="input" placeholder=" " autocomplete="off">
           <span class="topline"></span><span class="underline"></span>
           <label for="newItemLoc" class="label">Location (Old warehouse / New warehouse)</label>
         </div>
 
-        <button onclick="addNewItem()">Add Item</button>
+        <button onclick="addNewItem()" aria-label="Add Item">Add Item</button>
       </div>
       <div class="muted">Signed in as <strong id="signedAs"></strong>. Data syncs via Firebase (Firestore + Storage).</div>
     </section>
 
     <!-- Adjust Stock Page -->
-    <section id="adjustPage" class="theme-purple" style="display:none;">
-      <h2>Adjust Stock</h2>
+    <section id="adjustPage" class="theme-purple" style="display:none;" aria-labelledby="adjustPageTitle">
+      <h2 id="adjustPageTitle">Adjust Stock</h2>
       <div id="stockGrid" class="grid"></div>
     </section>
 
     <!-- Location Page -->
-    <section id="locationPage" class="theme-purple" style="display:none;">
-      <h2>Location</h2>
+    <section id="locationPage" class="theme-purple" style="display:none;" aria-labelledby="locationPageTitle">
+      <h2 id="locationPageTitle">Location</h2>
       <div id="locationGrid" class="grid"></div>
     </section>
 
     <!-- Goal Settings Page -->
-    <section id="goalPage" style="display:none;">
-      <h2>Set Stock Count Goal</h2>
+    <section id="goalPage" style="display:none;" aria-labelledby="goalPageTitle">
+      <h2 id="goalPageTitle">Set Stock Count Goal</h2>
       <table id="goalTable">
         <thead>
           <tr><th>Item Name</th><th>Current Goal</th><th>New Goal</th><th>Action</th></tr>
@@ -226,15 +236,15 @@
     </section>
 
     <!-- History Page -->
-    <section id="historyPage" style="display:none;">
-      <h2>History</h2>
+    <section id="historyPage" style="display:none;" aria-labelledby="historyPageTitle">
+      <h2 id="historyPageTitle">History</h2>
       <div class="toolbar">
         <div class="input-container" style="flex:1; min-width:260px;">
-          <input id="hist-search" type="text" class="input" placeholder=" ">
+          <input id="hist-search" type="text" class="input" placeholder=" " autocomplete="off">
           <span class="topline"></span><span class="underline"></span>
           <label for="hist-search" class="label">Search item / name / reason / location…</label>
         </div>
-        <select id="hist-item-filter"><option value="">All items</option></select>
+        <select id="hist-item-filter" aria-label="Filter by item"><option value="">All items</option></select>
         <span class="pill" id="hist-count">0 records</span>
         <div style="flex:1"></div>
         <button onclick="exportHistoryCSV()">Export CSV</button>
@@ -266,7 +276,7 @@
       <div id="adj-subtitle" class="muted"></div>
 
       <label for="adj-amount">Amount</label>
-      <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount">
+      <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount" inputmode="numeric">
 
       <label for="adj-location">Location</label>
       <select id="adj-location">
@@ -357,7 +367,7 @@
   <div id="imageModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="img-title">
     <div class="modal-card">
       <h3 id="img-title">Image</h3>
-    <img id="img-view" src="" alt="" style="width:100%; max-height:70vh; object-fit:contain; border:1px solid var(--line); border-radius:8px;" />
+      <img id="img-view" src="" alt="" style="width:100%; max-height:70vh; object-fit:contain; border:1px solid var(--line); border-radius:8px;" />
       <div class="modal-actions">
         <a id="img-open" href="#" target="_blank" rel="noopener" style="margin-right:auto;">Open in new tab</a>
         <button id="img-close">Close</button>
@@ -383,7 +393,7 @@
 
   <!-- Firebase + App Logic -->
   <script type="module">
-    /* Firebase SDKs (modular) */
+    /* Firebase SDKs (modular) — versions kept as-is */
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -423,10 +433,28 @@
     const colAdjustments = collection(db, "adjustments");
     const colLocations   = collection(db, "locations");
 
+    // --- Toasts ---
+    const toastWrap = document.getElementById('toast-wrap');
+    function toast(msg, type='info', timeout=3200){
+      const el = document.createElement('div');
+      el.className = 'toast' + (type==='warn' ? ' toast--warn' : type==='error' ? ' toast--error' : '');
+      el.innerHTML = \`\${escapeHtml(msg)} <span class="toast__close" aria-label="Dismiss" role="button">×</span>\`;
+      toastWrap.appendChild(el);
+      const close = ()=>{ if (el && el.parentNode) el.parentNode.removeChild(el); };
+      el.querySelector('.toast__close').addEventListener('click', close);
+      if (timeout>0) setTimeout(close, timeout);
+    }
+    const notify = toast; // alias for readability
+
     // Utils
     function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
     function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-    function toLocalDateTime(ts){ if (!ts) return ''; const d = ts.toDate ? ts.toDate() : new Date(ts); return isNaN(+d)?'':d.toLocaleString(); }
+    function toLocalDateTime(ts){
+      if (!ts) return '';
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
+      if (Number.isNaN(+d)) return '';
+      return d.toLocaleString();
+    }
     function normLoc(raw){
       const s=(raw||'').trim().toLowerCase();
       if (s.startsWith('old')) return 'Old warehouse';
@@ -435,14 +463,14 @@
     }
     function totalQty(item){ return (item.qtyOld ?? 0) + (item.qtyNew ?? 0) + (item.qty ?? 0); }
 
-    // NEW: Cache-buster helper
+    // Cache-buster helper
     function withCacheBuster(url){
       if (!url) return url;
       const sep = url.includes('?') ? '&' : '?';
-      return `${url}${sep}v=${Date.now()}`;
+      return \`\${url}\${sep}v=\${Date.now()}\`;
     }
 
-    // Supported image MIME types
+    // Image type helpers
     const SUPPORTED_IMAGE_TYPES = [
       "image/jpeg", "image/jpg", "image/png",
       "image/gif", "image/webp",
@@ -467,12 +495,16 @@
       if (/\.heif$/.test(name))  return "image/heif";
       return "application/octet-stream";
     }
+    function isLikelyHttpUrl(s){
+      const u = (s || '').trim();
+      return /^https?:\/\//i.test(u) || /^data:image\//i.test(u);
+    }
     async function uploadFileWithPreview({file, pathPrefix, title, afterSet}){
       const localURL = URL.createObjectURL(file);
       openImageViewer(localURL, title);
 
       const fileNameSafe = (file.name || ('photo_' + Date.now())).replace(/[^\w.\-]+/g,'_');
-      const path = `${pathPrefix}/${Date.now()}_${fileNameSafe}`;
+      const path = \`\${pathPrefix}/\${Date.now()}_\${fileNameSafe}\`;
       const ref  = storageRef(st, path);
       const contentType = guessContentType(file);
 
@@ -481,9 +513,7 @@
 
       await afterSet(url);
 
-      // Use query-param cache buster so View Image always refreshes
       openImageViewer(withCacheBuster(url), title);
-
       URL.revokeObjectURL(localURL);
     }
 
@@ -497,6 +527,9 @@
     let inventory = [];
     let adjustments = [];
     let locations = [];
+
+    // Track low-stock to avoid spammy alerts (only on state change from OK -> LOW)
+    const lowState = new Map(); // itemId -> boolean LOW
 
     // Live listeners
     onSnapshot(colInventory, (snap) => {
@@ -536,32 +569,36 @@
 
     // Add item
     async function addNewItem() {
-      const name = document.getElementById('newItemName').value.trim();
+      const nameRaw = document.getElementById('newItemName').value;
+      const name = (nameRaw || '').trim().replace(/\s+/g,' ');
       const qty  = parseInt(document.getElementById('newItemQty').value,10);
       const locRaw = document.getElementById('newItemLoc').value;
       const location = normLoc(locRaw);
 
-      if (!name || isNaN(qty) || qty <= 0) return alert("Enter valid name and quantity");
-      if (!location) return alert('Location must be "Old warehouse" or "New warehouse". You can just type "Old" or "New".');
+      if (!name || isNaN(qty) || qty <= 0) { notify("Enter a valid name and a quantity ≥ 1","warn"); return; }
+      if (!location) { notify('Location must be "Old warehouse" or "New warehouse". Tip: type "Old" or "New".', "warn"); return; }
 
-      const existing = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
-      if (existing) {
-        const incOld = location === 'Old warehouse' ? qty : 0;
-        const incNew = location === 'New warehouse' ? qty : 0;
-        const newOld = (existing.qtyOld ?? 0) + incOld;
-        const newNew = (existing.qtyNew ?? 0) + incNew;
-        await updateDoc(doc(db, "inventory", existing.id), {
-          qtyOld: newOld, qtyNew: newNew, qty: newOld + newNew, isNew:true
-        });
-      } else {
-        const qtyOld = location === 'Old warehouse' ? qty : 0;
-        const qtyNew = location === 'New warehouse' ? qty : 0;
-        await addDoc(colInventory, {
-          name, qtyOld, qtyNew, qty: qtyOld + qtyNew,
-          goal:0, img:null, isNew:true, createdAt: serverTimestamp()
-        });
-      }
-      alert(`Item "${name}" added to ${location}.`);
+      const existing = inventory.find(i => (i.name||'').toLowerCase() === name.toLowerCase());
+      try{
+        if (existing) {
+          const incOld = location === 'Old warehouse' ? qty : 0;
+          const incNew = location === 'New warehouse' ? qty : 0;
+          const newOld = Math.max(0, (existing.qtyOld ?? 0) + incOld);
+          const newNew = Math.max(0, (existing.qtyNew ?? 0) + incNew);
+          await updateDoc(doc(db, "inventory", existing.id), {
+            qtyOld: newOld, qtyNew: newNew, qty: newOld + newNew, isNew:true
+          });
+        } else {
+          const qtyOld = location === 'Old warehouse' ? qty : 0;
+          const qtyNew = location === 'New warehouse' ? qty : 0;
+          await addDoc(colInventory, {
+            name, qtyOld, qtyNew, qty: qtyOld + qtyNew,
+            goal:0, img:null, isNew:true, createdAt: serverTimestamp()
+          });
+        }
+        notify(\`Item "\${name}" added to \${location}.\`);
+      } catch(err){ console.error(err); notify('Failed to add item','error'); }
+
       document.getElementById('newItemName').value = '';
       document.getElementById('newItemQty').value = '';
       document.getElementById('newItemLoc').value = '';
@@ -581,7 +618,8 @@
         const card = document.createElement('div');
         card.className = 'card';
         const bgUrl = item.img ? withCacheBuster(item.img) : '';
-        const bgStyle = bgUrl ? `style="background-image:url('${escapeHtml(bgUrl)}')"` : '';
+        const safeBgUrl = bgUrl.replace(/"/g,'%22').replace(/'/g,'%27');
+        const bgStyle = bgUrl ? `style="background-image:url('${safeBgUrl}')"` : '';
         card.innerHTML = `
           <div class="card__shine"></div>
           <div class="card__glow"></div>
@@ -591,8 +629,8 @@
           ${item.isNew ? `<div class="badge-new" title="Dismiss">NEW</div>` : ''}
           <div class="card__content">
             <div class="card__image" ${bgStyle}>
-              <button class="img-edit-btn" title="Set image">🖼</button>
-              <button class="img-view-btn" title="View image">View Image</button>
+              <button class="img-edit-btn" title="Set image" aria-label="Set image">🖼</button>
+              <button class="img-view-btn" title="View image" aria-label="View image">View Image</button>
               <span class="qty-badge" title="Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}">Qty: ${total}</span>
             </div>
             <div class="card__text">
@@ -600,19 +638,19 @@
               <p class="card__description">Goal: ${item.goal || 0}</p>
             </div>
             <div class="card__actions">
-              <div class="card__button" title="Add (Shift-click to set image)" data-plus>+</div>
-              <div class="card__button card__button--minus" title="Minus" data-minus>–</div>
-              <div class="card__button card__button--trash" title="Delete item" data-del>🗑</div>
+              <div class="card__button" title="Add (Shift-click to set image)" data-plus aria-label="Add">+</div>
+              <div class="card__button card__button--minus" title="Minus" data-minus aria-label="Minus">–</div>
+              <div class="card__button card__button--trash" title="Delete item" data-del aria-label="Delete">🗑</div>
             </div>
           </div>`;
         card.querySelector('.img-edit-btn').addEventListener('click', () => openImagePicker(index));
         card.querySelector('.img-view-btn').addEventListener('click', () => {
           const current = inventory[index];
-          if (!current || !current.img) { alert('No image set yet. Click 🖼 to add one.'); return; }
+          if (!current || !current.img) { notify('No image set yet. Click 🖼 to add one.','warn'); return; }
           openImageViewer(withCacheBuster(current.img), `Item: ${current.name}`);
         });
-        if (item.isNew) card.querySelector('.badge-new').addEventListener('click', async () => {
-          await updateDoc(doc(db, "inventory", item.id), { isNew:false });
+        if (item.isNew) card.querySelector('.badge-new')?.addEventListener('click', async () => {
+          try { await updateDoc(doc(db, "inventory", item.id), { isNew:false }); } catch(e){}
         });
         card.querySelector('[data-plus]').addEventListener('click', (e) => { if (e.shiftKey){ openImagePicker(index); return; } openAdjustDialog(index,'add'); });
         card.querySelector('[data-minus]').addEventListener('click', () => openAdjustDialog(index,'sub'));
@@ -630,28 +668,39 @@
         row.innerHTML = `
           <td>${escapeHtml(item.name)}</td>
           <td>${item.goal || 0}</td>
-          <td><input type="number" id="newGoal-${index}" placeholder="New Goal"></td>
+          <td><input type="number" id="newGoal-${index}" placeholder="New Goal" min="0"></td>
           <td><button data-update-goal="${index}">Update</button></td>`;
         tbody.appendChild(row);
       });
       tbody.querySelectorAll('button[data-update-goal]').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          const idx = parseInt(e.currentTarget.getAttribute('data-update-goal'),10);
+        const onSave = async (idx) => {
           const el = document.getElementById(`newGoal-${idx}`);
           const newGoal = parseInt(el.value,10);
-          if (isNaN(newGoal) || newGoal < 0) return alert("Enter valid stock goal");
+          if (isNaN(newGoal) || newGoal < 0) { notify("Enter a valid stock goal (≥ 0)","warn"); return; }
           const item = inventory[idx];
-          await updateDoc(doc(db, "inventory", item.id), { goal:newGoal });
-          alert(`Stock goal updated for ${item.name}`);
-        });
+          try{
+            await updateDoc(doc(db, "inventory", item.id), { goal:newGoal });
+            notify(`Stock goal updated for ${item.name}`);
+          }catch(err){ console.error(err); notify('Failed to update goal','error'); }
+        };
+        btn.addEventListener('click', () => onSave(parseInt(btn.getAttribute('data-update-goal'),10)));
+      });
+      // Enter to save
+      tbody.querySelectorAll('input[id^="newGoal-"]').forEach((inp, i) => {
+        inp.addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); tbody.querySelector(`button[data-update-goal="${i}"]`)?.click(); } });
       });
     }
 
     function checkLowStockAlerts() {
-      inventory.forEach(item => {
+      for (const item of inventory) {
         const total = totalQty(item);
-        if (item.goal > 0 && total <= item.goal) alert(`Low stock for "${item.name}" (Total: ${total}, Goal: ${item.goal})`);
-      });
+        const isLow = item.goal > 0 && total <= item.goal;
+        const wasLow = lowState.get(item.id) === true;
+        if (isLow && !wasLow) {
+          notify(`Low stock for "${item.name}" (Total: ${total}, Goal: ${item.goal})`, 'warn', 6000);
+        }
+        lowState.set(item.id, isLow);
+      }
     }
 
     /* ---------- Inventory image picker ---------- */
@@ -660,8 +709,9 @@
 
     function openImagePicker(index){
       imgTargetIndex=index;
-      const choice=prompt("Set image:\n- Paste an image URL and press OK, OR\n- Leave blank to choose a file (uploads to Firebase Storage).");
+      const choice=prompt("Set image:\n- Paste an image URL (http/https) and press OK, OR\n- Leave blank to choose a file (uploads to Firebase Storage).");
       if (choice && choice.trim()){
+        if (!isLikelyHttpUrl(choice.trim())) { notify('Please enter a valid http(s) or data: image URL','warn'); imgTargetIndex=null; return; }
         setItemImageFromURL(choice.trim());
       } else {
         fileInput.click();
@@ -674,7 +724,7 @@
       if(!file || imgTargetIndex===null) return;
 
       if (!isSupportedImage(file)) {
-        alert(`Unsupported image format: ${file.type || file.name}\n\nSupported: JPG, JPEG, PNG, GIF, WEBP, BMP, HEIC, HEIF`);
+        notify(`Unsupported image format: ${file.type || file.name}\nSupported: JPG, JPEG, PNG, GIF, WEBP, BMP, HEIC, HEIF`,'warn', 7000);
         imgTargetIndex = null;
         return;
       }
@@ -687,7 +737,7 @@
           title: `Item: ${item.name}`,
           afterSet: async (url)=>updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true })
         });
-      }catch(err){ console.error(err); alert('Upload failed'); }
+      }catch(err){ console.error(err); notify('Upload failed','error'); }
       imgTargetIndex=null;
     });
 
@@ -698,7 +748,7 @@
         await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true });
         openImageViewer(withCacheBuster(url), `Item: ${item.name}`);
       }
-      catch(err){ console.error(err); alert('Failed to set image URL'); }
+      catch(err){ console.error(err); notify('Failed to set image URL','error'); }
       imgTargetIndex=null;
     }
     window.setItemImageFromURL=setItemImageFromURL;
@@ -711,7 +761,7 @@
 
       const addCard = document.createElement('div');
       addCard.className = 'card card--add';
-      addCard.innerHTML = `<div class="big-plus card__button" title="Add location card">+</div>`;
+      addCard.innerHTML = `<div class="big-plus card__button" title="Add location card" aria-label="Add location card">+</div>`;
       addCard.addEventListener('click', openAddLocationDialog);
       grid.appendChild(addCard);
 
@@ -719,37 +769,38 @@
         const card = document.createElement('div');
         card.className = 'card';
         const bgUrl = loc.img ? withCacheBuster(loc.img) : '';
-        const bgStyle = bgUrl ? `style="background-image:url('${escapeHtml(bgUrl)}')"` : '';
+        const safeBgUrl = bgUrl.replace(/"/g,'%22').replace(/'/g,'%27');
+        const bgStyle = bgUrl ? `style="background-image:url('${safeBgUrl}')"` : '';
         card.innerHTML = `
           <div class="card__shine"></div>
           <div class="card__glow"></div>
           ${loc.isNew ? `<div class="badge-new" title="Dismiss">NEW</div>` : ''}
           <div class="card__content">
             <div class="card__image" ${bgStyle}>
-              <button class="img-edit-btn" title="Set image (camera/gallery)">🖼</button>
-              <button class="img-view-btn" title="View image">View Image</button>
+              <button class="img-edit-btn" title="Set image (camera/gallery)" aria-label="Set image">🖼</button>
+              <button class="img-view-btn" title="View image" aria-label="View image">View Image</button>
             </div>
             <div class="card__text">
               <h3 class="card__title" title="${escapeHtml(loc.name)}">${escapeHtml(loc.name)}</h3>
               <p class="card__description">${escapeHtml(loc.description || '')}</p>
             </div>
             <div class="card__actions">
-              <div class="card__button card__button--trash" title="Delete card" data-del>🗑</div>
+              <div class="card__button card__button--trash" title="Delete card" data-del aria-label="Delete">🗑</div>
             </div>
           </div>`;
         card.querySelector('.img-edit-btn').addEventListener('click', () => openLocationImagePicker(index));
         card.querySelector('.img-view-btn').addEventListener('click', () => {
           const currentLoc = locations[index];
-          if (!currentLoc || !currentLoc.img) { alert('No image set yet. Click 🖼 to add one.'); return; }
+          if (!currentLoc || !currentLoc.img) { notify('No image set yet. Click 🖼 to add one.','warn'); return; }
           openImageViewer(withCacheBuster(currentLoc.img), `Location: ${currentLoc.name}`);
         });
-        if (loc.isNew) card.querySelector('.badge-new').addEventListener('click', async () => {
-          await updateDoc(doc(db,"locations", loc.id), { isNew:false });
+        if (loc.isNew) card.querySelector('.badge-new')?.addEventListener('click', async () => {
+          try{ await updateDoc(doc(db,"locations", loc.id), { isNew:false }); }catch(e){}
         });
         card.querySelector('[data-del]').addEventListener('click', async () => {
           if (!confirm(`Delete location card "${loc.name}"?`)) return;
-          try { await deleteDoc(doc(db,"locations",loc.id)); }
-          catch(err){ console.error(err); alert('Failed to delete'); }
+          try { await deleteDoc(doc(db,"locations",loc.id)); notify('Location card deleted'); }
+          catch(err){ console.error(err); notify('Failed to delete','error'); }
         });
         grid.appendChild(card);
       });
@@ -770,12 +821,13 @@
     document.getElementById('loc-add-confirm').addEventListener('click', async ()=>{
       const name = document.getElementById('loc-item-name').value.trim();
       const description = document.getElementById('loc-desc').value.trim();
-      if (!name) return alert('Please enter an item name.');
+      if (!name) { notify('Please enter an item name.','warn'); return; }
       try{
         await addDoc(colLocations, {
           name, description, img:null, createdAt:serverTimestamp(), isNew:true, actor: CURRENT_USER
         });
-      }catch(err){ console.error(err); alert('Failed to create card'); }
+        notify('Location card created');
+      }catch(err){ console.error(err); notify('Failed to create card','error'); }
       closeAddLocationDialog();
     });
 
@@ -785,8 +837,11 @@
 
     function openLocationImagePicker(index){
       locImgTargetIndex = index;
-      const choice=prompt("Set image for this location:\n- Paste an image URL and press OK, OR\n- Leave blank to take/select a photo (uploads to Firebase Storage).");
-      if (choice && choice.trim()){ setLocationImageFromURL(choice.trim()); } else { locFileInput.click(); }
+      const choice=prompt("Set image for this location:\n- Paste an image URL (http/https) and press OK, OR\n- Leave blank to take/select a photo (uploads to Firebase Storage).");
+      if (choice && choice.trim()){
+        if (!isLikelyHttpUrl(choice.trim())) { notify('Please enter a valid http(s) or data: image URL','warn'); locImgTargetIndex=null; return; }
+        setLocationImageFromURL(choice.trim());
+      } else { locFileInput.click(); }
     }
     window.openLocationImagePicker = openLocationImagePicker;
 
@@ -795,7 +850,7 @@
       if (!file || locImgTargetIndex===null) return;
 
       if (!isSupportedImage(file)) {
-        alert(`Unsupported image format: ${file.type || file.name}\n\nSupported: JPG, JPEG, PNG, GIF, WEBP, BMP, HEIC, HEIF`);
+        notify(`Unsupported image format: ${file.type || file.name}\nSupported: JPG, JPEG, PNG, GIF, WEBP, BMP, HEIC, HEIF`,'warn', 7000);
         locImgTargetIndex = null;
         return;
       }
@@ -808,7 +863,7 @@
           title: `Location: ${loc.name}`,
           afterSet: async (url)=>updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false })
         });
-      }catch(err){ console.error(err); alert('Upload failed'); }
+      }catch(err){ console.error(err); notify('Upload failed','error'); }
       locImgTargetIndex=null;
     });
 
@@ -818,7 +873,7 @@
       try{
         await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false });
         openImageViewer(withCacheBuster(url), `Location: ${loc.name}`);
-      }catch(err){ console.error(err); alert('Failed to set image URL'); }
+      }catch(err){ console.error(err); notify('Failed to set image URL','error'); }
       locImgTargetIndex=null;
     }
     window.setLocationImageFromURL = setLocationImageFromURL;
@@ -834,7 +889,7 @@
       imgView.src = url;
       imgView.alt = title;
       imgTitle.textContent = title;
-      imgOpenLink.href = url;
+      imgOpenLink.href = url || '#';
       imageModal.classList.add('open');
     }
     function closeImageViewer(){
@@ -878,8 +933,8 @@
       const actor   = CURRENT_USER;
       const reason  = document.getElementById('adj-reason').value.trim();
       const adjustedBy = document.getElementById('adj-by').value.trim();
-      if (!Number.isInteger(amount) || amount <= 0) return alert('Enter a valid positive amount.');
-      if (!reason || !adjustedBy) return alert('Please fill in Reason and Adjusted by (name).');
+      if (!Number.isInteger(amount) || amount <= 0) { notify('Enter a valid positive amount.','warn'); return; }
+      if (!reason || !adjustedBy) { notify('Please fill in Reason and Adjusted by (name).','warn'); return; }
 
       const item = inventory[pending.index];
       const signedDelta = pending.mode === 'add' ? amount : -amount;
@@ -901,7 +956,8 @@
           delta: signedDelta, actor, reason, adjustedBy,
           qtyAfterOld: newOld, qtyAfterNew: newNew, qtyAfter: newTotal
         });
-      } catch(err){ console.error(err); alert('Failed to save adjustment'); }
+        notify('Adjustment saved');
+      } catch(err){ console.error(err); notify('Failed to save adjustment','error'); }
       closeAdjustDialog();
     });
 
@@ -934,7 +990,7 @@
       const actor   = CURRENT_USER;
       const reason  = document.getElementById('del-reason').value.trim();
       const adjustedBy = document.getElementById('del-by').value.trim();
-      if (!reason || !adjustedBy) return alert('Please fill in Reason and Adjusted by (name).');
+      if (!reason || !adjustedBy) { notify('Please fill in Reason and Adjusted by (name).','warn'); return; }
 
       const removed = inventory[pendingDeleteIndex];
       const prevTotal = totalQty(removed);
@@ -947,7 +1003,8 @@
           qtyAfterOld: 0, qtyAfterNew: 0, qtyAfter: 0
         });
         await deleteDoc(doc(db,"inventory", removed.id));
-      } catch(err){ console.error(err); alert('Failed to delete item'); }
+        notify('Item deleted');
+      } catch(err){ console.error(err); notify('Failed to delete item','error'); }
       pendingDeleteIndex = null;
       closeDeleteDialog();
     });
@@ -957,11 +1014,12 @@
       const sel = document.getElementById('hist-item-filter');
       if (!sel) return;
       const current = sel.value;
-      const names = Array.from(new Set(adjustments.map(a => a.item))).sort((a,b)=>a.localeCompare(b));
+      const names = Array.from(new Set(adjustments.map(a => a.item))).filter(Boolean).sort((a,b)=>a.localeCompare(b));
       sel.innerHTML = '<option value="">All items</option>' + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
       if ([...sel.options].some(o => o.value === current)) sel.value = current;
       sel.onchange = renderHistory;
-      document.getElementById('hist-search').oninput = renderHistory;
+      const searchEl = document.getElementById('hist-search');
+      if (searchEl && !searchEl._bound){ searchEl._bound=true; searchEl.oninput = renderHistory; }
     }
 
     function renderHistory() {
@@ -983,7 +1041,7 @@
       for (const r of rows) {
         const tr = document.createElement('tr');
         const dtStr = toLocalDateTime(r.ts);
-        const deltaStr = (r.delta > 0 ? '+' : '') + r.delta;
+        const deltaStr = (r.delta > 0 ? '+' : '') + (r.delta ?? 0);
         const reason = r.reason ?? r.purpose ?? '';
         const adjustedBy = r.adjustedBy ?? r.forWhom ?? '';
         tr.innerHTML = `
@@ -1019,12 +1077,14 @@
           csvEscape(adjustedBy)
         ].join(','));
       }
-      const blob = new Blob([csvRows.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const BOM = "\uFEFF"; // Excel-friendly
+      const blob = new Blob([BOM + csvRows.join('\n')], {type:'text/csv;charset=utf-8;'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url;
       a.download = `inventory-history-${new Date().toISOString().slice(0,10)}.csv`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      notify('CSV exported');
     }
     window.exportHistoryCSV = exportHistoryCSV;
 
@@ -1038,8 +1098,8 @@
           await batch.commit();
           snap = await getDocs(query(colAdjustments));
         }
-        alert('History cleared.');
-      } catch(err){ console.error(err); alert('Failed to clear history'); }
+        notify('History cleared');
+      } catch(err){ console.error(err); notify('Failed to clear history','error'); }
     }
     window.clearHistory = clearHistory;
 
