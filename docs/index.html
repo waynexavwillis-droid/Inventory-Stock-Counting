@@ -35,6 +35,10 @@
       /* Deep Purple theme (Adjust/Location pages) */
       --p-bg:#0f0a1f; --p-card:#1a1233; --p-ink:#e8e3ff; --p-muted:#b8acd9; --p-line:#3b2b66;
       --p-accent:#6d28d9; --p-accent-ink:#ffffff; --p-glow:rgba(109,40,217,.35);
+
+      /* Status page soft blues (screenshot-ish) */
+      --s-card:#ffffff; --s-ink:#0f172a; --s-muted:#6b7280; --s-line:#e5e7eb; --s-badge:#e2e8f0;
+      --s-accent:#111827;
     }
 
     html,body{ height:100%; }
@@ -125,7 +129,7 @@
     #addPage{ max-width: 1000px; margin: 0 auto; }
     #addPage .input-container{ max-width: 560px; }
     #addPage input[type="number"]{ width: 140px; box-sizing: border-box; }
-    .add-row{ display:grid; grid-template-columns: minmax(260px, 1fr) 160px minmax(200px, 1fr) auto; gap: 12px; align-items:center; max-width:900px; }
+    .add-row{ display:grid; grid-template-columns: minmax(260px, 1fr) 160px minmax(220px, 1fr) auto; gap: 12px; align-items:center; max-width:900px; }
     .add-row .input-container, .add-row .input{ width:100%; }
     @media (max-width: 640px){ .add-row{ grid-template-columns: 1fr; } }
 
@@ -160,60 +164,44 @@
     .toast--error{ background:#991b1b; }
     .toast__close{ margin-left:12px; cursor:pointer; font-weight:700; }
 
-    /* --- Your provided “card” design (used for imgbb helper) --- */
-    .helper-row{
-      display:grid;
-      grid-template-columns: 1fr 280px;
-      gap:16px;
-      align-items:start;
-      margin-top:12px;
-    }
-    @media (max-width: 900px){
-      .helper-row{ grid-template-columns: 1fr; }
-    }
+    /* Helper card you used for imgbb */
+    .helper-row{ display:grid; grid-template-columns: 1fr; gap:16px; align-items:start; margin-top:12px; }
     .card.helper{
-      width: 100%;
-      height: auto;
-      border-radius: 15px;
-      box-shadow: 1px 5px 60px 0px #100a;
-      background: #0f0a1f; /* darker to match theme */
-      color: #fff;
-      padding: 16px;
+      width: 100%; height: auto; border-radius: 15px; box-shadow: 1px 5px 60px 0px #100a;
+      background: #0f0a1f; color: #fff; padding: 16px;
     }
-    .card.helper .card-border-top{
-      width: 60%;
-      height: 3px;
-      background: #6d28d9;
-      margin: 6px auto 10px;
-      border-radius: 0 0 15px 15px;
-    }
-    .card.helper span{
-      font-weight: 600;
-      color: #fff;
-      text-align: center;
-      display: block;
-      padding-top: 6px;
-      font-size: 16px;
-    }
-    .card.helper .job{
-      font-weight: 400;
-      color: #e8e3ff;
-      display: block;
-      text-align: center;
-      padding-top: 3px;
-      font-size: 12px;
-      opacity:.85;
-    }
-    .card.helper .img{
-      width: 70px; height: 70px; background:#1a1233; border-radius: 15px; margin: 14px auto 6px;
-      display:flex; align-items:center; justify-content:center; font-size:24px;
-    }
-    .card.helper button{
-      padding: 10px 16px; display:block; margin:12px auto 6px; border-radius:8px; border:1px solid #6d28d9;
-      background:#6d28d9; color:#fff; font-weight:600; cursor:pointer;
-    }
+    .card.helper .card-border-top{ width: 60%; height: 3px; background: #6d28d9; margin: 6px auto 10px; border-radius: 0 0 15px 15px; }
+    .card.helper span{ font-weight: 600; color: #fff; text-align: center; display: block; padding-top: 6px; font-size: 16px; }
+    .card.helper .job{ font-weight: 400; color: #e8e3ff; display: block; text-align: center; padding-top: 3px; font-size: 12px; opacity:.85; }
+    .card.helper .img{ width: 70px; height: 70px; background:#1a1233; border-radius: 15px; margin: 14px auto 6px; display:flex; align-items:center; justify-content:center; font-size:24px; }
+    .card.helper button{ padding: 10px 16px; display:block; margin:12px auto 6px; border-radius:8px; border:1px solid #6d28d9; background:#6d28d9; color:#fff; font-weight:600; cursor:pointer; }
     .card.helper button:hover{ filter:brightness(.92); }
     .helper-note{ text-align:center; font-size:12px; color:#b8acd9; margin-top:4px; }
+
+    /* ---------- Status page styles ---------- */
+    #statusPage{ max-width:1200px; margin:0 auto; }
+    .status-toolbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:10px 0 16px; }
+    .status-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+    .status-card{
+      background:var(--s-card);
+      border:1px solid var(--s-line);
+      border-radius:16px;
+      box-shadow:0 8px 24px rgba(15,23,42,.06);
+      color:var(--s-ink);
+      display:flex; flex-direction:column; gap:10px;
+      padding:14px 14px 12px;
+    }
+    .status-card__top{ display:flex; align-items:center; justify-content:space-between; color:var(--s-muted); font-size:12px; }
+    .status-card__title{ font-weight:700; margin:2px 0 4px; }
+    .status-meta{ font-size:12px; color:var(--s-muted); display:grid; grid-template-columns:auto auto; gap:4px 14px; }
+    .status-row{ display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px dashed var(--s-line); padding-top:8px; }
+    .status-chip{ background:var(--s-badge); border-radius:999px; padding:2px 8px; font-size:12px; }
+    .status-amt{ font-weight:800; }
+
+    .action-btn{
+      background:#111827; color:#fff; border:1px solid #111827; border-radius:8px; padding:10px 14px;
+    }
+    .action-btn:hover{ filter:brightness(.93); }
   </style>
 </head>
 <body>
@@ -233,6 +221,7 @@
     <button onclick="document.getElementById('menu-check').checked=false; showPage('locationPage')">Location</button>
     <button onclick="document.getElementById('menu-check').checked=false; showPage('goalPage')">Set Stock Count Goal</button>
     <button onclick="document.getElementById('menu-check').checked=false; showPage('historyPage')">History</button>
+    <button onclick="document.getElementById('menu-check').checked=false; showPage('statusPage')">Status</button>
     <hr>
     <button onclick="logout()">Logout</button>
   </nav>
@@ -257,22 +246,26 @@
 
         <input type="number" id="newItemQty" placeholder="Quantity" min="1" inputmode="numeric" aria-label="Quantity">
 
+        <!-- CHANGED: text input -> dropdown -->
         <div class="input-container">
-          <input type="text" id="newItemLoc" class="input" placeholder=" " autocomplete="off">
+          <select id="newItemLoc" class="input" style="height:40px;">
+            <option>Old warehouse</option>
+            <option>New warehouse</option>
+          </select>
           <span class="topline"></span><span class="underline"></span>
-          <label for="newItemLoc" class="label">Location (Old warehouse / New warehouse)</label>
+          <label for="newItemLoc" class="label">Location</label>
         </div>
 
         <button onclick="addNewItem()" aria-label="Add Item">Add Item</button>
       </div>
 
-      <!-- New: Image URL + imgbb helper -->
+      <!-- Optional helper (no Image URL field anymore) -->
       <div class="helper-row">
         <div class="card helper" aria-label="Image Helper">
           <div class="card-border-top"></div>
           <div class="img">🖼️</div>
           <span>Need an image URL?</span>
-          <span class="job">Upload to imgbb, copy the link, paste it here.</span>
+          <span class="job">Upload to imgbb, copy the link, paste into an item later via 🖼.</span>
           <button type="button" onclick="openImgbb()">Open imgbb.com</button>
           <div class="helper-note">Tip: choose “Direct link” if available.</div>
         </div>
@@ -335,6 +328,23 @@
         <tbody></tbody>
       </table>
       <div class="muted">History syncs across devices (Firestore). “Clear” deletes all adjustment records.</div>
+    </section>
+
+    <!-- NEW: Status Page -->
+    <section id="statusPage" style="display:none;" aria-labelledby="statusPageTitle">
+      <h2 id="statusPageTitle">Status</h2>
+
+      <div class="status-toolbar">
+        <div class="input-container" style="flex:1; min-width:280px;">
+          <input id="status-search" type="text" class="input" placeholder=" ">
+          <span class="topline"></span><span class="underline"></span>
+          <label for="status-search" class="label">Search order / item / remarks…</label>
+        </div>
+        <button class="action-btn" id="status-add-btn">+ New Status</button>
+      </div>
+
+      <div id="statusList" class="status-list"></div>
+      <div class="muted">Track individual loan/rent sets here. Use the + button to add a record.</div>
     </section>
   </main>
 
@@ -444,6 +454,42 @@
     </div>
   </div>
 
+  <!-- NEW: Status modal -->
+  <div id="statusModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="status-title">
+    <div class="modal-card">
+      <h3 id="status-title">Add Status</h3>
+
+      <div class="input-container">
+        <input id="st-order" type="text" class="input" placeholder=" ">
+        <span class="topline"></span><span class="underline"></span>
+        <label for="st-order" class="label">Order</label>
+      </div>
+
+      <div class="input-container">
+        <input id="st-item" type="text" class="input" placeholder=" ">
+        <span class="topline"></span><span class="underline"></span>
+        <label for="st-item" class="label">Item Name</label>
+      </div>
+
+      <label for="st-qty">Quantity</label>
+      <input id="st-qty" type="number" min="1" step="1" value="1" placeholder="Quantity">
+
+      <label for="st-type">Status</label>
+      <select id="st-type">
+        <option>Loan</option>
+        <option>Rent</option>
+      </select>
+
+      <label for="st-remarks">Remarks</label>
+      <textarea id="st-remarks" rows="3" placeholder="Optional notes…"></textarea>
+
+      <div class="modal-actions">
+        <button id="st-cancel">Cancel</button>
+        <button id="st-save" class="action-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Hidden file pickers -->
   <input
     type="file"
@@ -462,7 +508,7 @@
 
   <!-- Firebase + App Logic -->
   <script type="module">
-    /* Firebase SDKs (modular) — versions kept as-is */
+    /* Firebase SDKs (modular) */
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -501,6 +547,7 @@
     const colInventory   = collection(db, "inventory");
     const colAdjustments = collection(db, "adjustments");
     const colLocations   = collection(db, "locations");
+    const colStatuses    = collection(db, "statuses");   // NEW
 
     // --- Toasts ---
     const toastWrap = document.getElementById('toast-wrap');
@@ -518,16 +565,13 @@
     // Utils
     function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
     function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-    function toLocalDateTime(ts){
-      if (!ts) return '';
-      const d = ts.toDate ? ts.toDate() : new Date(ts);
-      if (Number.isNaN(+d)) return '';
-      return d.toLocaleString();
-    }
+    function toLocalDateTime(ts){ if (!ts) return ''; const d = ts.toDate ? ts.toDate() : new Date(ts); return isNaN(+d)?'':d.toLocaleString(); }
     function normLoc(raw){
       const s=(raw||'').trim().toLowerCase();
       if (s.startsWith('old')) return 'Old warehouse';
       if (s.startsWith('new')) return 'New warehouse';
+      // since we changed to dropdown, also accept exact labels
+      if (['old warehouse','new warehouse'].includes(s)) return s.replace(/\b\w/g,m=>m.toUpperCase());
       return null;
     }
     function totalQty(item){ return (item.qtyOld ?? 0) + (item.qtyNew ?? 0) + (item.qty ?? 0); }
@@ -539,12 +583,8 @@
       return `${url}${sep}v=${Date.now()}`;
     }
 
-    // Image type helpers
-    const SUPPORTED_IMAGE_TYPES = [
-      "image/jpeg", "image/jpg", "image/png",
-      "image/gif", "image/webp",
-      "image/bmp", "image/heic", "image/heif"
-    ];
+    // Image helpers
+    const SUPPORTED_IMAGE_TYPES = ["image/jpeg","image/jpg","image/png","image/gif","image/webp","image/bmp","image/heic","image/heif"];
     function isSupportedImage(file){
       if (!file) return false;
       if (file.type && SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) return true;
@@ -552,36 +592,31 @@
       return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/.test(name);
     }
     function guessContentType(file){
-      const byType = (file && file.type) ? file.type : "";
-      if (byType) return byType;
-      const name = (file?.name || "").toLowerCase();
-      if (/\.jpe?g$/.test(name)) return "image/jpeg";
-      if (/\.png$/.test(name))   return "image/png";
-      if (/\.gif$/.test(name))   return "image/gif";
-      if (/\.webp$/.test(name))  return "image/webp";
-      if (/\.bmp$/.test(name))   return "image/bmp";
-      if (/\.heic$/.test(name))  return "image/heic";
-      if (/\.heif$/.test(name))  return "image/heif";
+      const t=file?.type||""; if(t) return t;
+      const n=(file?.name||"").toLowerCase();
+      if(/\.jpe?g$/.test(n)) return "image/jpeg";
+      if(/\.png$/.test(n)) return "image/png";
+      if(/\.gif$/.test(n)) return "image/gif";
+      if(/\.webp$/.test(n)) return "image/webp";
+      if(/\.bmp$/.test(n)) return "image/bmp";
+      if(/\.heic$/.test(n)) return "image/heic";
+      if(/\.heif$/.test(n)) return "image/heif";
       return "application/octet-stream";
     }
     function isLikelyHttpUrl(s){
-      const u = (s || '').trim();
+      const u=(s||'').trim();
       return /^https?:\/\//i.test(u) || /^data:image\//i.test(u);
     }
     async function uploadFileWithPreview({file, pathPrefix, title, afterSet}){
       const localURL = URL.createObjectURL(file);
       openImageViewer(localURL, title);
-
       const fileNameSafe = (file.name || ('photo_' + Date.now())).replace(/[^\w.\-]+/g,'_');
       const path = `${pathPrefix}/${Date.now()}_${fileNameSafe}`;
       const ref  = storageRef(st, path);
       const contentType = guessContentType(file);
-
       await uploadBytes(ref, file, { contentType });
       const url = await getDownloadURL(ref);
-
       await afterSet(url);
-
       openImageViewer(withCacheBuster(url), title);
       URL.revokeObjectURL(localURL);
     }
@@ -596,19 +631,19 @@
     let inventory = [];
     let adjustments = [];
     let locations = [];
+    let statuses = [];
 
     // Track low-stock to avoid spammy alerts
     const lowState = new Map(); // itemId -> boolean LOW
 
     // Live listeners
-    onSnapshot(colInventory, (snap) => {
-      inventory = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-      renderTables();
-    });
+    onSnapshot(colInventory, (snap) => { inventory = snap.docs.map(d => ({ id:d.id, ...d.data() })); renderTables(); });
+    onSnapshot(colLocations, (snap) => { locations = snap.docs.map(d => ({ id:d.id, ...d.data() })); renderLocationGrid(); });
 
-    onSnapshot(colLocations, (snap) => {
-      locations = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-      renderLocationGrid();
+    // NEW: live listener for statuses (latest first)
+    onSnapshot(query(colStatuses, orderBy("ts","desc")), (snap) => {
+      statuses = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      renderStatuses();
     });
 
     let unsubHistory=null;
@@ -624,7 +659,7 @@
 
     // Routing
     function showPage(pageId) {
-      ['addPage','adjustPage','locationPage','goalPage','historyPage'].forEach(id => {
+      ['addPage','adjustPage','locationPage','goalPage','historyPage','statusPage'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
       });
@@ -633,26 +668,23 @@
       if (pageId === 'adjustPage' || pageId === 'goalPage') renderTables();
       if (pageId === 'locationPage') renderLocationGrid();
       if (pageId === 'historyPage') attachHistoryListener();
+      if (pageId === 'statusPage') renderStatuses();
     }
     window.showPage = showPage;
 
-    // NEW: open imgbb
-    window.openImgbb = function(){
-      window.open('https://imgbb.com', '_blank', 'noopener');
-    };
+    // imgbb opener
+    window.openImgbb = function(){ window.open('https://imgbb.com', '_blank', 'noopener'); };
 
-    // Add item (now supports optional image URL)
+    // Add item (uses dropdown location)
     async function addNewItem() {
       const nameRaw = document.getElementById('newItemName').value;
       const name = (nameRaw || '').trim().replace(/\s+/g,' ');
       const qty  = parseInt(document.getElementById('newItemQty').value,10);
       const locRaw = document.getElementById('newItemLoc').value;
-      const imgUrlRaw = document.getElementById('newItemImgUrl').value.trim();
       const location = normLoc(locRaw);
 
       if (!name || isNaN(qty) || qty <= 0) { notify("Enter a valid name and a quantity ≥ 1","warn"); return; }
-      if (!location) { notify('Location must be "Old warehouse" or "New warehouse". Tip: type "Old" or "New".', "warn"); return; }
-      if (imgUrlRaw && !isLikelyHttpUrl(imgUrlRaw)) { notify("Image URL must start with http(s) or be a data:image URL.","warn"); return; }
+      if (!location) { notify('Location must be "Old warehouse" or "New warehouse".',"warn"); return; }
 
       const existing = inventory.find(i => (i.name||'').toLowerCase() === name.toLowerCase());
       try{
@@ -661,15 +693,13 @@
           const incNew = location === 'New warehouse' ? qty : 0;
           const newOld = Math.max(0, (existing.qtyOld ?? 0) + incOld);
           const newNew = Math.max(0, (existing.qtyNew ?? 0) + incNew);
-          const data = { qtyOld: newOld, qtyNew: newNew, qty: newOld + newNew, isNew:true };
-          if (imgUrlRaw) data.img = imgUrlRaw;
-          await updateDoc(doc(db, "inventory", existing.id), data);
+          await updateDoc(doc(db, "inventory", existing.id), { qtyOld: newOld, qtyNew: newNew, qty: newOld + newNew, isNew:true });
         } else {
           const qtyOld = location === 'Old warehouse' ? qty : 0;
           const qtyNew = location === 'New warehouse' ? qty : 0;
           await addDoc(colInventory, {
             name, qtyOld, qtyNew, qty: qtyOld + qtyNew,
-            goal:0, img: imgUrlRaw || null, isNew:true, createdAt: serverTimestamp()
+            goal:0, img:null, isNew:true, createdAt: serverTimestamp()
           });
         }
         notify(`Item "${name}" added to ${location}.`);
@@ -677,8 +707,7 @@
 
       document.getElementById('newItemName').value = '';
       document.getElementById('newItemQty').value = '';
-      document.getElementById('newItemLoc').value = '';
-      document.getElementById('newItemImgUrl').value = '';
+      // keep dropdown as-is
     }
     window.addNewItem = addNewItem;
 
@@ -762,9 +791,6 @@
         };
         btn.addEventListener('click', () => onSave(parseInt(btn.getAttribute('data-update-goal'),10)));
       });
-      tbody.querySelectorAll('input[id^="newGoal-"]').forEach((inp, i) => {
-        inp.addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); tbody.querySelector(`button[data-update-goal="${i}"]`)?.click(); } });
-      });
     }
 
     function checkLowStockAlerts() {
@@ -772,9 +798,7 @@
         const total = totalQty(item);
         const isLow = item.goal > 0 && total <= item.goal;
         const wasLow = lowState.get(item.id) === true;
-        if (isLow && !wasLow) {
-          notify(`Low stock for "${item.name}" (Total: ${total}, Goal: ${item.goal})`, 'warn', 6000);
-        }
+        if (isLow && !wasLow) notify(`Low stock for "${item.name}" (Total: ${total}, Goal: ${item.goal})`, 'warn', 6000);
         lowState.set(item.id, isLow);
       }
     }
@@ -888,9 +912,7 @@
       document.getElementById('locAddModal').classList.add('open');
       setTimeout(()=>document.getElementById('loc-item-name').focus(), 0);
     }
-    function closeAddLocationDialog(){
-      document.getElementById('locAddModal').classList.remove('open');
-    }
+    function closeAddLocationDialog(){ document.getElementById('locAddModal').classList.remove('open'); }
     document.getElementById('loc-add-cancel').addEventListener('click', closeAddLocationDialog);
     document.getElementById('locAddModal').addEventListener('click', e => { if (e.target.id === 'locAddModal') closeAddLocationDialog(); });
 
@@ -899,9 +921,7 @@
       const description = document.getElementById('loc-desc').value.trim();
       if (!name) { notify('Please enter an item name.','warn'); return; }
       try{
-        await addDoc(colLocations, {
-          name, description, img:null, createdAt:serverTimestamp(), isNew:true, actor: CURRENT_USER
-        });
+        await addDoc(colLocations, { name, description, img:null, createdAt:serverTimestamp(), isNew:true, actor: CURRENT_USER });
         notify('Location card created');
       }catch(err){ console.error(err); notify('Failed to create card','error'); }
       closeAddLocationDialog();
@@ -1153,7 +1173,7 @@
           csvEscape(adjustedBy)
         ].join(','));
       }
-      const BOM = "\uFEFF"; // Excel-friendly
+      const BOM = "\uFEFF";
       const blob = new Blob([BOM + csvRows.join('\n')], {type:'text/csv;charset=utf-8;'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url;
@@ -1179,6 +1199,74 @@
     }
     window.clearHistory = clearHistory;
 
+    // ---------- Status page logic ----------
+    const statusModal = document.getElementById('statusModal');
+    const stOpenBtn   = document.getElementById('status-add-btn');
+    const stCancel    = document.getElementById('st-cancel');
+    const stSave      = document.getElementById('st-save');
+    const stSearch    = document.getElementById('status-search');
+
+    stOpenBtn.addEventListener('click', () => { openStatusModal(); });
+    stCancel.addEventListener('click', closeStatusModal);
+    statusModal.addEventListener('click', e => { if (e.target.id === 'statusModal') closeStatusModal(); });
+    statusModal.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); stSave.click(); } });
+
+    function openStatusModal(){
+      document.getElementById('st-order').value   = '';
+      document.getElementById('st-item').value    = '';
+      document.getElementById('st-qty').value     = '1';
+      document.getElementById('st-type').value    = 'Loan';
+      document.getElementById('st-remarks').value = '';
+      statusModal.classList.add('open');
+      setTimeout(()=>document.getElementById('st-order').focus(),0);
+    }
+    function closeStatusModal(){ statusModal.classList.remove('open'); }
+
+    stSave.addEventListener('click', async ()=>{
+      const order   = document.getElementById('st-order').value.trim();
+      const item    = document.getElementById('st-item').value.trim();
+      const qty     = parseInt(document.getElementById('st-qty').value,10);
+      const stype   = document.getElementById('st-type').value;
+      const remarks = document.getElementById('st-remarks').value.trim();
+      if (!order || !item || !Number.isInteger(qty) || qty<=0){ notify('Please fill Order, Item, and a positive Quantity.','warn'); return; }
+      try{
+        await addDoc(colStatuses, { ts:serverTimestamp(), order, item, qty, status:stype, remarks, actor:CURRENT_USER });
+        notify('Status saved');
+        closeStatusModal();
+      }catch(err){ console.error(err); notify('Failed to save status','error'); }
+    });
+
+    function renderStatuses(){
+      const wrap = document.getElementById('statusList');
+      if (!wrap) return;
+      wrap.innerHTML = '';
+      let rows = statuses.slice();
+      const q = (stSearch?.value || '').trim().toLowerCase();
+      if (q) rows = rows.filter(r =>
+        (r.order||'').toLowerCase().includes(q) ||
+        (r.item||'').toLowerCase().includes(q) ||
+        (r.remarks||'').toLowerCase().includes(q)
+      );
+      for (const r of rows){
+        const div = document.createElement('div');
+        div.className='status-card';
+        const dt = toLocalDateTime(r.ts) || '';
+        div.innerHTML = `
+          <div class="status-card__top">
+            <span>${escapeHtml(dt)}</span>
+            <span class="status-chip">${escapeHtml(r.status || '')}</span>
+          </div>
+          <div class="status-card__title">Order: ${escapeHtml(r.order || '')}</div>
+          <div class="status-meta">
+            <div>Item Name</div><div>${escapeHtml(r.item || '')}</div>
+            <div>Quantities</div><div class="status-amt">${r.qty ?? ''}</div>
+          </div>
+          ${r.remarks ? `<div class="status-row"><div style="color:var(--s-muted);">Remarks</div><div>${escapeHtml(r.remarks)}</div></div>` : ''}`;
+        wrap.appendChild(div);
+      }
+    }
+    stSearch?.addEventListener('input', renderStatuses);
+
     // Initial render + Esc to close modals
     function initialRender(){ renderTables(); renderLocationGrid(); }
     initialRender();
@@ -1188,6 +1276,7 @@
         document.getElementById('deleteModal').classList.remove('open');
         document.getElementById('locAddModal').classList.remove('open');
         document.getElementById('imageModal').classList.remove('open');
+        document.getElementById('statusModal').classList.remove('open');
       }
     });
   </script>
