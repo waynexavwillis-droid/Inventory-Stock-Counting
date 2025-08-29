@@ -736,15 +736,125 @@
     }
 
     /* Map helpers by ID */
-    const getItemById = (id) => inventory.find(i=>i.id===id);
+const getItemById = (id) => inventory.find(i => i.id === id);
 
-    /* Adjust dialog by ID */
-    function openAdjustDialogById(id, mode){
-      const index = inventory.findIndex(i=>i.id===id);
-      if (index<0) return;
-      openAdjustDialog(index, mode);
+/* Adjust dialog by ID */
+function openAdjustDialogById(id, mode){
+  const index = inventory.findIndex(i => i.id === id);
+  if (index < 0) return;
+  openAdjustDialog(index, mode);
+}
+window.openAdjustDialogById = openAdjustDialogById;
+
+/* --- FIX: Adjust dialog actions & stock updates --- */
+document.getElementById('adj-cancel').addEventListener('click', closeAdjustDialog);
+document.getElementById('adjustModal').addEventListener('click', (e) => {
+  if (e.target.id === 'adjustModal') closeAdjustDialog();
+});
+document.getElementById('adjustModal').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('adj-confirm').click();
+  }
+});
+
+document.getElementById('adj-confirm').addEventListener('click', async () => {
+  try {
+    // Check if there's an item selected
+    if (pending?.index == null) {
+      closeAdjustDialog();
+      return;
     }
-    window.openAdjustDialogById = openAdjustDialogById;
+
+    const item = inventory[pending.index];
+    if (!item) {
+      closeAdjustDialog();
+      return;
+    }
+
+    // Get form values
+    const amountRaw = document.getElementById('adj-amount').value;
+    const amt = parseInt(amountRaw, 10);
+    const locRaw = document.getElementById('adj-location').value;
+    const loc = normLoc(locRaw);
+    const reason = (document.getElementById('adj-reason').value || '').trim();
+    const adjustedBy = (document.getElementById('adj-by').value || '').trim();
+
+    // Validations
+    if (!Number.isInteger(amt) || amt <= 0) {
+      notify('Enter a positive integer amount.','warn');
+      return;
+    }
+    if (!loc) {
+      notify('Location must be "Old warehouse" or "New warehouse".','warn');
+      return;
+    }
+    if (!reason || !adjustedBy) {
+      notify('Please fill Reason and Adjusted by (name).','warn');
+      return;
+    }
+
+    // Determine add/subtract mode
+    const mode = pending.mode === 'sub' ? 'sub' : 'add';
+    const delta = mode === 'add' ? amt : -amt;
+
+    // Get current quantities
+    const prevOld = Number(item.qtyOld ?? 0);
+    const prevNew = Number(item.qtyNew ?? 0);
+
+    // Prevent subtracting more than available stock
+    if (mode === 'sub') {
+      if (loc === 'Old warehouse' && amt > prevOld) {
+        notify(`Not enough stock in Old warehouse (have ${prevOld}).`,'warn');
+        return;
+      }
+      if (loc === 'New warehouse' && amt > prevNew) {
+        notify(`Not enough stock in New warehouse (have ${prevNew}).`,'warn');
+        return;
+      }
+    }
+
+    // Calculate new stock levels
+    let newOld = prevOld;
+    let newNew = prevNew;
+    if (loc === 'Old warehouse') newOld = prevOld + delta;
+    if (loc === 'New warehouse') newNew = prevNew + delta;
+
+    // Clamp to 0 if somehow negative
+    newOld = Math.max(0, newOld);
+    newNew = Math.max(0, newNew);
+    const newTotal = newOld + newNew;
+
+    // Update Firestore inventory document
+    await updateDoc(doc(db, "inventory", item.id), {
+      qtyOld: newOld,
+      qtyNew: newNew,
+      qty: newTotal
+    });
+
+    // Log adjustment in history
+    await addDoc(colAdjustments, {
+      ts: serverTimestamp(),
+      item: item.name,
+      itemId: item.id,
+      location: loc,
+      delta,
+      actor: CURRENT_USER,
+      reason,
+      adjustedBy,
+      qtyAfterOld: newOld,
+      qtyAfterNew: newNew,
+      qtyAfter: newTotal
+    });
+
+    notify(`${mode === 'add' ? 'Added' : 'Subtracted'} ${Math.abs(delta)} ${loc === 'Old warehouse' ? 'to/from Old' : 'to/from New'} for "${item.name}".`);
+    closeAdjustDialog();
+  } catch(err) {
+    console.error(err);
+    notify('Failed to adjust stock','error');
+  }
+});
+
 
     /* Image picker helpers by ID */
     let imgTargetIndex=null;
