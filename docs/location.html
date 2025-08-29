@@ -27,6 +27,7 @@
   input,button,select,textarea{padding:8px;margin:4px;font-family:inherit}
   button{background:#6d28d9;border:1px solid #6d28d9;color:#fff;border-radius:8px;cursor:pointer}
   button:hover{filter:brightness(.93)}
+  /* hamburger + sidebar */
   #menu-check{display:none}
   .hamburger{position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;cursor:pointer;user-select:none;z-index:1200;transition:transform .3s}
   .hamburger .bar{height:3px;background:#e8e3ff;border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
@@ -45,7 +46,7 @@
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
   .card{width:190px;height:254px;background:var(--panel);border-radius:20px;position:relative;overflow:visible;transition:.5s;box-shadow:0 20px 45px rgba(109,40,217,.35),0 8px 20px rgba(0,0,0,.25);border:1px solid var(--line);color:var(--ink)}
   .badge-new{position:absolute;top:-10px;right:-10px;background:#e11d48;color:#fff;padding:.35em .55em;border-radius:999px;font-weight:700;font-size:.7em;box-shadow:0 8px 18px rgba(0,0,0,.25);cursor:pointer}
-  .card__image{width:100%;height:100px;border-radius:12px;background:linear-gradient(180deg,#2a2146 0%, #221b3a 100%);position:relative;overflow:hidden}
+  .card__image{width:100%;height:100px;border-radius:12px;background:linear-gradient(180deg,#2a2146 0%, #221b3a 100%);position:relative;overflow:hidden;background-size:cover;background-position:center}
   .img-edit-btn,.img-view-btn{position:absolute;top:6px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:999px;background:rgba(26,18,51,.95);color:#e8e3ff;cursor:pointer}
   .img-edit-btn{left:6px;width:26px}
   .img-view-btn{right:6px;padding:0 8px;font-size:12px}
@@ -54,6 +55,9 @@
   .card__description{color:var(--muted);font-size:.75em;margin:0}
   .card__actions{display:flex;justify-content:center;gap:12px;margin-top:8px}
   .card__button--trash{background:transparent;color:#e8e3ff;border:1px solid #e8e3ff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+  /* add-tile look */
+  .card--add{display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px dashed var(--line)}
 
   /* Modals, inputs, toasts */
   .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:9999}
@@ -113,7 +117,7 @@
     </div>
     <label for="loc-desc">Details / placement notes</label>
     <textarea id="loc-desc" rows="4" class="input" style="height:auto" placeholder="e.g., Rack A3, top shelf, behind boxes"></textarea>
-    <div style="color:#6b7280">After creating, tap the 🖼 button on the card to add a photo (camera/gallery) or paste an image URL.</div>
+    <div style="color:#b8acd9">After creating, tap the 🖼 button on the card to add a photo (camera/gallery) or paste an image URL.</div>
     <div class="modal-actions">
       <button id="loc-add-cancel" style="background:#2b2b2b;border-color:#2b2b2b">Cancel</button>
       <button id="loc-add-confirm">Create</button>
@@ -143,6 +147,7 @@
   import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
   import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
 
+  /* ---------- Firebase ---------- */
   const firebaseConfig = {
     apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
     authDomain: "epedu-inventory-database.firebaseapp.com",
@@ -152,7 +157,6 @@
     appId: "1:124437251040:web:4989c73efc2f4afbf22185",
     measurementId: "G-GFEEP49VRP"
   };
-
   const app = initializeApp(firebaseConfig);
   try { getAnalytics(app); } catch(e) {}
   const auth = getAuth(app);
@@ -162,15 +166,16 @@
 
   const CURRENT_USER = localStorage.getItem('auth_user') || 'Unknown';
 
-  /* Sidebar ARIA */
+  /* ---------- Sidebar ARIA ---------- */
   const menuCheck = document.getElementById('menu-check');
   const hamb = document.querySelector('label.hamburger');
   function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
   menuCheck.addEventListener('change', syncAria); syncAria();
 
-  /* Toasts */
+  /* ---------- Toasts / utils ---------- */
   const toastWrap = document.getElementById('toast-wrap');
-  function toast(msg, type='info', timeout=3200){
+  function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  function notify(msg, type='info', timeout=3200){
     const el = document.createElement('div');
     el.className = 'toast' + (type==='warn' ? ' toast--warn' : type==='error' ? ' toast--error' : '');
     el.innerHTML = `${escapeHtml(msg)} <span class="toast__close" aria-label="Dismiss" role="button">×</span>`;
@@ -179,14 +184,14 @@
     el.querySelector('.toast__close').addEventListener('click', close);
     if (timeout>0) setTimeout(close, timeout);
   }
-  const notify = toast;
-
-  /* Utils */
-  function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
   function withCacheBuster(url){ if (!url) return url; const sep = url.includes('?') ? '&' : '?'; return `${url}${sep}v=${Date.now()}`; }
   const SUPPORTED_IMAGE_TYPES=["image/jpeg","image/jpg","image/png","image/gif","image/webp","image/bmp","image/heic","image/heif"];
   function isSupportedImage(file){ if (!file) return false; if (file.type && SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) return true; const n=(file.name||"").toLowerCase(); return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/.test(n); }
-  function guessContentType(file){ const t=file?.type||""; if(t) return t; const n=(file?.name||"").toLowerCase(); if(/\.jpe?g$/.test(n))return"image/jpeg"; if(/\.png$/.test(n))return"image/png"; if(/\.gif$/.test(n))return"image/gif"; if(/\.webp$/.test(n))return"image/webp"; if(/\.bmp$/.test(n))return"image/bmp"; if(/\.heic$/.test(n))return"image/heic"; if(/\.heif$/.test(n))return"image/heif"; return"application/octet-stream"; }
+  function guessContentType(file){ const t=file?.type||""; if(t) return t; const n=(file?.name||"").toLowerCase();
+    if(/\.jpe?g$/.test(n))return"image/jpeg"; if(/\.png$/.test(n))return"image/png"; if(/\.gif$/.test(n))return"image/gif";
+    if(/\.webp$/.test(n))return"image/webp"; if(/\.bmp$/.test(n))return"image/bmp"; if(/\.heic$/.test(n))return"image/heic";
+    if(/\.heif$/.test(n))return"image/heif"; return"application/octet-stream"; }
+  function isLikelyHttpUrl(s){ const u=(s||'').trim(); return /^https?:\/\//i.test(u) || /^data:image\//i.test(u); }
   async function uploadFileWithPreview({file, pathPrefix, title, afterSet}){
     const localURL = URL.createObjectURL(file); openImageViewer(localURL, title);
     const safe = (file.name || ('photo_' + Date.now())).replace(/[^\w.\-]+/g,'_');
@@ -199,14 +204,17 @@
     URL.revokeObjectURL(localURL);
   }
 
-  /* Firestore refs */
+  /* ---------- Firestore ---------- */
   const colLocations = collection(db, "locations");
 
-  /* State + listeners */
+  /* ---------- State & listeners ---------- */
   let locations = [];
-  onSnapshot(colLocations, (snap) => { locations = snap.docs.map(d => ({ id:d.id, ...d.data() })); renderLocationGrid(); });
+  onSnapshot(colLocations, (snap) => {
+    locations = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderLocationGrid();
+  });
 
-  /* Image viewer */
+  /* ---------- Image viewer ---------- */
   const imageModal   = document.getElementById('imageModal');
   const imgView      = document.getElementById('img-view');
   const imgTitle     = document.getElementById('img-title');
@@ -218,17 +226,19 @@
   imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
   window.openImageViewer = openImageViewer;
 
-  /* Render */
+  /* ---------- Render grid (with + add card) ---------- */
   function renderLocationGrid(){
     const grid = document.getElementById('locationGrid'); if (!grid) return;
     grid.innerHTML = '';
-    // Add card
-    const addCard = document.createElement('div'); addCard.className = 'card';
-    addCard.style.border='2px dashed var(--line)'; addCard.style.display='flex'; addCard.style.alignItems='center'; addCard.style.justifyContent='center'; addCard.style.cursor='pointer';
-    addCard.innerHTML = `<div class="card__button--trash" title="Add location" style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:28px;border:1px solid var(--line);">+</div>`;
-    addCard.addEventListener('click', openAddLocationDialog); grid.appendChild(addCard);
 
-    // Location cards
+    // add tile
+    const addCard = document.createElement('div'); addCard.className = 'card card--add';
+    addCard.innerHTML = `<div style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:28px;border:1px solid var(--line);">+</div>`;
+    addCard.title = 'Add location card';
+    addCard.addEventListener('click', openAddLocationDialog);
+    grid.appendChild(addCard);
+
+    // existing
     locations.forEach((loc, index) => {
       const card = document.createElement('div'); card.className = 'card';
       const bgUrl = loc.img ? withCacheBuster(loc.img) : '';
@@ -255,17 +265,25 @@
         if (!currentLoc || !currentLoc.img) { notify('No image set yet. Click 🖼 to add one.','warn'); return; }
         openImageViewer(withCacheBuster(currentLoc.img), `Location: ${currentLoc.name}`);
       });
-      if (loc.isNew) card.querySelector('.badge-new')?.addEventListener('click', async ()=>{ try{ await updateDoc(doc(db,"locations", loc.id), { isNew:false }); }catch(e){} });
+      if (loc.isNew) card.querySelector('.badge-new')?.addEventListener('click', async ()=>{
+        try{ await updateDoc(doc(db,"locations", loc.id), { isNew:false }); }catch(e){}
+      });
       card.querySelector('[data-del]').addEventListener('click', async ()=>{
         if (!confirm(`Delete location card "${loc.name}"?`)) return;
-        try { await deleteDoc(doc(db,"locations",loc.id)); notify('Location card deleted'); } catch(err){ console.error(err); notify('Failed to delete','error'); }
+        try { await deleteDoc(doc(db,"locations",loc.id)); notify('Location card deleted'); }
+        catch(err){ console.error(err); notify('Failed to delete','error'); }
       });
       grid.appendChild(card);
     });
   }
 
-  /* Add location modal */
-  function openAddLocationDialog(){ document.getElementById('loc-item-name').value = ''; document.getElementById('loc-desc').value = ''; document.getElementById('locAddModal').classList.add('open'); setTimeout(()=>document.getElementById('loc-item-name').focus(), 0); }
+  /* ---------- Add location modal ---------- */
+  function openAddLocationDialog(){
+    document.getElementById('loc-item-name').value = '';
+    document.getElementById('loc-desc').value = '';
+    document.getElementById('locAddModal').classList.add('open');
+    setTimeout(()=>document.getElementById('loc-item-name').focus(), 0);
+  }
   function closeAddLocationDialog(){ document.getElementById('locAddModal').classList.remove('open'); }
   document.getElementById('loc-add-cancel').addEventListener('click', closeAddLocationDialog);
   document.getElementById('locAddModal').addEventListener('click', e => { if (e.target.id === 'locAddModal') closeAddLocationDialog(); });
@@ -273,15 +291,17 @@
     const name = document.getElementById('loc-item-name').value.trim();
     const description = document.getElementById('loc-desc').value.trim();
     if (!name) { notify('Please enter an item name.','warn'); return; }
-    try{ await addDoc(colLocations, { name, description, img:null, createdAt:serverTimestamp(), isNew:true, actor: CURRENT_USER }); notify('Location card created'); }
-    catch(err){ console.error(err); notify('Failed to create card','error'); }
+    try{
+      await addDoc(colLocations, { name, description, img:null, createdAt:serverTimestamp(), isNew:true, actor: CURRENT_USER });
+      notify('Location card created');
+    }catch(err){ console.error(err); notify('Failed to create card','error'); }
     closeAddLocationDialog();
   });
 
-  /* Image picker for locations */
+  /* ---------- Image picker for locations ---------- */
   let locImgTargetIndex = null;
   const locFileInput = document.getElementById('hiddenLocationFileInput');
-  function isLikelyHttpUrl(s){ const u=(s||'').trim(); return /^https?:\/\//i.test(u) || /^data:image\//i.test(u); }
+
   function openLocationImagePicker(index){
     locImgTargetIndex = index;
     const choice=prompt("Set image for this location:\n- Paste an image URL (http/https) and press OK, OR\n- Leave blank to take/select a photo (uploads to Firebase Storage).");
@@ -297,24 +317,29 @@
     if (!file || locImgTargetIndex===null) return;
     if (!isSupportedImage(file)) { notify(`Unsupported image format: ${file.type || file.name}`,'warn', 6000); locImgTargetIndex = null; return; }
     const loc = locations[locImgTargetIndex];
-    try{ await uploadFileWithPreview({ file, pathPrefix: `locationImages/${loc.id}`, title: `Location: ${loc.name}`, afterSet: async (url)=>updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false }) }); }
-    catch(err){ console.error(err); notify('Upload failed','error'); }
+    try{
+      await uploadFileWithPreview({
+        file,
+        pathPrefix: `locationImages/${loc.id}`,
+        title: `Location: ${loc.name}`,
+        afterSet: async (url)=>updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false })
+      });
+    }catch(err){ console.error(err); notify('Upload failed','error'); }
     locImgTargetIndex=null;
   });
+
   async function setLocationImageFromURL(url){
     if (locImgTargetIndex===null) return;
     const loc = locations[locImgTargetIndex];
-    try{ await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false }); openImageViewer(withCacheBuster(url), `Location: ${loc.name}`); }
-    catch(err){ console.error(err); notify('Failed to set image URL','error'); }
+    try{
+      await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false });
+      openImageViewer(withCacheBuster(url), `Location: ${loc.name}`);
+    }catch(err){ console.error(err); notify('Failed to set image URL','error'); }
     locImgTargetIndex=null;
   }
   window.setLocationImageFromURL = setLocationImageFromURL;
 
-  /* Toast utils */
-  function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-  function notify(m,t='info',time=3200){ const el=document.createElement('div'); el.className='toast'+(t==='warn'?' toast--warn':t==='error'?' toast--error':''); el.innerHTML=`${escapeHtml(m)} <span class="toast__close" aria-label="Dismiss" role="button">×</span>`; toastWrap.appendChild(el); const close=()=>{ if(el&&el.parentNode) el.parentNode.removeChild(el); }; el.querySelector('.toast__close').addEventListener('click',close); if(time>0) setTimeout(close,time); }
-
-  /* ESC closes modals */
+  /* ---------- ESC closes modals ---------- */
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape'){
       document.getElementById('locAddModal').classList.remove('open');
@@ -324,4 +349,3 @@
 </script>
 </body>
 </html>
-
