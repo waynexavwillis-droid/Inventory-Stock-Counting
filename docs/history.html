@@ -1,1 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Inventory System — History</title>
+
+<script>
+  const AUTH_OK   = localStorage.getItem('auth_v1') === 'ok';
+  const AUTH_USER = localStorage.getItem('auth_user');
+  const AUTH_ROLE = localStorage.getItem('auth_role');
+  if (!AUTH_OK || !AUTH_USER) { window.location.replace('login.html'); }
+  else if (AUTH_ROLE === 'viewer') { window.location.replace('viewer.html'); }
+  function logout(){
+    localStorage.removeItem('auth_v1'); localStorage.removeItem('auth_user');
+    localStorage.removeItem('auth_role'); localStorage.removeItem('auth_time');
+    window.location.replace('login.html');
+  }
+</script>
+
+<style>
+  :root{
+    --nav-w:260px; --bg:#f6f7f8; --panel:#fff; --ink:#111; --muted:#6b7280; --line:#e5e7eb;
+  }
+  html,body{height:100%} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  h2{color:var(--ink)} .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
+  input,button,select,textarea{padding:8px;margin:4px;font-family:inherit}
+  button{background:linear-gradient(#fafafa,#f3f4f6);border:1px solid var(--line);color:var(--ink);border-radius:8px;cursor:pointer}
+  button:hover{background:#111;color:#fff;border-color:#111}
+  table{width:100%;margin-top:12px;border-collapse:collapse} table,th,td{border:1px solid var(--line)}
+  thead th{background:#f3f4f6;color:var(--muted)} th,td{padding:8px;text-align:left;vertical-align:top}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 16px}
+  .pill{display:inline-block;padding:2px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;color:#555}
+  #menu-check{display:none}
+  .hamburger{position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;cursor:pointer;user-select:none;z-index:1200;transition:transform .3s}
+  .hamburger .bar{height:3px;background:#111;border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
+  .hamburger .bar1,.hamburger .bar3{width:18px}.hamburger .bar2{width:28px}
+  #menu-check:checked+label.hamburger{transform:translateX(var(--nav-w))}
+  #menu-check:checked+label.hamburger .bar1{transform:translateY(10px) rotate(45deg);width:28px}
+  #menu-check:checked+label.hamburger .bar2{opacity:0}
+  #menu-check:checked+label.hamburger .bar3{transform:translateY(-10px) rotate(-45deg);width:28px}
+  .sidebar{position:fixed;inset:0 auto 0 0;width:var(--nav-w);background:#f3f4f6;padding:20px;box-sizing:border-box;transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;border-right:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.18)}
+  .sidebar a,.sidebar button{display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--line);background:#fff}
+  .sidebar a:hover{background:#111;color:#fff;border-color:#111}
+  #menu-check:checked~.sidebar{transform:translateX(0)}
+  label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
+  #menu-check:checked~label.overlay{opacity:1;visibility:visible}
+
+  /* Fancy input */
+  .input-container{position:relative;margin:8px 4px;min-width:260px}
+  .input{width:100%;padding:10px;height:40px;border:2px solid var(--ink);border-top:none;border-bottom:none;font-size:16px;background:transparent;outline:none;box-shadow:7px 7px 0 0 var(--ink);transition:.5s;box-sizing:border-box}
+  .topline,.underline{position:absolute;background-color:var(--ink);height:2px;right:0;transition:.5s}
+  .topline{width:0;top:0}.underline{width:0;bottom:0}
+  .input:focus~.topline{width:35%}.input:focus~.underline{width:100%}
+  .label{position:absolute;top:10px;left:10px;color:var(--ink);transition:.5s;transform:scale(0);z-index:-1;background:#fff;padding:0 4px}
+  .input:focus~.label{top:-10px;transform:scale(1)}
+
+  /* Toasts */
+  .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
+  .toast{background:#111;color:#fff;padding:10px 12px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+  .toast--warn{background:#b45309}.toast--error{background:#991b1b}.toast__close{margin-left:12px;cursor:pointer;font-weight:700}
+</style>
+</head>
+<body>
+
+<input id="menu-check" type="checkbox" />
+<label for="menu-check" class="hamburger" aria-label="Toggle menu" aria-controls="side" role="button" tabindex="0">
+  <span class="bar bar1"></span><span class="bar bar2"></span><span class="bar bar3"></span>
+</label>
+
+<nav class="sidebar" id="side" role="navigation" aria-label="Main">
+  <a href="index.html">Add New Stock</a>
+  <a href="adjust.html">Adjust Stock</a>
+  <a href="location.html">Location</a>
+  <a href="goal.html">Set Stock Count Goal</a>
+  <a href="history.html">History</a>
+  <a href="status.html">Status</a>
+  <hr>
+  <button onclick="logout()">Logout</button>
+</nav>
+<label class="overlay" for="menu-check" aria-hidden="true"></label>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<main class="content">
+  <section aria-labelledby="historyPageTitle">
+    <h2 id="historyPageTitle">History</h2>
+    <div class="toolbar">
+      <div class="input-container" style="flex:1;">
+        <input id="hist-search" type="text" class="input" placeholder=" " autocomplete="off">
+        <span class="topline"></span><span class="underline"></span>
+        <label for="hist-search" class="label">Search item / name / reason / location…</label>
+      </div>
+      <select id="hist-item-filter"><option value="">All items</option></select>
+      <span class="pill" id="hist-count">0 records</span>
+      <div style="flex:1"></div>
+      <button onclick="exportHistoryCSV()">Export CSV</button>
+      <button onclick="clearHistory()">Clear History</button>
+    </div>
+    <table id="historyTable">
+      <thead>
+        <tr>
+          <th class="nowrap">Date/Time</th>
+          <th>Item</th>
+          <th>Location</th>
+          <th class="nowrap">Change</th>
+          <th>Qty After (Total)</th>
+          <th>By (Name)</th>
+          <th>Reason</th>
+          <th>Adjusted by (name)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="muted">History syncs across devices (Firestore). “Clear” deletes all adjustment records.</div>
+  </section>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+  import {
+    getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+    onSnapshot, serverTimestamp, query, orderBy, getDocs, writeBatch
+  } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
+    authDomain: "epedu-inventory-database.firebaseapp.com",
+    projectId: "epedu-inventory-database",
+    storageBucket: "epedu-inventory-database.appspot.com",
+    messagingSenderId: "124437251040",
+    appId: "1:124437251040:web:4989c73efc2f4afbf22185",
+    measurementId: "G-GFEEP49VRP"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  try { getAnalytics(app); } catch(e) {}
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+  signInAnonymously(auth).catch(console.error);
+
+  /* Sidebar ARIA */
+  const menuCheck = document.getElementById('menu-check');
+  const hamb = document.querySelector('label.hamburger');
+  function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
+  menuCheck.addEventListener('change', syncAria); syncAria();
+
+  /* Toasts */
+  const toastWrap = document.getElementById('toast-wrap');
+  function toast(msg, type='info', timeout=3200){
+    const el = document.createElement('div');
+    el.className = 'toast' + (type==='warn' ? ' toast--warn' : type==='error' ? ' toast--error' : '');
+    el.innerHTML = `${escapeHtml(msg)} <span class="toast__close" aria-label="Dismiss" role="button">×</span>`;
+    toastWrap.appendChild(el);
+    const close = ()=>{ if (el && el.parentNode) el.parentNode.removeChild(el); };
+    el.querySelector('.toast__close').addEventListener('click', close);
+    if (timeout>0) setTimeout(close, timeout);
+  }
+  const notify = toast;
+
+  /* Utils */
+  function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
+  function toLocalDateTime(ts){ if (!ts) return ''; const d = ts.toDate ? ts.toDate() : new Date(ts); return isNaN(+d)?'':d.toLocaleString(); }
+
+  const colAdjustments = collection(db, "adjustments");
+  let adjustments = [];
+  let unsubHistory = null;
+
+  function attachHistoryListener(){
+    if (unsubHistory) return;
+    const qAdj = query(colAdjustments, orderBy("ts","desc"));
+    unsubHistory = onSnapshot(qAdj, (snap) => {
+      adjustments = snap.docs.map(d => ({ id:d.id, ...d.data() })); populateHistoryFilters(); renderHistory();
+    });
+  }
+  attachHistoryListener();
+
+  function populateHistoryFilters() {
+    const sel = document.getElementById('hist-item-filter'); if (!sel) return;
+    const current = sel.value;
+    const names = Array.from(new Set(adjustments.map(a => a.item))).filter(Boolean).sort((a,b)=>a.localeCompare(b));
+    sel.innerHTML = '<option value="">All items</option>' + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+    if ([...sel.options].some(o => o.value === current)) sel.value = current;
+    sel.onchange = renderHistory;
+    const searchEl = document.getElementById('hist-search'); if (searchEl && !searchEl._bound){ searchEl._bound=true; searchEl.oninput = renderHistory; }
+  }
+  function renderHistory() {
+    const tbody = document.querySelector('#historyTable tbody'); if (!tbody) return;
+    tbody.innerHTML = '';
+    let rows = adjustments.slice();
+    const q = (document.getElementById('hist-search').value || '').trim().toLowerCase();
+    if (q) rows = rows.filter(r =>
+      (r.item||'').toLowerCase().includes(q) ||
+      (r.actor||'').toLowerCase().includes(q) ||
+      ((r.reason ?? r.purpose ?? '').toLowerCase().includes(q)) ||
+      ((r.adjustedBy ?? r.forWhom ?? '').toLowerCase().includes(q)) ||
+      ((r.location ?? '').toLowerCase().includes(q))
+    );
+    const itemFilter = document.getElementById('hist-item-filter').value;
+    if (itemFilter) rows = rows.filter(r => r.item === itemFilter);
+    document.getElementById('hist-count').textContent = `${rows.length} record${rows.length===1?'':'s'}`;
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      const dtStr = toLocalDateTime(r.ts);
+      const deltaStr = (r.delta > 0 ? '+' : '') + (r.delta ?? 0);
+      const reason = r.reason ?? r.purpose ?? '';
+      const adjustedBy = r.adjustedBy ?? r.forWhom ?? '';
+      tr.innerHTML = `
+        <td>${dtStr}</td>
+        <td>${escapeHtml(r.item)}</td>
+        <td>${escapeHtml(r.location ?? '')}</td>
+        <td class="nowrap">${deltaStr}</td>
+        <td>${r.qtyAfter ?? ''}</td>
+        <td>${escapeHtml(r.actor ?? '')}</td>
+        <td>${escapeHtml(reason)}</td>
+        <td>${escapeHtml(adjustedBy)}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  /* Export + Clear */
+  async function exportHistoryCSV(){
+    const qAdj = query(colAdjustments, orderBy("ts","desc"));
+    const snap = await getDocs(qAdj);
+    const rows = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    const header = ['Date/Time','Item','Location','Change','Qty After (Total)','By (Name)','Reason','Adjusted by (name)'];
+    const csvRows = [header.join(',')];
+    for (const r of rows){
+      const reason = r.reason ?? r.purpose ?? '';
+      const adjustedBy = r.adjustedBy ?? r.forWhom ?? '';
+      csvRows.push([ toLocalDateTime(r.ts), csvEscape(r.item), csvEscape(r.location ?? ''), (r.delta>0?'+':'') + (r.delta ?? 0), r.qtyAfter ?? '', csvEscape(r.actor ?? ''), csvEscape(reason), csvEscape(adjustedBy) ].join(','));
+    }
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvRows.join('\n')], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `inventory-history-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); notify('CSV exported');
+  }
+  window.exportHistoryCSV = exportHistoryCSV;
+
+  async function clearHistory(){
+    if (!confirm('This will permanently delete ALL history records. Continue?')) return;
+    try{
+      let snap = await getDocs(query(colAdjustments));
+      while (!snap.empty){
+        const batch = writeBatch(db); let count = 0;
+        snap.forEach(docSnap => { if (count<450){ batch.delete(docSnap.ref); count++; } });
+        await batch.commit();
+        snap = await getDocs(query(colAdjustments));
+      }
+      notify('History cleared');
+    } catch(err){ console.error(err); notify('Failed to clear history','error'); }
+  }
+  window.clearHistory = clearHistory;
+</script>
+</body>
+</html>
 
