@@ -266,24 +266,6 @@
         <button onclick="addNewItem()" aria-label="Add Item">Add Item</button>
       </div>
 
-      <!-- New: Image URL + imgbb helper -->
-      <div class="helper-row">
-        <div class="input-container" style="max-width:560px;">
-          <input id="newItemImgUrl" type="url" class="input" placeholder=" ">
-          <span class="topline"></span><span class="underline"></span>
-          <label for="newItemImgUrl" class="label">Image URL (paste from imgbb or any https link)</label>
-        </div>
-
-        <div class="card helper" aria-label="Image Helper">
-          <div class="card-border-top"></div>
-          <div class="img">🖼️</div>
-          <span>Need an image URL?</span>
-          <span class="job">Upload to imgbb, copy the link, paste it here.</span>
-          <button type="button" onclick="openImgbb()">Open imgbb.com</button>
-          <div class="helper-note">Tip: choose “Direct link” if available.</div>
-        </div>
-      </div>
-
       <div class="muted">Signed in as <strong id="signedAs"></strong>. Data syncs via Firebase (Firestore + Storage).</div>
     </section>
 
