@@ -36,7 +36,7 @@
       --p-bg:#0f0a1f; --p-card:#1a1233; --p-ink:#e8e3ff; --p-muted:#b8acd9; --p-line:#3b2b66;
       --p-accent:#6d28d9; --p-accent-ink:#ffffff; --p-glow:rgba(109,40,217,.35);
 
-      /* Status page soft blues (screenshot-ish) */
+      /* Status page soft blues */
       --s-card:#ffffff; --s-ink:#0f172a; --s-muted:#6b7280; --s-line:#e5e7eb; --s-badge:#e2e8f0;
       --s-accent:#111827;
     }
@@ -96,7 +96,7 @@
     .card__actions{ display:flex; justify-content:center; gap:12px; margin-top:8px; }
     .card__button{ width:28px; height:28px; background:var(--card-accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--accent-ink); cursor:pointer; transition:all .3s; transform:scale(.9); user-select:none; }
     .card__button--minus{ background:#2b2b2b; }
-    .card__button--trash{ background:transparent; color:var(--ink); border:1px solid var(--ink); border-radius:50%; }
+    .card__button--trash{ background:transparent; color:#111; border:1px solid #111; border-radius:50%; }
     .card:hover{ transform:translateY(-8px); border-color:var(--line); }
     .card:hover .card__shine{ opacity:1; animation:shine 3s infinite; }
     @keyframes shine { 0%{background-position:-100% 0} 100%{background-position:200% 0} }
@@ -112,7 +112,7 @@
     #adj-confirm, #del-confirm{ background:#111; color:#fff; border-color:#111; border-radius:8px; }
     #adj-confirm:hover, #del-confirm:hover{ filter:brightness(0.9); }
 
-    /* Fancy input */
+    /* Fancy input (used in other pages, not for Status modal’s first 2 inputs) */
     .input-container{ position: relative; margin: 8px 4px; }
     .input{ width: 100%; padding: 10px; height: 40px; border: 2px solid var(--ink); border-top:none; border-bottom:none; font-size: 16px; background: transparent; outline:none; box-shadow: 7px 7px 0 0 var(--ink); transition: all 0.5s; box-sizing:border-box; }
     .input[readonly]{ background:#fafafa; cursor:not-allowed; }
@@ -164,7 +164,7 @@
     .toast--error{ background:#991b1b; }
     .toast__close{ margin-left:12px; cursor:pointer; font-weight:700; }
 
-    /* Helper card you used for imgbb */
+    /* Helper card (imgbb) */
     .helper-row{ display:grid; grid-template-columns: 1fr; gap:16px; align-items:start; margin-top:12px; }
     .card.helper{
       width: 100%; height: auto; border-radius: 15px; box-shadow: 1px 5px 60px 0px #100a;
@@ -191,11 +191,21 @@
       display:flex; flex-direction:column; gap:10px;
       padding:14px 14px 12px;
     }
-    .status-card__top{ display:flex; align-items:center; justify-content:space-between; color:var(--s-muted); font-size:12px; }
+    .status-card__top{ display:flex; align-items:center; justify-content:space-between; color:var(--s-muted); font-size:12px; gap:8px; }
     .status-card__title{ font-weight:700; margin:2px 0 4px; }
     .status-meta{ font-size:12px; color:var(--s-muted); display:grid; grid-template-columns:auto auto; gap:4px 14px; }
     .status-row{ display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px dashed var(--s-line); padding-top:8px; }
     .status-chip{ background:var(--s-badge); border-radius:999px; padding:2px 8px; font-size:12px; }
+
+    /* colored chips */
+    .chip--loan{ background:#dcfce7; color:#065f46; }  /* green */
+    .chip--rent{ background:#fef3c7; color:#92400e; }  /* yellow */
+
+    /* delete button */
+    .status-del{
+      background:transparent; border:1px solid var(--s-line); border-radius:8px; padding:4px 8px; font-size:12px; cursor:pointer; color:#374151;
+    }
+    .status-del:hover{ background:#f9fafb; }
     .status-amt{ font-weight:800; }
 
     .action-btn{
@@ -246,7 +256,7 @@
 
         <input type="number" id="newItemQty" placeholder="Quantity" min="1" inputmode="numeric" aria-label="Quantity">
 
-        <!-- CHANGED: text input -> dropdown -->
+        <!-- Dropdown for location -->
         <div class="input-container">
           <select id="newItemLoc" class="input" style="height:40px;">
             <option>Old warehouse</option>
@@ -259,13 +269,12 @@
         <button onclick="addNewItem()" aria-label="Add Item">Add Item</button>
       </div>
 
-      <!-- Optional helper (no Image URL field anymore) -->
       <div class="helper-row">
         <div class="card helper" aria-label="Image Helper">
           <div class="card-border-top"></div>
           <div class="img">🖼️</div>
           <span>Need an image URL?</span>
-          <span class="job">Upload to imgbb, copy the link, paste into an item later via 🖼.</span>
+          <span class="job">Upload to imgbb, copy the link, then set it via the 🖼 button on an item.</span>
           <button type="button" onclick="openImgbb()">Open imgbb.com</button>
           <div class="helper-note">Tip: choose “Direct link” if available.</div>
         </div>
@@ -330,7 +339,7 @@
       <div class="muted">History syncs across devices (Firestore). “Clear” deletes all adjustment records.</div>
     </section>
 
-    <!-- NEW: Status Page -->
+    <!-- Status Page -->
     <section id="statusPage" style="display:none;" aria-labelledby="statusPageTitle">
       <h2 id="statusPageTitle">Status</h2>
 
@@ -353,34 +362,27 @@
     <div class="modal-card">
       <h3 id="adj-title">Adjust Stock</h3>
       <div id="adj-subtitle" class="muted"></div>
-
       <label for="adj-amount">Amount</label>
       <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount" inputmode="numeric">
-
       <label for="adj-location">Location</label>
       <select id="adj-location">
-        <option>Old warehouse</option>
-        <option>New warehouse</option>
+        <option>Old warehouse</option><option>New warehouse</option>
       </select>
-
       <div class="input-container">
         <input id="adj-name" type="text" class="input" placeholder=" " readonly>
         <span class="topline"></span><span class="underline"></span>
         <label for="adj-name" class="label">Your name (auto)</label>
       </div>
-
       <div class="input-container">
         <input id="adj-reason" type="text" class="input" placeholder=" ">
         <span class="topline"></span><span class="underline"></span>
         <label for="adj-reason" class="label">Reason</label>
       </div>
-
       <div class="input-container">
         <input id="adj-by" type="text" class="input" placeholder=" ">
         <span class="topline"></span><span class="underline"></span>
         <label for="adj-by" class="label">Adjusted by (name)</label>
       </div>
-
       <div class="modal-actions">
         <button id="adj-cancel">Cancel</button>
         <button id="adj-confirm">Confirm</button>
@@ -392,18 +394,14 @@
   <div id="locAddModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="loc-title">
     <div class="modal-card">
       <h3 id="loc-title">Add Location Card</h3>
-
       <div class="input-container">
         <input id="loc-item-name" type="text" class="input" placeholder=" ">
         <span class="topline"></span><span class="underline"></span>
         <label for="loc-item-name" class="label">Item name</label>
       </div>
-
       <label for="loc-desc">Details / placement notes</label>
       <textarea id="loc-desc" rows="4" placeholder="e.g., Rack A3, top shelf, behind boxes"></textarea>
-
       <div class="muted">After creating, tap the 🖼 button on the card to add a photo (camera/gallery) or paste an image URL.</div>
-
       <div class="modal-actions">
         <button id="loc-add-cancel">Cancel</button>
         <button id="loc-add-confirm">Create</button>
@@ -416,25 +414,21 @@
     <div class="modal-card">
       <h3 id="del-title">Delete Item</h3>
       <div id="del-subtitle" class="muted"></div>
-
       <div class="input-container">
         <input id="del-name" type="text" class="input" placeholder=" " readonly>
         <span class="topline"></span><span class="underline"></span>
         <label for="del-name" class="label">Your name (auto)</label>
       </div>
-
       <div class="input-container">
         <input id="del-reason" type="text" class="input" placeholder=" ">
         <span class="topline"></span><span class="underline"></span>
         <label for="del-reason" class="label">Reason (e.g., discontinued)</label>
       </div>
-
       <div class="input-container">
         <input id="del-by" type="text" class="input" placeholder=" ">
         <span class="topline"></span><span class="underline"></span>
         <label for="del-by" class="label">Adjusted by (name)</label>
       </div>
-
       <div class="modal-actions">
         <button id="del-cancel">Cancel</button>
         <button id="del-confirm" style="background:#111827;color:#fff;">Delete</button>
@@ -454,22 +448,16 @@
     </div>
   </div>
 
-  <!-- NEW: Status modal -->
+  <!-- Status modal (with static labels for first 2 fields) -->
   <div id="statusModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="status-title">
     <div class="modal-card">
       <h3 id="status-title">Add Status</h3>
 
-      <div class="input-container">
-        <input id="st-order" type="text" class="input" placeholder=" ">
-        <span class="topline"></span><span class="underline"></span>
-        <label for="st-order" class="label">Order</label>
-      </div>
+      <label for="st-order">Order ID</label>
+      <input id="st-order" type="text" placeholder="e.g., ORDER 543">
 
-      <div class="input-container">
-        <input id="st-item" type="text" class="input" placeholder=" ">
-        <span class="topline"></span><span class="underline"></span>
-        <label for="st-item" class="label">Item Name</label>
-      </div>
+      <label for="st-item">Item Name</label>
+      <input id="st-item" type="text" placeholder="e.g., 3D WRITING PEN">
 
       <label for="st-qty">Quantity</label>
       <input id="st-qty" type="number" min="1" step="1" value="1" placeholder="Quantity">
@@ -491,24 +479,11 @@
   </div>
 
   <!-- Hidden file pickers -->
-  <input
-    type="file"
-    id="hiddenFileInput"
-    accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.heif"
-    capture="environment"
-    style="display:none"
-  />
-  <input
-    type="file"
-    id="hiddenLocationFileInput"
-    accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.heif"
-    capture="environment"
-    style="display:none"
-  />
+  <input type="file" id="hiddenFileInput" accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.heif" capture="environment" style="display:none" />
+  <input type="file" id="hiddenLocationFileInput" accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.heif" capture="environment" style="display:none" />
 
   <!-- Firebase + App Logic -->
   <script type="module">
-    /* Firebase SDKs (modular) */
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -516,11 +491,8 @@
       getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
       onSnapshot, serverTimestamp, query, orderBy, getDocs, writeBatch
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-    import {
-      getStorage, ref as storageRef, uploadBytes, getDownloadURL
-    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
 
-    /* Firebase config */
     const firebaseConfig = {
       apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
       authDomain: "epedu-inventory-database.firebaseapp.com",
@@ -538,18 +510,16 @@
     const st   = getStorage(app);
     signInAnonymously(auth).catch(console.error);
 
-    // Current user (set by login.html)
     const CURRENT_USER = localStorage.getItem('auth_user') || 'Unknown';
     const signedAs = document.getElementById('signedAs');
     if (signedAs) signedAs.textContent = CURRENT_USER;
 
-    // Collections
     const colInventory   = collection(db, "inventory");
     const colAdjustments = collection(db, "adjustments");
     const colLocations   = collection(db, "locations");
     const colStatuses    = collection(db, "statuses");   // NEW
 
-    // --- Toasts ---
+    /* Toasts */
     const toastWrap = document.getElementById('toast-wrap');
     function toast(msg, type='info', timeout=3200){
       const el = document.createElement('div');
@@ -562,7 +532,7 @@
     }
     const notify = toast;
 
-    // Utils
+    /* Utils */
     function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
     function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
     function toLocalDateTime(ts){ if (!ts) return ''; const d = ts.toDate ? ts.toDate() : new Date(ts); return isNaN(+d)?'':d.toLocaleString(); }
@@ -570,101 +540,60 @@
       const s=(raw||'').trim().toLowerCase();
       if (s.startsWith('old')) return 'Old warehouse';
       if (s.startsWith('new')) return 'New warehouse';
-      // since we changed to dropdown, also accept exact labels
       if (['old warehouse','new warehouse'].includes(s)) return s.replace(/\b\w/g,m=>m.toUpperCase());
       return null;
     }
     function totalQty(item){ return (item.qtyOld ?? 0) + (item.qtyNew ?? 0) + (item.qty ?? 0); }
-
-    // Cache-buster helper
-    function withCacheBuster(url){
-      if (!url) return url;
-      const sep = url.includes('?') ? '&' : '?';
-      return `${url}${sep}v=${Date.now()}`;
-    }
-
-    // Image helpers
+    function withCacheBuster(url){ if (!url) return url; const sep = url.includes('?') ? '&' : '?'; return `${url}${sep}v=${Date.now()}`; }
     const SUPPORTED_IMAGE_TYPES = ["image/jpeg","image/jpg","image/png","image/gif","image/webp","image/bmp","image/heic","image/heif"];
-    function isSupportedImage(file){
-      if (!file) return false;
-      if (file.type && SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) return true;
-      const name = (file.name || "").toLowerCase();
-      return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/.test(name);
-    }
-    function guessContentType(file){
-      const t=file?.type||""; if(t) return t;
-      const n=(file?.name||"").toLowerCase();
-      if(/\.jpe?g$/.test(n)) return "image/jpeg";
-      if(/\.png$/.test(n)) return "image/png";
-      if(/\.gif$/.test(n)) return "image/gif";
-      if(/\.webp$/.test(n)) return "image/webp";
-      if(/\.bmp$/.test(n)) return "image/bmp";
-      if(/\.heic$/.test(n)) return "image/heic";
-      if(/\.heif$/.test(n)) return "image/heif";
-      return "application/octet-stream";
-    }
-    function isLikelyHttpUrl(s){
-      const u=(s||'').trim();
-      return /^https?:\/\//i.test(u) || /^data:image\//i.test(u);
-    }
+    function isSupportedImage(file){ if (!file) return false; if (file.type && SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) return true; const n=(file.name||"").toLowerCase(); return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/.test(n); }
+    function guessContentType(file){ const t=file?.type||""; if(t) return t; const n=(file?.name||"").toLowerCase(); if(/\.jpe?g$/.test(n))return"image/jpeg"; if(/\.png$/.test(n))return"image/png"; if(/\.gif$/.test(n))return"image/gif"; if(/\.webp$/.test(n))return"image/webp"; if(/\.bmp$/.test(n))return"image/bmp"; if(/\.heic$/.test(n))return"image/heic"; if(/\.heif$/.test(n))return"image/heif"; return"application/octet-stream"; }
+    function isLikelyHttpUrl(s){ const u=(s||'').trim(); return /^https?:\/\//i.test(u) || /^data:image\//i.test(u); }
     async function uploadFileWithPreview({file, pathPrefix, title, afterSet}){
-      const localURL = URL.createObjectURL(file);
-      openImageViewer(localURL, title);
-      const fileNameSafe = (file.name || ('photo_' + Date.now())).replace(/[^\w.\-]+/g,'_');
-      const path = `${pathPrefix}/${Date.now()}_${fileNameSafe}`;
+      const localURL = URL.createObjectURL(file); openImageViewer(localURL, title);
+      const safe = (file.name || ('photo_' + Date.now())).replace(/[^\w.\-]+/g,'_');
+      const path = `${pathPrefix}/${Date.now()}_${safe}`;
       const ref  = storageRef(st, path);
-      const contentType = guessContentType(file);
-      await uploadBytes(ref, file, { contentType });
+      await uploadBytes(ref, file, { contentType: guessContentType(file) });
       const url = await getDownloadURL(ref);
       await afterSet(url);
       openImageViewer(withCacheBuster(url), title);
       URL.revokeObjectURL(localURL);
     }
 
-    // Hamburger aria
+    /* Menu ARIA */
     const menuCheck = document.getElementById('menu-check');
     const hamb = document.querySelector('label.hamburger');
     function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
     menuCheck.addEventListener('change', syncAria); syncAria();
 
-    // State
+    /* State */
     let inventory = [];
     let adjustments = [];
     let locations = [];
     let statuses = [];
+    const lowState = new Map();
 
-    // Track low-stock to avoid spammy alerts
-    const lowState = new Map(); // itemId -> boolean LOW
-
-    // Live listeners
+    /* Live listeners */
     onSnapshot(colInventory, (snap) => { inventory = snap.docs.map(d => ({ id:d.id, ...d.data() })); renderTables(); });
     onSnapshot(colLocations, (snap) => { locations = snap.docs.map(d => ({ id:d.id, ...d.data() })); renderLocationGrid(); });
-
-    // NEW: live listener for statuses (latest first)
-    onSnapshot(query(colStatuses, orderBy("ts","desc")), (snap) => {
-      statuses = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-      renderStatuses();
-    });
+    onSnapshot(query(colStatuses, orderBy("ts","desc")), (snap) => { statuses = snap.docs.map(d => ({ id:d.id, ...d.data() })); renderStatuses(); });
 
     let unsubHistory=null;
     function attachHistoryListener(){
       if (unsubHistory) return;
-      const qAdj = query(colAdjustments, orderBy("ts","desc"));
+      const qAdj = query(collection(db,"adjustments"), orderBy("ts","desc"));
       unsubHistory = onSnapshot(qAdj, (snap) => {
-        adjustments = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-        populateHistoryFilters();
-        renderHistory();
+        adjustments = snap.docs.map(d => ({ id:d.id, ...d.data() })); populateHistoryFilters(); renderHistory();
       });
     }
 
-    // Routing
+    /* Routing */
     function showPage(pageId) {
       ['addPage','adjustPage','locationPage','goalPage','historyPage','statusPage'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
+        const el = document.getElementById(id); if (el) el.style.display = 'none';
       });
-      const target = document.getElementById(pageId);
-      if (target) target.style.display = 'block';
+      const target = document.getElementById(pageId); if (target) target.style.display = 'block';
       if (pageId === 'adjustPage' || pageId === 'goalPage') renderTables();
       if (pageId === 'locationPage') renderLocationGrid();
       if (pageId === 'historyPage') attachHistoryListener();
@@ -672,17 +601,13 @@
     }
     window.showPage = showPage;
 
-    // imgbb opener
-    window.openImgbb = function(){ window.open('https://imgbb.com', '_blank', 'noopener'); };
+    window.openImgbb = () => window.open('https://imgbb.com', '_blank', 'noopener');
 
-    // Add item (uses dropdown location)
+    /* Add item */
     async function addNewItem() {
-      const nameRaw = document.getElementById('newItemName').value;
-      const name = (nameRaw || '').trim().replace(/\s+/g,' ');
+      const name = (document.getElementById('newItemName').value || '').trim().replace(/\s+/g,' ');
       const qty  = parseInt(document.getElementById('newItemQty').value,10);
-      const locRaw = document.getElementById('newItemLoc').value;
-      const location = normLoc(locRaw);
-
+      const location = normLoc(document.getElementById('newItemLoc').value);
       if (!name || isNaN(qty) || qty <= 0) { notify("Enter a valid name and a quantity ≥ 1","warn"); return; }
       if (!location) { notify('Location must be "Old warehouse" or "New warehouse".',"warn"); return; }
 
@@ -697,41 +622,31 @@
         } else {
           const qtyOld = location === 'Old warehouse' ? qty : 0;
           const qtyNew = location === 'New warehouse' ? qty : 0;
-          await addDoc(colInventory, {
-            name, qtyOld, qtyNew, qty: qtyOld + qtyNew,
-            goal:0, img:null, isNew:true, createdAt: serverTimestamp()
-          });
+          await addDoc(colInventory, { name, qtyOld, qtyNew, qty: qtyOld + qtyNew, goal:0, img:null, isNew:true, createdAt: serverTimestamp() });
         }
         notify(`Item "${name}" added to ${location}.`);
       } catch(err){ console.error(err); notify('Failed to add item','error'); }
-
       document.getElementById('newItemName').value = '';
       document.getElementById('newItemQty').value = '';
-      // keep dropdown as-is
     }
     window.addNewItem = addNewItem;
 
-    // Renderers
+    /* Renderers */
     function renderTables(){ renderStockGrid(); renderGoalTable(); checkLowStockAlerts(); }
 
     function renderStockGrid() {
-      const grid = document.getElementById('stockGrid');
-      if (!grid) return;
+      const grid = document.getElementById('stockGrid'); if (!grid) return;
       grid.innerHTML = '';
       inventory.forEach((item, index) => {
         const total = totalQty(item);
         const low = (item.goal > 0) && (total <= item.goal);
-        const card = document.createElement('div');
-        card.className = 'card';
+        const card = document.createElement('div'); card.className = 'card';
         const bgUrl = item.img ? withCacheBuster(item.img) : '';
         const safeBgUrl = bgUrl ? bgUrl.replace(/"/g,'%22').replace(/'/g,'%27') : '';
-        const bgStyle = bgUrl ? `style="background-image:url('${safeBgUrl}')"` : '';
+        const bgStyle = bgUrl ? `style="background-image:url('${safeBgUrl}')" ` : '';
         card.innerHTML = `
-          <div class="card__shine"></div>
-          <div class="card__glow"></div>
-          <div class="badge-lowok" style="${low ? 'opacity:1; transform:scale(1);' : ''}">
-            ${low ? 'LOW' : 'OK'}
-          </div>
+          <div class="card__shine"></div><div class="card__glow"></div>
+          <div class="badge-lowok" style="${low ? 'opacity:1; transform:scale(1);' : ''}">${low ? 'LOW' : 'OK'}</div>
           ${item.isNew ? `<div class="badge-new" title="Dismiss">NEW</div>` : ''}
           <div class="card__content">
             <div class="card__image" ${bgStyle}>
@@ -744,9 +659,9 @@
               <p class="card__description">Goal: ${item.goal || 0}</p>
             </div>
             <div class="card__actions">
-              <div class="card__button" title="Add (Shift-click to set image)" data-plus aria-label="Add">+</div>
-              <div class="card__button card__button--minus" title="Minus" data-minus aria-label="Minus">–</div>
-              <div class="card__button card__button--trash" title="Delete item" data-del aria-label="Delete">🗑</div>
+              <div class="card__button" data-plus aria-label="Add" title="Add (Shift=Set image)">+</div>
+              <div class="card__button card__button--minus" data-minus aria-label="Minus" title="Minus">–</div>
+              <div class="card__button card__button--trash" data-del aria-label="Delete" title="Delete">🗑</div>
             </div>
           </div>`;
         card.querySelector('.img-edit-btn').addEventListener('click', () => openImagePicker(index));
@@ -755,39 +670,31 @@
           if (!current || !current.img) { notify('No image set yet. Click 🖼 to add one.','warn'); return; }
           openImageViewer(withCacheBuster(current.img), `Item: ${current.name}`);
         });
-        if (item.isNew) card.querySelector('.badge-new')?.addEventListener('click', async () => {
-          try { await updateDoc(doc(db, "inventory", item.id), { isNew:false }); } catch(e){}
-        });
-        card.querySelector('[data-plus]').addEventListener('click', (e) => { if (e.shiftKey){ openImagePicker(index); return; } openAdjustDialog(index,'add'); });
-        card.querySelector('[data-minus]').addEventListener('click', () => openAdjustDialog(index,'sub'));
-        card.querySelector('[data-del]').addEventListener('click', () => openDeleteDialog(index));
+        if (item.isNew) card.querySelector('.badge-new')?.addEventListener('click', async ()=>{ try{ await updateDoc(doc(db,"inventory", item.id), { isNew:false }); }catch(e){} });
+        card.querySelector('[data-plus]').addEventListener('click', (e)=>{ if (e.shiftKey){ openImagePicker(index); return; } openAdjustDialog(index,'add'); });
+        card.querySelector('[data-minus]').addEventListener('click', ()=> openAdjustDialog(index,'sub'));
+        card.querySelector('[data-del]').addEventListener('click', ()=> openDeleteDialog(index));
         grid.appendChild(card);
       });
     }
 
     function renderGoalTable() {
-      const tbody = document.querySelector('#goalTable tbody');
-      if (!tbody) return;
+      const tbody = document.querySelector('#goalTable tbody'); if (!tbody) return;
       tbody.innerHTML = '';
       inventory.forEach((item, index) => {
         const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${escapeHtml(item.name)}</td>
-          <td>${item.goal || 0}</td>
+        row.innerHTML = `<td>${escapeHtml(item.name)}</td><td>${item.goal || 0}</td>
           <td><input type="number" id="newGoal-${index}" placeholder="New Goal" min="0"></td>
           <td><button data-update-goal="${index}">Update</button></td>`;
         tbody.appendChild(row);
       });
       tbody.querySelectorAll('button[data-update-goal]').forEach(btn => {
         const onSave = async (idx) => {
-          const el = document.getElementById(`newGoal-${idx}`);
-          const newGoal = parseInt(el.value,10);
+          const el = document.getElementById(`newGoal-${idx}`); const newGoal = parseInt(el.value,10);
           if (isNaN(newGoal) || newGoal < 0) { notify("Enter a valid stock goal (≥ 0)","warn"); return; }
           const item = inventory[idx];
-          try{
-            await updateDoc(doc(db, "inventory", item.id), { goal:newGoal });
-            notify(`Stock goal updated for ${item.name}`);
-          }catch(err){ console.error(err); notify('Failed to update goal','error'); }
+          try{ await updateDoc(doc(db, "inventory", item.id), { goal:newGoal }); notify(`Stock goal updated for ${item.name}`); }
+          catch(err){ console.error(err); notify('Failed to update goal','error'); }
         };
         btn.addEventListener('click', () => onSave(parseInt(btn.getAttribute('data-update-goal'),10)));
       });
@@ -803,77 +710,49 @@
       }
     }
 
-    /* ---------- Inventory image picker ---------- */
+    /* Image pickers (inventory + location) */
     let imgTargetIndex=null;
     const fileInput=document.getElementById('hiddenFileInput');
-
     function openImagePicker(index){
       imgTargetIndex=index;
       const choice=prompt("Set image:\n- Paste an image URL (http/https) and press OK, OR\n- Leave blank to choose a file (uploads to Firebase Storage).");
       if (choice && choice.trim()){
         if (!isLikelyHttpUrl(choice.trim())) { notify('Please enter a valid http(s) or data: image URL','warn'); imgTargetIndex=null; return; }
         setItemImageFromURL(choice.trim());
-      } else {
-        fileInput.click();
-      }
+      } else fileInput.click();
     }
     window.openImagePicker=openImagePicker;
-
     fileInput.addEventListener('change', async (e)=>{
       const file=e.target.files && e.target.files[0]; e.target.value='';
       if(!file || imgTargetIndex===null) return;
-
-      if (!isSupportedImage(file)) {
-        notify(`Unsupported image format: ${file.type || file.name}\nSupported: JPG, JPEG, PNG, GIF, WEBP, BMP, HEIC, HEIF`,'warn', 7000);
-        imgTargetIndex = null;
-        return;
-      }
-
+      if (!isSupportedImage(file)) { notify(`Unsupported image format: ${file.type || file.name}`,'warn', 6000); imgTargetIndex = null; return; }
       const item=inventory[imgTargetIndex];
       try{
-        await uploadFileWithPreview({
-          file,
-          pathPrefix: `itemImages/${item.id}`,
-          title: `Item: ${item.name}`,
-          afterSet: async (url)=>updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true })
-        });
+        await uploadFileWithPreview({ file, pathPrefix: `itemImages/${item.id}`, title: `Item: ${item.name}`, afterSet: async (url)=>updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true }) });
       }catch(err){ console.error(err); notify('Upload failed','error'); }
       imgTargetIndex=null;
     });
-
     async function setItemImageFromURL(url){
-      if(imgTargetIndex===null) return;
-      const item=inventory[imgTargetIndex];
-      try{
-        await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true });
-        openImageViewer(withCacheBuster(url), `Item: ${item.name}`);
-      }
+      if(imgTargetIndex===null) return; const item=inventory[imgTargetIndex];
+      try{ await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true }); openImageViewer(withCacheBuster(url), `Item: ${item.name}`); }
       catch(err){ console.error(err); notify('Failed to set image URL','error'); }
       imgTargetIndex=null;
     }
     window.setItemImageFromURL=setItemImageFromURL;
 
-    /* ---------- Location page logic ---------- */
     function renderLocationGrid(){
-      const grid = document.getElementById('locationGrid');
-      if (!grid) return;
+      const grid = document.getElementById('locationGrid'); if (!grid) return;
       grid.innerHTML = '';
-
-      const addCard = document.createElement('div');
-      addCard.className = 'card card--add';
+      const addCard = document.createElement('div'); addCard.className = 'card card--add';
       addCard.innerHTML = `<div class="big-plus card__button" title="Add location card" aria-label="Add location card">+</div>`;
-      addCard.addEventListener('click', openAddLocationDialog);
-      grid.appendChild(addCard);
-
+      addCard.addEventListener('click', openAddLocationDialog); grid.appendChild(addCard);
       locations.forEach((loc, index) => {
-        const card = document.createElement('div');
-        card.className = 'card';
+        const card = document.createElement('div'); card.className = 'card';
         const bgUrl = loc.img ? withCacheBuster(loc.img) : '';
         const safeBgUrl = bgUrl ? bgUrl.replace(/"/g,'%22').replace(/'/g,'%27') : '';
         const bgStyle = bgUrl ? `style="background-image:url('${safeBgUrl}')"` : '';
         card.innerHTML = `
-          <div class="card__shine"></div>
-          <div class="card__glow"></div>
+          <div class="card__shine"></div><div class="card__glow"></div>
           ${loc.isNew ? `<div class="badge-new" title="Dismiss">NEW</div>` : ''}
           <div class="card__content">
             <div class="card__image" ${bgStyle}>
@@ -885,7 +764,7 @@
               <p class="card__description">${escapeHtml(loc.description || '')}</p>
             </div>
             <div class="card__actions">
-              <div class="card__button card__button--trash" title="Delete card" data-del aria-label="Delete">🗑</div>
+              <div class="card__button card__button--trash" data-del aria-label="Delete" title="Delete">🗑</div>
             </div>
           </div>`;
         card.querySelector('.img-edit-btn').addEventListener('click', () => openLocationImagePicker(index));
@@ -894,132 +773,81 @@
           if (!currentLoc || !currentLoc.img) { notify('No image set yet. Click 🖼 to add one.','warn'); return; }
           openImageViewer(withCacheBuster(currentLoc.img), `Location: ${currentLoc.name}`);
         });
-        if (loc.isNew) card.querySelector('.badge-new')?.addEventListener('click', async () => {
-          try{ await updateDoc(doc(db,"locations", loc.id), { isNew:false }); }catch(e){}
-        });
-        card.querySelector('[data-del]').addEventListener('click', async () => {
-          if (!confirm(`Delete location card "${loc.name}"?`)) return;
-          try { await deleteDoc(doc(db,"locations",loc.id)); notify('Location card deleted'); }
-          catch(err){ console.error(err); notify('Failed to delete','error'); }
-        });
+        if (loc.isNew) card.querySelector('.badge-new')?.addEventListener('click', async ()=>{ try{ await updateDoc(doc(db,"locations", loc.id), { isNew:false }); }catch(e){} });
+        card.querySelector('[data-del]').addEventListener('click', async ()=>{ if (!confirm(`Delete location card "${loc.name}"?`)) return; try { await deleteDoc(doc(db,"locations",loc.id)); notify('Location card deleted'); } catch(err){ console.error(err); notify('Failed to delete','error'); } });
         grid.appendChild(card);
       });
     }
-
-    function openAddLocationDialog(){
-      document.getElementById('loc-item-name').value = '';
-      document.getElementById('loc-desc').value = '';
-      document.getElementById('locAddModal').classList.add('open');
-      setTimeout(()=>document.getElementById('loc-item-name').focus(), 0);
-    }
+    function openAddLocationDialog(){ document.getElementById('loc-item-name').value = ''; document.getElementById('loc-desc').value = ''; document.getElementById('locAddModal').classList.add('open'); setTimeout(()=>document.getElementById('loc-item-name').focus(), 0); }
     function closeAddLocationDialog(){ document.getElementById('locAddModal').classList.remove('open'); }
     document.getElementById('loc-add-cancel').addEventListener('click', closeAddLocationDialog);
     document.getElementById('locAddModal').addEventListener('click', e => { if (e.target.id === 'locAddModal') closeAddLocationDialog(); });
-
     document.getElementById('loc-add-confirm').addEventListener('click', async ()=>{
       const name = document.getElementById('loc-item-name').value.trim();
       const description = document.getElementById('loc-desc').value.trim();
       if (!name) { notify('Please enter an item name.','warn'); return; }
-      try{
-        await addDoc(colLocations, { name, description, img:null, createdAt:serverTimestamp(), isNew:true, actor: CURRENT_USER });
-        notify('Location card created');
-      }catch(err){ console.error(err); notify('Failed to create card','error'); }
+      try{ await addDoc(colLocations, { name, description, img:null, createdAt:serverTimestamp(), isNew:true, actor: CURRENT_USER }); notify('Location card created'); }
+      catch(err){ console.error(err); notify('Failed to create card','error'); }
       closeAddLocationDialog();
     });
 
-    // Location image picker
     let locImgTargetIndex = null;
     const locFileInput = document.getElementById('hiddenLocationFileInput');
-
     function openLocationImagePicker(index){
       locImgTargetIndex = index;
       const choice=prompt("Set image for this location:\n- Paste an image URL (http/https) and press OK, OR\n- Leave blank to take/select a photo (uploads to Firebase Storage).");
       if (choice && choice.trim()){
         if (!isLikelyHttpUrl(choice.trim())) { notify('Please enter a valid http(s) or data: image URL','warn'); locImgTargetIndex=null; return; }
         setLocationImageFromURL(choice.trim());
-      } else { locFileInput.click(); }
+      } else locFileInput.click();
     }
     window.openLocationImagePicker = openLocationImagePicker;
-
     locFileInput.addEventListener('change', async (e)=>{
       const file = e.target.files && e.target.files[0]; e.target.value='';
       if (!file || locImgTargetIndex===null) return;
-
-      if (!isSupportedImage(file)) {
-        notify(`Unsupported image format: ${file.type || file.name}\nSupported: JPG, JPEG, PNG, GIF, WEBP, BMP, HEIC, HEIF`,'warn', 7000);
-        locImgTargetIndex = null;
-        return;
-      }
-
+      if (!isSupportedImage(file)) { notify(`Unsupported image format: ${file.type || file.name}`,'warn', 6000); locImgTargetIndex = null; return; }
       const loc = locations[locImgTargetIndex];
-      try{
-        await uploadFileWithPreview({
-          file,
-          pathPrefix: `locationImages/${loc.id}`,
-          title: `Location: ${loc.name}`,
-          afterSet: async (url)=>updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false })
-        });
-      }catch(err){ console.error(err); notify('Upload failed','error'); }
+      try{ await uploadFileWithPreview({ file, pathPrefix: `locationImages/${loc.id}`, title: `Location: ${loc.name}`, afterSet: async (url)=>updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false }) }); }
+      catch(err){ console.error(err); notify('Upload failed','error'); }
       locImgTargetIndex=null;
     });
-
     async function setLocationImageFromURL(url){
       if (locImgTargetIndex===null) return;
       const loc = locations[locImgTargetIndex];
-      try{
-        await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false });
-        openImageViewer(withCacheBuster(url), `Location: ${loc.name}`);
-      }catch(err){ console.error(err); notify('Failed to set image URL','error'); }
+      try{ await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false }); openImageViewer(withCacheBuster(url), `Location: ${loc.name}`); }
+      catch(err){ console.error(err); notify('Failed to set image URL','error'); }
       locImgTargetIndex=null;
     }
     window.setLocationImageFromURL = setLocationImageFromURL;
 
-    /* ---------- Image viewer ---------- */
+    /* Image viewer */
     const imageModal   = document.getElementById('imageModal');
     const imgView      = document.getElementById('img-view');
     const imgTitle     = document.getElementById('img-title');
     const imgOpenLink  = document.getElementById('img-open');
     const imgCloseBtn  = document.getElementById('img-close');
-
-    function openImageViewer(url, title='Image'){
-      imgView.src = url;
-      imgView.alt = title;
-      imgTitle.textContent = title;
-      imgOpenLink.href = url || '#';
-      imageModal.classList.add('open');
-    }
-    function closeImageViewer(){
-      imageModal.classList.remove('open');
-      imgView.src = '';
-      imgView.alt = '';
-    }
+    function openImageViewer(url, title='Image'){ imgView.src = url; imgView.alt = title; imgTitle.textContent = title; imgOpenLink.href = url || '#'; imageModal.classList.add('open'); }
+    function closeImageViewer(){ imageModal.classList.remove('open'); imgView.src = ''; imgView.alt = ''; }
     imgCloseBtn.addEventListener('click', closeImageViewer);
     imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
     window.openImageViewer = openImageViewer;
 
-    /* ---------- Adjust + delete logic ---------- */
+    /* Adjust + delete logic */
     let pending = { index:null, mode:'add' };
     function openAdjustDialog(index, mode) {
       pending = { index, mode };
-      const item = inventory[index];
-      const total = totalQty(item);
+      const item = inventory[index]; const total = totalQty(item);
       document.getElementById('adj-title').textContent = `${mode === 'add' ? 'Add to' : 'Minus from'} "${item.name}"`;
       document.getElementById('adj-subtitle').textContent = `Current total: ${total} (Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0})`;
       document.getElementById('adj-amount').value = '1';
-
-      const nameInput = document.getElementById('adj-name');
-      nameInput.value = CURRENT_USER;
-      nameInput.readOnly = true;
-
+      const nameInput = document.getElementById('adj-name'); nameInput.value = CURRENT_USER; nameInput.readOnly = true;
       document.getElementById('adj-location').value = 'Old warehouse';
-      document.getElementById('adj-reason').value = '';
-      document.getElementById('adj-by').value = '';
+      document.getElementById('adj-reason').value = ''; document.getElementById('adj-by').value = '';
       document.getElementById('adjustModal').classList.add('open');
       setTimeout(() => document.getElementById('adj-amount').focus(), 0);
     }
     function closeAdjustDialog(){ document.getElementById('adjustModal').classList.remove('open'); }
     window.openAdjustDialog=openAdjustDialog;
-
     document.getElementById('adj-cancel').addEventListener('click', closeAdjustDialog);
     document.getElementById('adjustModal').addEventListener('click', e => { if (e.target.id === 'adjustModal') closeAdjustDialog(); });
     document.getElementById('adjustModal').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('adj-confirm').click(); } });
@@ -1031,96 +859,32 @@
       const adjustedBy = document.getElementById('adj-by').value.trim();
       if (!Number.isInteger(amount) || amount <= 0) { notify('Enter a valid positive amount.','warn'); return; }
       if (!reason || !adjustedBy) { notify('Please fill in Reason and Adjusted by (name).','warn'); return; }
-
       const item = inventory[pending.index];
       const signedDelta = pending.mode === 'add' ? amount : -amount;
-
-      const old = item.qtyOld ?? 0;
-      const neu = item.qtyNew ?? 0;
+      const old = item.qtyOld ?? 0; const neu = item.qtyNew ?? 0;
       let newOld = old, newNew = neu;
-      if (location === 'Old warehouse') newOld = Math.max(0, old + signedDelta);
-      else newNew = Math.max(0, neu + signedDelta);
-
+      if (location === 'Old warehouse') newOld = Math.max(0, old + signedDelta); else newNew = Math.max(0, neu + signedDelta);
       const newTotal = newOld + newNew;
-
       try{
         await updateDoc(doc(db,"inventory", item.id), { qtyOld:newOld, qtyNew:newNew, qty:newTotal, isNew:false });
-        await addDoc(colAdjustments, {
-          ts: serverTimestamp(),
-          item: item.name, itemId: item.id,
-          location,
-          delta: signedDelta, actor, reason, adjustedBy,
-          qtyAfterOld: newOld, qtyAfterNew: newNew, qtyAfter: newTotal
-        });
+        await addDoc(colAdjustments, { ts: serverTimestamp(), item: item.name, itemId: item.id, location, delta: signedDelta, actor, reason, adjustedBy, qtyAfterOld: newOld, qtyAfterNew: newNew, qtyAfter: newTotal });
         notify('Adjustment saved');
       } catch(err){ console.error(err); notify('Failed to save adjustment','error'); }
       closeAdjustDialog();
     });
 
-    // Delete dialog
-    let pendingDeleteIndex = null;
-    function openDeleteDialog(index) {
-      pendingDeleteIndex = index;
-      const item = inventory[index];
-      const total = totalQty(item);
-      document.getElementById('del-title').textContent = `Delete "${item.name}"`;
-      document.getElementById('del-subtitle').textContent = `This will remove the item and log a history entry with -${total} (Qty after: 0).`;
-
-      const delName = document.getElementById('del-name');
-      delName.value = CURRENT_USER;
-      delName.readOnly = true;
-
-      document.getElementById('del-reason').value = '';
-      document.getElementById('del-by').value = '';
-      document.getElementById('deleteModal').classList.add('open');
-      setTimeout(() => document.getElementById('del-reason').focus(), 0);
-    }
-    function closeDeleteDialog(){ document.getElementById('deleteModal').classList.remove('open'); }
-    window.openDeleteDialog=openDeleteDialog;
-
-    document.getElementById('del-cancel').addEventListener('click', closeDeleteDialog);
-    document.getElementById('deleteModal').addEventListener('click', e => { if (e.target.id === 'deleteModal') closeDeleteDialog(); });
-    document.getElementById('deleteModal').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('del-confirm').click(); } });
-    document.getElementById('del-confirm').addEventListener('click', async () => {
-      if (pendingDeleteIndex === null) return closeDeleteDialog();
-      const actor   = CURRENT_USER;
-      const reason  = document.getElementById('del-reason').value.trim();
-      const adjustedBy = document.getElementById('del-by').value.trim();
-      if (!reason || !adjustedBy) { notify('Please fill in Reason and Adjusted by (name).','warn'); return; }
-
-      const removed = inventory[pendingDeleteIndex];
-      const prevTotal = totalQty(removed);
-      try{
-        await addDoc(colAdjustments, {
-          ts: serverTimestamp(),
-          item: removed.name, itemId: removed.id,
-          location: 'ALL',
-          delta: -prevTotal, actor, reason, adjustedBy,
-          qtyAfterOld: 0, qtyAfterNew: 0, qtyAfter: 0
-        });
-        await deleteDoc(doc(db,"inventory", removed.id));
-        notify('Item deleted');
-      } catch(err){ console.error(err); notify('Failed to delete item','error'); }
-      pendingDeleteIndex = null;
-      closeDeleteDialog();
-    });
-
-    // History area
+    /* History */
     function populateHistoryFilters() {
-      const sel = document.getElementById('hist-item-filter');
-      if (!sel) return;
+      const sel = document.getElementById('hist-item-filter'); if (!sel) return;
       const current = sel.value;
       const names = Array.from(new Set(adjustments.map(a => a.item))).filter(Boolean).sort((a,b)=>a.localeCompare(b));
       sel.innerHTML = '<option value="">All items</option>' + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
       if ([...sel.options].some(o => o.value === current)) sel.value = current;
       sel.onchange = renderHistory;
-      const searchEl = document.getElementById('hist-search');
-      if (searchEl && !searchEl._bound){ searchEl._bound=true; searchEl.oninput = renderHistory; }
+      const searchEl = document.getElementById('hist-search'); if (searchEl && !searchEl._bound){ searchEl._bound=true; searchEl.oninput = renderHistory; }
     }
-
     function renderHistory() {
-      const tbody = document.querySelector('#historyTable tbody');
-      if (!tbody) return;
+      const tbody = document.querySelector('#historyTable tbody'); if (!tbody) return;
       tbody.innerHTML = '';
       let rows = adjustments.slice();
       const q = (document.getElementById('hist-search').value || '').trim().toLowerCase();
@@ -1152,9 +916,8 @@
         tbody.appendChild(tr);
       }
     }
-
     async function exportHistoryCSV(){
-      const qAdj = query(colAdjustments, orderBy("ts","desc"));
+      const qAdj = query(collection(db,"adjustments"), orderBy("ts","desc"));
       const snap = await getDocs(qAdj);
       const rows = snap.docs.map(d => ({ id:d.id, ...d.data() }));
       const header = ['Date/Time','Item','Location','Change','Qty After (Total)','By (Name)','Reason','Adjusted by (name)'];
@@ -1162,44 +925,31 @@
       for (const r of rows){
         const reason = r.reason ?? r.purpose ?? '';
         const adjustedBy = r.adjustedBy ?? r.forWhom ?? '';
-        csvRows.push([
-          toLocalDateTime(r.ts),
-          csvEscape(r.item),
-          csvEscape(r.location ?? ''),
-          (r.delta>0?'+':'') + (r.delta ?? 0),
-          r.qtyAfter ?? '',
-          csvEscape(r.actor ?? ''),
-          csvEscape(reason),
-          csvEscape(adjustedBy)
-        ].join(','));
+        csvRows.push([ toLocalDateTime(r.ts), csvEscape(r.item), csvEscape(r.location ?? ''), (r.delta>0?'+':'') + (r.delta ?? 0), r.qtyAfter ?? '', csvEscape(r.actor ?? ''), csvEscape(reason), csvEscape(adjustedBy) ].join(','));
       }
       const BOM = "\uFEFF";
       const blob = new Blob([BOM + csvRows.join('\n')], {type:'text/csv;charset=utf-8;'});
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url;
-      a.download = `inventory-history-${new Date().toISOString().slice(0,10)}.csv`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      notify('CSV exported');
+      const a = document.createElement('a'); a.href = url; a.download = `inventory-history-${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); notify('CSV exported');
     }
     window.exportHistoryCSV = exportHistoryCSV;
-
     async function clearHistory(){
       if (!confirm('This will permanently delete ALL history records. Continue?')) return;
       try{
-        let snap = await getDocs(query(colAdjustments));
+        let snap = await getDocs(query(collection(db,"adjustments")));
         while (!snap.empty){
           const batch = writeBatch(db); let count = 0;
           snap.forEach(docSnap => { if (count<450){ batch.delete(docSnap.ref); count++; } });
           await batch.commit();
-          snap = await getDocs(query(colAdjustments));
+          snap = await getDocs(query(collection(db,"adjustments")));
         }
         notify('History cleared');
       } catch(err){ console.error(err); notify('Failed to clear history','error'); }
     }
     window.clearHistory = clearHistory;
 
-    // ---------- Status page logic ----------
+    /* ---------- Status page logic ---------- */
     const statusModal = document.getElementById('statusModal');
     const stOpenBtn   = document.getElementById('status-add-btn');
     const stCancel    = document.getElementById('st-cancel');
@@ -1226,19 +976,17 @@
       const order   = document.getElementById('st-order').value.trim();
       const item    = document.getElementById('st-item').value.trim();
       const qty     = parseInt(document.getElementById('st-qty').value,10);
-      const stype   = document.getElementById('st-type').value;
+      const stype   = document.getElementById('st-type').value; // Loan | Rent
       const remarks = document.getElementById('st-remarks').value.trim();
-      if (!order || !item || !Number.isInteger(qty) || qty<=0){ notify('Please fill Order, Item, and a positive Quantity.','warn'); return; }
+      if (!order || !item || !Number.isInteger(qty) || qty<=0){ notify('Please fill Order ID, Item Name, and a positive Quantity.','warn'); return; }
       try{
         await addDoc(colStatuses, { ts:serverTimestamp(), order, item, qty, status:stype, remarks, actor:CURRENT_USER });
-        notify('Status saved');
-        closeStatusModal();
+        notify('Status saved'); closeStatusModal();
       }catch(err){ console.error(err); notify('Failed to save status','error'); }
     });
 
     function renderStatuses(){
-      const wrap = document.getElementById('statusList');
-      if (!wrap) return;
+      const wrap = document.getElementById('statusList'); if (!wrap) return;
       wrap.innerHTML = '';
       let rows = statuses.slice();
       const q = (stSearch?.value || '').trim().toLowerCase();
@@ -1248,13 +996,16 @@
         (r.remarks||'').toLowerCase().includes(q)
       );
       for (const r of rows){
-        const div = document.createElement('div');
-        div.className='status-card';
+        const div = document.createElement('div'); div.className='status-card';
         const dt = toLocalDateTime(r.ts) || '';
+        const chipClass = (r.status||'').toLowerCase()==='rent' ? 'chip--rent' : 'chip--loan';
         div.innerHTML = `
           <div class="status-card__top">
             <span>${escapeHtml(dt)}</span>
-            <span class="status-chip">${escapeHtml(r.status || '')}</span>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <span class="status-chip ${chipClass}">${escapeHtml(r.status || '')}</span>
+              <button class="status-del" data-status-del="${r.id}" title="Delete">🗑</button>
+            </div>
           </div>
           <div class="status-card__title">Order: ${escapeHtml(r.order || '')}</div>
           <div class="status-meta">
@@ -1264,10 +1015,20 @@
           ${r.remarks ? `<div class="status-row"><div style="color:var(--s-muted);">Remarks</div><div>${escapeHtml(r.remarks)}</div></div>` : ''}`;
         wrap.appendChild(div);
       }
+      // wire delete buttons
+      wrap.querySelectorAll('[data-status-del]').forEach(btn=>{
+        btn.onclick = async (e)=>{
+          const id = e.currentTarget.getAttribute('data-status-del');
+          if (!id) return;
+          if (!confirm('Delete this status record?')) return;
+          try{ await deleteDoc(doc(db,'statuses',id)); notify('Status deleted'); }
+          catch(err){ console.error(err); notify('Failed to delete status','error'); }
+        };
+      });
     }
     stSearch?.addEventListener('input', renderStatuses);
 
-    // Initial render + Esc to close modals
+    /* Initial render + Esc close */
     function initialRender(){ renderTables(); renderLocationGrid(); }
     initialRender();
     window.addEventListener('keydown', (e) => {
