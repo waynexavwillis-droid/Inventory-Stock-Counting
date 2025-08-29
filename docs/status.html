@@ -1,1 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Inventory System — Status</title>
+
+<script>
+  const AUTH_OK   = localStorage.getItem('auth_v1') === 'ok';
+  const AUTH_USER = localStorage.getItem('auth_user');
+  const AUTH_ROLE = localStorage.getItem('auth_role');
+  if (!AUTH_OK || !AUTH_USER) { window.location.replace('login.html'); }
+  else if (AUTH_ROLE === 'viewer') { window.location.replace('viewer.html'); }
+  function logout(){
+    localStorage.removeItem('auth_v1'); localStorage.removeItem('auth_user');
+    localStorage.removeItem('auth_role'); localStorage.removeItem('auth_time');
+    window.location.replace('login.html');
+  }
+</script>
+
+<style>
+  :root{
+    --nav-w:260px; --bg:#f6f7f8; --s-card:#fff; --s-ink:#0f172a; --s-muted:#6b7280; --s-line:#e5e7eb; --s-badge:#e2e8f0;
+  }
+  html,body{height:100%} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--s-ink)}
+  h2{color:var(--s-ink)} .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
+  input,button,select,textarea{padding:8px;margin:4px;font-family:inherit}
+  button{background:#111827;border:1px solid #111827;color:#fff;border-radius:8px;cursor:pointer}
+  button:hover{filter:brightness(.93)}
+  #menu-check{display:none}
+  .hamburger{position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;cursor:pointer;user-select:none;z-index:1200;transition:transform .3s}
+  .hamburger .bar{height:3px;background:#111;border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
+  .hamburger .bar1,.hamburger .bar3{width:18px}.hamburger .bar2{width:28px}
+  #menu-check:checked+label.hamburger{transform:translateX(var(--nav-w))}
+  #menu-check:checked+label.hamburger .bar1{transform:translateY(10px) rotate(45deg);width:28px}
+  #menu-check:checked+label.hamburger .bar2{opacity:0}
+  #menu-check:checked+label.hamburger .bar3{transform:translateY(-10px) rotate(-45deg);width:28px}
+  .sidebar{position:fixed;inset:0 auto 0 0;width:var(--nav-w);background:#f3f4f6;padding:20px;box-sizing:border-box;transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;border-right:1px solid var(--s-line);box-shadow:0 10px 30px rgba(0,0,0,.18)}
+  .sidebar a,.sidebar button{display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--s-line);background:#fff}
+  .sidebar a:hover{background:#111;color:#fff;border-color:#111}
+  #menu-check:checked~.sidebar{transform:translateX(0)}
+  label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
+  #menu-check:checked~label.overlay{opacity:1;visibility:visible}
+
+  .status-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 16px}
+  .input-container{position:relative;margin:8px 4px;min-width:280px}
+  .input{width:100%;padding:10px;height:40px;border:2px solid #111;border-top:none;border-bottom:none;font-size:16px;background:transparent;outline:none;box-shadow:7px 7px 0 0 #111;transition:.5s;box-sizing:border-box}
+  .topline,.underline{position:absolute;background-color:#111;height:2px;right:0;transition:.5s}
+  .topline{width:0;top:0}.underline{width:0;bottom:0}
+  .input:focus~.topline{width:35%}.input:focus~.underline{width:100%}
+  .label{position:absolute;top:10px;left:10px;color:#111;transition:.5s;transform:scale(0);z-index:-1;background:#fff;padding:0 4px}
+  .input:focus~.label{top:-10px;transform:scale(1)}
+
+  .status-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  .status-card{background:var(--s-card);border:1px solid var(--s-line);border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.06);color:var(--s-ink);display:flex;flex-direction:column;gap:10px;padding:14px 14px 12px}
+  .status-card__top{display:flex;align-items:center;justify-content:space-between;color:var(--s-muted);font-size:12px;gap:8px}
+  .status-card__title{font-weight:700;margin:2px 0 4px}
+  .status-meta{font-size:12px;color:var(--s-muted);display:grid;grid-template-columns:auto auto;gap:4px 14px}
+  .status-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px;border-top:1px dashed var(--s-line);padding-top:8px}
+  .status-chip{background:var(--s-badge);border-radius:999px;padding:2px 8px;font-size:12px}
+  .chip--loan{background:#dcfce7;color:#065f46}
+  .chip--rent{background:#fef3c7;color:#92400e}
+  .status-del{background:transparent;border:1px solid var(--s-line);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:#374151}
+  .status-del:hover{background:#f9fafb}
+  .status-amt{font-weight:800}
+
+  /* Modal + toasts */
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:9999}
+  .modal.open{display:flex}
+  .modal-card{width:95%;max-width:520px;background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 20px 40px rgba(0,0,0,.15);border:1px solid #e5e7eb;color:#111}
+  .modal-card h3{margin:0 0 10px;color:#111}
+  .modal-card label{display:block;margin:10px 0 4px;font-size:14px;color:#111}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
+  .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
+  .toast{background:#111;color:#fff;padding:10px 12px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+  .toast--warn{background:#b45309}.toast--error{background:#991b1b}.toast__close{margin-left:12px;cursor:pointer;font-weight:700}
+</style>
+</head>
+<body>
+
+<input id="menu-check" type="checkbox" />
+<label for="menu-check" class="hamburger" aria-label="Toggle menu" aria-controls="side" role="button" tabindex="0">
+  <span class="bar bar1"></span><span class="bar bar2"></span><span class="bar bar3"></span>
+</label>
+
+<nav class="sidebar" id="side" role="navigation" aria-label="Main">
+  <a href="index.html">Add New Stock</a>
+  <a href="adjust.html">Adjust Stock</a>
+  <a href="location.html">Location</a>
+  <a href="goal.html">Set Stock Count Goal</a>
+  <a href="history.html">History</a>
+  <a href="status.html">Status</a>
+  <hr>
+  <button onclick="logout()">Logout</button>
+</nav>
+<label class="overlay" for="menu-check" aria-hidden="true"></label>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<main class="content">
+  <section aria-labelledby="statusPageTitle">
+    <h2 id="statusPageTitle">Status</h2>
+
+    <div class="status-toolbar">
+      <div class="input-container" style="flex:1;min-width:280px">
+        <input id="status-search" type="text" class="input" placeholder=" ">
+        <span class="topline"></span><span class="underline"></span>
+        <label for="status-search" class="label">Search order / item / remarks…</label>
+      </div>
+      <button class="action-btn" id="status-add-btn">+ New Status</button>
+    </div>
+
+    <div id="statusList" class="status-list"></div>
+    <div style="color:#6b7280">Track individual loan/rent sets here. Use the + button to add a record.</div>
+  </section>
+</main>
+
+<!-- Status modal -->
+<div id="statusModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="status-title">
+  <div class="modal-card">
+    <h3 id="status-title">Add Status</h3>
+    <label for="st-order">Order ID</label>
+    <input id="st-order" type="text" placeholder="e.g., ORDER 543" class="input">
+    <label for="st-item">Item Name</label>
+    <input id="st-item" type="text" placeholder="e.g., 3D WRITING PEN" class="input">
+    <label for="st-qty">Quantity</label>
+    <input id="st-qty" type="number" min="1" step="1" value="1" placeholder="Quantity" class="input">
+    <label for="st-type">Status</label>
+    <select id="st-type" class="input"><option>Loan</option><option>Rent</option></select>
+    <label for="st-remarks">Remarks</label>
+    <textarea id="st-remarks" rows="3" placeholder="Optional notes…" class="input" style="height:auto"></textarea>
+    <div class="modal-actions">
+      <button id="st-cancel" style="background:#2b2b2b;border-color:#2b2b2b">Cancel</button>
+      <button id="st-save" class="action-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+  import { getFirestore, collection, doc, addDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+  const
 
