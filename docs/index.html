@@ -525,7 +525,7 @@
       if (['old warehouse','new warehouse'].includes(s)) return s.replace(/\b\w/g,m=>m.toUpperCase());
       return null;
     }
-    function totalQty(item){ return (item.qtyOld ?? 0) + (item.qtyNew ?? 0) + (item.qty ?? 0); }
+    function totalQty(item){ return (Number(item.qtyOld) || 0) + (Number(item.qtyNew) || 0); }
     function withCacheBuster(url){ if (!url) return url; const sep = url.includes('?') ? '&' : '?'; return `${url}${sep}v=${Date.now()}`; }
     const SUPPORTED_IMAGE_TYPES = ["image/jpeg","image/jpg","image/png","image/gif","image/webp","image/bmp","image/heic","image/heif"];
     function isSupportedImage(file){ if (!file) return false; if (file.type && SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) return true; const n=(file.name||"").toLowerCase(); return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/.test(n); }
