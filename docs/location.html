@@ -20,49 +20,74 @@
 
 <style>
   :root{
-    --nav-w:260px; --bg:#0f0a1f; --panel:#1a1233; --ink:#e8e3ff; --muted:#b8acd9; --line:#3b2b66; --accent:#6d28d9;
+    /* match goal.html palette */
+    --nav-w:260px; --bg:#f6f7f8; --panel:#fff; --ink:#111; --muted:#6b7280; --line:#e5e7eb;
   }
-  html,body{height:100%} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
-  h2{color:var(--ink)} .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  h2{color:var(--ink)}
+  .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
   input,button,select,textarea{padding:8px;margin:4px;font-family:inherit}
-  button{background:#6d28d9;border:1px solid #6d28d9;color:#fff;border-radius:8px;cursor:pointer}
-  button:hover{filter:brightness(.93)}
-  /* hamburger + sidebar */
+
+  /* buttons match goal.html */
+  button{
+    background:linear-gradient(#fafafa,#f3f4f6);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:8px; cursor:pointer
+  }
+  button:hover{background:#111;color:#fff;border-color:#111}
+
+  /* hamburger + sidebar (light) */
   #menu-check{display:none}
   .hamburger{position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;cursor:pointer;user-select:none;z-index:1200;transition:transform .3s}
-  .hamburger .bar{height:3px;background:#e8e3ff;border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
+  .hamburger .bar{height:3px;background:#111;border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
   .hamburger .bar1,.hamburger .bar3{width:18px}.hamburger .bar2{width:28px}
   #menu-check:checked+label.hamburger{transform:translateX(var(--nav-w))}
   #menu-check:checked+label.hamburger .bar1{transform:translateY(10px) rotate(45deg);width:28px}
   #menu-check:checked+label.hamburger .bar2{opacity:0}
   #menu-check:checked+label.hamburger .bar3{transform:translateY(-10px) rotate(-45deg);width:28px}
-  .sidebar{position:fixed;inset:0 auto 0 0;width:var(--nav-w);background:#1a1233;padding:20px;box-sizing:border-box;transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;border-right:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45)}
-  .sidebar a,.sidebar button{display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;border-radius:8px;text-decoration:none;color:#e8e3ff;border:1px solid var(--line);background:#0f0a1f}
-  .sidebar a:hover{background:#6d28d9;color:#fff;border-color:#6d28d9}
+  .sidebar{
+    position:fixed;inset:0 auto 0 0;width:var(--nav-w);background:#f3f4f6;padding:20px;box-sizing:border-box;transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;border-right:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.18)
+  }
+  .sidebar a,.sidebar button{display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--line);background:#fff}
+  .sidebar a:hover{background:#111;color:#fff;border-color:#111}
   #menu-check:checked~.sidebar{transform:translateX(0)}
   label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
   #menu-check:checked~label.overlay{opacity:1;visibility:visible}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
-  .card{width:190px;height:254px;background:var(--panel);border-radius:20px;position:relative;overflow:visible;transition:.5s;box-shadow:0 20px 45px rgba(109,40,217,.35),0 8px 20px rgba(0,0,0,.25);border:1px solid var(--line);color:var(--ink)}
-  .badge-new{position:absolute;top:-10px;right:-10px;background:#e11d48;color:#fff;padding:.35em .55em;border-radius:999px;font-weight:700;font-size:.7em;box-shadow:0 8px 18px rgba(0,0,0,.25);cursor:pointer}
-  .card__image{width:100%;height:100px;border-radius:12px;background:linear-gradient(180deg,#2a2146 0%, #221b3a 100%);position:relative;overflow:hidden;background-size:cover;background-position:center}
-  .img-edit-btn,.img-view-btn{position:absolute;top:6px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:999px;background:rgba(26,18,51,.95);color:#e8e3ff;cursor:pointer}
+  .card{
+    width:190px;height:254px;background:var(--panel);border-radius:20px;position:relative;overflow:visible;transition:.2s;
+    box-shadow:0 8px 20px rgba(0,0,0,.08);border:1px solid var(--line);color:var(--ink)
+  }
+  .card:hover{transform:translateY(-4px)}
+  .badge-new{position:absolute;top:-10px;right:-10px;background:#e11d48;color:#fff;padding:.35em .55em;border-radius:999px;font-weight:700;font-size:.7em;box-shadow:0 8px 18px rgba(0,0,0,.15);cursor:pointer}
+  .card__image{
+    width:100%;height:100px;border-radius:12px;background:#f3f4f6;position:relative;overflow:hidden;background-size:cover;background-position:center;border:1px solid var(--line)
+  }
+  .img-edit-btn,.img-view-btn{
+    position:absolute;top:6px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.95);color:var(--ink);cursor:pointer
+  }
   .img-edit-btn{left:6px;width:26px}
   .img-view-btn{right:6px;padding:0 8px;font-size:12px}
   .card__text{display:flex;flex-direction:column;gap:.25em;padding:0 10px}
   .card__title{font-size:1.1em;margin:6px 0 0;font-weight:700}
   .card__description{color:var(--muted);font-size:.75em;margin:0}
   .card__actions{display:flex;justify-content:center;gap:12px;margin-top:8px}
-  .card__button--trash{background:transparent;color:#e8e3ff;border:1px solid #e8e3ff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .card__button--trash{
+    background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer
+  }
+  .card__button--trash:hover{background:#111;color:#fff;border-color:#111}
 
   /* add-tile look */
-  .card--add{display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px dashed var(--line)}
+  .card--add{display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px dashed var(--line);background:#fff}
+  .card--add:hover{background:#1110a;filter:brightness(.98)}
 
   /* Modals, inputs, toasts */
   .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:9999}
   .modal.open{display:flex}
-  .modal-card{width:95%;max-width:520px;background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 20px 40px rgba(0,0,0,.15);border:1px solid #e5e7eb;color:#111}
+  .modal-card{width:95%;max-width:520px;background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 20px 40px rgba(0,0,0,.15);border:1px solid var(--line);color:#111}
   .modal-card h3{margin:0 0 10px;color:#111}
   .modal-card label{display:block;margin:10px 0 4px;font-size:14px;color:#111}
   .input-container{position:relative;margin:8px 0}
@@ -73,6 +98,7 @@
   .label{position:absolute;top:10px;left:10px;color:#111;transition:.5s;transform:scale(0);z-index:-1;background:#fff;padding:0 4px}
   .input:focus~.label{top:-10px;transform:scale(1)}
   .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
+
   .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
   .toast{background:#111;color:#fff;padding:10px 12px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
   .toast--warn{background:#b45309}.toast--error{background:#991b1b}.toast__close{margin-left:12px;cursor:pointer;font-weight:700}
@@ -117,9 +143,9 @@
     </div>
     <label for="loc-desc">Details / placement notes</label>
     <textarea id="loc-desc" rows="4" class="input" style="height:auto" placeholder="e.g., Rack A3, top shelf, behind boxes"></textarea>
-    <div style="color:#b8acd9">After creating, tap the 🖼 button on the card to add a photo (camera/gallery) or paste an image URL.</div>
+    <div style="color:#6b7280">After creating, tap the 🖼 button on the card to add a photo (camera/gallery) or paste an image URL.</div>
     <div class="modal-actions">
-      <button id="loc-add-cancel" style="background:#2b2b2b;border-color:#2b2b2b">Cancel</button>
+      <button id="loc-add-cancel">Cancel</button>
       <button id="loc-add-confirm">Create</button>
     </div>
   </div>
@@ -129,223 +155,6 @@
 <div id="imageModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="img-title">
   <div class="modal-card">
     <h3 id="img-title">Image</h3>
-    <img id="img-view" src="" alt="" style="width:100%; max-height:70vh; object-fit:contain; border:1px solid #e5e7eb; border-radius:8px;" />
+    <img id="img-view" src="" alt="" style="width:100%; max-height:70vh; object-fit:contain; border:1px solid var(--line); border-radius:8px;" />
     <div class="modal-actions">
-      <a id="img-open" href="#" target="_blank" rel="noopener" style="margin-right:auto;color:#6d28d9">Open in new tab</a>
-      <button id="img-close" style="background:#2b2b2b;border-color:#2b2b2b">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- Hidden file picker -->
-<input type="file" id="hiddenLocationFileInput" accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.heif" capture="environment" style="display:none" />
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
-  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
-
-  /* ---------- Firebase ---------- */
-  const firebaseConfig = {
-    apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
-    authDomain: "epedu-inventory-database.firebaseapp.com",
-    projectId: "epedu-inventory-database",
-    storageBucket: "epedu-inventory-database.appspot.com",
-    messagingSenderId: "124437251040",
-    appId: "1:124437251040:web:4989c73efc2f4afbf22185",
-    measurementId: "G-GFEEP49VRP"
-  };
-  const app = initializeApp(firebaseConfig);
-  try { getAnalytics(app); } catch(e) {}
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
-  const st   = getStorage(app);
-  signInAnonymously(auth).catch(console.error);
-
-  const CURRENT_USER = localStorage.getItem('auth_user') || 'Unknown';
-
-  /* ---------- Sidebar ARIA ---------- */
-  const menuCheck = document.getElementById('menu-check');
-  const hamb = document.querySelector('label.hamburger');
-  function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
-  menuCheck.addEventListener('change', syncAria); syncAria();
-
-  /* ---------- Toasts / utils ---------- */
-  const toastWrap = document.getElementById('toast-wrap');
-  function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-  function notify(msg, type='info', timeout=3200){
-    const el = document.createElement('div');
-    el.className = 'toast' + (type==='warn' ? ' toast--warn' : type==='error' ? ' toast--error' : '');
-    el.innerHTML = `${escapeHtml(msg)} <span class="toast__close" aria-label="Dismiss" role="button">×</span>`;
-    toastWrap.appendChild(el);
-    const close = ()=>{ if (el && el.parentNode) el.parentNode.removeChild(el); };
-    el.querySelector('.toast__close').addEventListener('click', close);
-    if (timeout>0) setTimeout(close, timeout);
-  }
-  function withCacheBuster(url){ if (!url) return url; const sep = url.includes('?') ? '&' : '?'; return `${url}${sep}v=${Date.now()}`; }
-  const SUPPORTED_IMAGE_TYPES=["image/jpeg","image/jpg","image/png","image/gif","image/webp","image/bmp","image/heic","image/heif"];
-  function isSupportedImage(file){ if (!file) return false; if (file.type && SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) return true; const n=(file.name||"").toLowerCase(); return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/.test(n); }
-  function guessContentType(file){ const t=file?.type||""; if(t) return t; const n=(file?.name||"").toLowerCase();
-    if(/\.jpe?g$/.test(n))return"image/jpeg"; if(/\.png$/.test(n))return"image/png"; if(/\.gif$/.test(n))return"image/gif";
-    if(/\.webp$/.test(n))return"image/webp"; if(/\.bmp$/.test(n))return"image/bmp"; if(/\.heic$/.test(n))return"image/heic";
-    if(/\.heif$/.test(n))return"image/heif"; return"application/octet-stream"; }
-  function isLikelyHttpUrl(s){ const u=(s||'').trim(); return /^https?:\/\//i.test(u) || /^data:image\//i.test(u); }
-  async function uploadFileWithPreview({file, pathPrefix, title, afterSet}){
-    const localURL = URL.createObjectURL(file); openImageViewer(localURL, title);
-    const safe = (file.name || ('photo_' + Date.now())).replace(/[^\w.\-]+/g,'_');
-    const path = `${pathPrefix}/${Date.now()}_${safe}`;
-    const ref  = storageRef(st, path);
-    await uploadBytes(ref, file, { contentType: guessContentType(file) });
-    const url = await getDownloadURL(ref);
-    await afterSet(url);
-    openImageViewer(withCacheBuster(url), title);
-    URL.revokeObjectURL(localURL);
-  }
-
-  /* ---------- Firestore ---------- */
-  const colLocations = collection(db, "locations");
-
-  /* ---------- State & listeners ---------- */
-  let locations = [];
-  onSnapshot(colLocations, (snap) => {
-    locations = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-    renderLocationGrid();
-  });
-
-  /* ---------- Image viewer ---------- */
-  const imageModal   = document.getElementById('imageModal');
-  const imgView      = document.getElementById('img-view');
-  const imgTitle     = document.getElementById('img-title');
-  const imgOpenLink  = document.getElementById('img-open');
-  const imgCloseBtn  = document.getElementById('img-close');
-  function openImageViewer(url, title='Image'){ imgView.src = url; imgView.alt = title; imgTitle.textContent = title; imgOpenLink.href = url || '#'; imageModal.classList.add('open'); }
-  function closeImageViewer(){ imageModal.classList.remove('open'); imgView.src = ''; imgView.alt = ''; }
-  imgCloseBtn.addEventListener('click', closeImageViewer);
-  imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
-  window.openImageViewer = openImageViewer;
-
-  /* ---------- Render grid (with + add card) ---------- */
-  function renderLocationGrid(){
-    const grid = document.getElementById('locationGrid'); if (!grid) return;
-    grid.innerHTML = '';
-
-    // add tile
-    const addCard = document.createElement('div'); addCard.className = 'card card--add';
-    addCard.innerHTML = `<div style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:28px;border:1px solid var(--line);">+</div>`;
-    addCard.title = 'Add location card';
-    addCard.addEventListener('click', openAddLocationDialog);
-    grid.appendChild(addCard);
-
-    // existing
-    locations.forEach((loc, index) => {
-      const card = document.createElement('div'); card.className = 'card';
-      const bgUrl = loc.img ? withCacheBuster(loc.img) : '';
-      const safeBgUrl = bgUrl ? bgUrl.replace(/"/g,'%22').replace(/'/g,'%27') : '';
-      const bgStyle = bgUrl ? `style="background-image:url('${safeBgUrl}')"` : '';
-      card.innerHTML = `
-        ${loc.isNew ? `<div class="badge-new" title="Dismiss">NEW</div>` : ''}
-        <div class="card__content">
-          <div class="card__image" ${bgStyle}>
-            <button class="img-edit-btn" title="Set image (camera/gallery)" aria-label="Set image">🖼</button>
-            <button class="img-view-btn" title="View image" aria-label="View image">View Image</button>
-          </div>
-          <div class="card__text">
-            <h3 class="card__title" title="${escapeHtml(loc.name)}">${escapeHtml(loc.name)}</h3>
-            <p class="card__description">${escapeHtml(loc.description || '')}</p>
-          </div>
-          <div class="card__actions">
-            <div class="card__button--trash" data-del title="Delete">🗑</div>
-          </div>
-        </div>`;
-      card.querySelector('.img-edit-btn').addEventListener('click', () => openLocationImagePicker(index));
-      card.querySelector('.img-view-btn').addEventListener('click', () => {
-        const currentLoc = locations[index];
-        if (!currentLoc || !currentLoc.img) { notify('No image set yet. Click 🖼 to add one.','warn'); return; }
-        openImageViewer(withCacheBuster(currentLoc.img), `Location: ${currentLoc.name}`);
-      });
-      if (loc.isNew) card.querySelector('.badge-new')?.addEventListener('click', async ()=>{
-        try{ await updateDoc(doc(db,"locations", loc.id), { isNew:false }); }catch(e){}
-      });
-      card.querySelector('[data-del]').addEventListener('click', async ()=>{
-        if (!confirm(`Delete location card "${loc.name}"?`)) return;
-        try { await deleteDoc(doc(db,"locations",loc.id)); notify('Location card deleted'); }
-        catch(err){ console.error(err); notify('Failed to delete','error'); }
-      });
-      grid.appendChild(card);
-    });
-  }
-
-  /* ---------- Add location modal ---------- */
-  function openAddLocationDialog(){
-    document.getElementById('loc-item-name').value = '';
-    document.getElementById('loc-desc').value = '';
-    document.getElementById('locAddModal').classList.add('open');
-    setTimeout(()=>document.getElementById('loc-item-name').focus(), 0);
-  }
-  function closeAddLocationDialog(){ document.getElementById('locAddModal').classList.remove('open'); }
-  document.getElementById('loc-add-cancel').addEventListener('click', closeAddLocationDialog);
-  document.getElementById('locAddModal').addEventListener('click', e => { if (e.target.id === 'locAddModal') closeAddLocationDialog(); });
-  document.getElementById('loc-add-confirm').addEventListener('click', async ()=>{
-    const name = document.getElementById('loc-item-name').value.trim();
-    const description = document.getElementById('loc-desc').value.trim();
-    if (!name) { notify('Please enter an item name.','warn'); return; }
-    try{
-      await addDoc(colLocations, { name, description, img:null, createdAt:serverTimestamp(), isNew:true, actor: CURRENT_USER });
-      notify('Location card created');
-    }catch(err){ console.error(err); notify('Failed to create card','error'); }
-    closeAddLocationDialog();
-  });
-
-  /* ---------- Image picker for locations ---------- */
-  let locImgTargetIndex = null;
-  const locFileInput = document.getElementById('hiddenLocationFileInput');
-
-  function openLocationImagePicker(index){
-    locImgTargetIndex = index;
-    const choice=prompt("Set image for this location:\n- Paste an image URL (http/https) and press OK, OR\n- Leave blank to take/select a photo (uploads to Firebase Storage).");
-    if (choice && choice.trim()){
-      if (!isLikelyHttpUrl(choice.trim())) { notify('Please enter a valid http(s) or data: image URL','warn'); locImgTargetIndex=null; return; }
-      setLocationImageFromURL(choice.trim());
-    } else locFileInput.click();
-  }
-  window.openLocationImagePicker = openLocationImagePicker;
-
-  locFileInput.addEventListener('change', async (e)=>{
-    const file = e.target.files && e.target.files[0]; e.target.value='';
-    if (!file || locImgTargetIndex===null) return;
-    if (!isSupportedImage(file)) { notify(`Unsupported image format: ${file.type || file.name}`,'warn', 6000); locImgTargetIndex = null; return; }
-    const loc = locations[locImgTargetIndex];
-    try{
-      await uploadFileWithPreview({
-        file,
-        pathPrefix: `locationImages/${loc.id}`,
-        title: `Location: ${loc.name}`,
-        afterSet: async (url)=>updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false })
-      });
-    }catch(err){ console.error(err); notify('Upload failed','error'); }
-    locImgTargetIndex=null;
-  });
-
-  async function setLocationImageFromURL(url){
-    if (locImgTargetIndex===null) return;
-    const loc = locations[locImgTargetIndex];
-    try{
-      await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false });
-      openImageViewer(withCacheBuster(url), `Location: ${loc.name}`);
-    }catch(err){ console.error(err); notify('Failed to set image URL','error'); }
-    locImgTargetIndex=null;
-  }
-  window.setLocationImageFromURL = setLocationImageFromURL;
-
-  /* ---------- ESC closes modals ---------- */
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape'){
-      document.getElementById('locAddModal').classList.remove('open');
-      document.getElementById('imageModal').classList.remove('open');
-    }
-  });
-</script>
-</body>
-</html>
+      <a id="img-open" href="#" target="_blank" rel="noopener" style="margin-right:auto;color:#111;text-decoration:underline">O_
