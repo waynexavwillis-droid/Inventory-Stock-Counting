@@ -127,8 +127,8 @@
         <div class="card-border-top"></div>
         <div class="img">🖼️</div>
         <span>Need an image URL?</span>
-        <span class="job">Upload to imgbb, copy the link, then set it via the 🖼 button on an item.</span>
-        <button type="button" onclick="openImgbb()">Open imgbb.com</button>
+        <span class="job">Upload to ImageKit, copy the link, then set it via the 🖼 button on an item.</span>
+        <button type="button" onclick="openImgbb()">Open ImageKit</button>
         <div class="helper-note">Tip: choose “Direct link” if available.</div>
       </div>
     </div>
@@ -199,8 +199,8 @@
   let inventory = [];
   onSnapshot(colInventory, (snap) => { inventory = snap.docs.map(d => ({ id:d.id, ...d.data() })); });
 
-  /* Open imgbb */
-  window.openImgbb = () => window.open('https://imgbb.com', '_blank', 'noopener');
+  /* Open ImageKit instead of imgbb */
+  window.openImgbb = () => window.open('https://imagekit.io/dashboard/media-library/L0VQRURVIElOVkVOVE9SWSA', '_blank', 'noopener');
 
   /* Add item */
   async function addNewItem() {
