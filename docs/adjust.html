@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Inventory System — Adjust Stock</title>
 
-<!-- Auth gate with role check -->
 <script>
   const AUTH_OK   = localStorage.getItem('auth_v1') === 'ok';
   const AUTH_USER = localStorage.getItem('auth_user');
@@ -23,42 +22,20 @@
 
 <style>
   :root{
-    /* match goal.html palette */
     --nav-w:260px;
-    --bg:#f6f7f8;        /* page background */
-    --panel:#fff;        /* cards / panels */
-    --ink:#111;          /* main text */
-    --muted:#6b7280;     /* secondary text */
-    --line:#e5e7eb;      /* borders */
-    --accent:#111;       /* neutral action color */
-    --chip:#eef2f7;
+    --bg:#f6f7f8; --panel:#fff; --ink:#111; --muted:#6b7280; --line:#e5e7eb; --accent:#111; --chip:#eef2f7;
   }
-
   html,body{height:100%}
   body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
   h1,h2,h3{color:var(--ink)}
   .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
   input,button,select,textarea{padding:8px;margin:4px;font-family:inherit}
-
-  /* buttons (goal.html style) */
-  button{
-    background:linear-gradient(#fafafa,#f3f4f6);
-    border:1px solid var(--line);
-    color:var(--ink);
-    border-radius:8px; cursor:pointer
-  }
+  button{background:linear-gradient(#fafafa,#f3f4f6);border:1px solid var(--line);color:var(--ink);border-radius:8px;cursor:pointer}
   button:hover{background:#111;color:#fff;border-color:#111}
 
-  /* Sidebar + hamburger (light) */
   #menu-check{display:none}
-  .hamburger{
-    position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;
-    cursor:pointer;user-select:none;z-index:1200;transition:transform .3s
-  }
-  .hamburger .bar{
-    height:3px;background:#111;border-radius:10px;transition:transform .35s,opacity .25s,width .35s
-  }
-  .hamburger .bar1,.hamburger .bar3{width:18px}.hamburger .bar2{width:28px}
+  .hamburger{position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;cursor:pointer;user-select:none;z-index:1200;transition:transform .3s}
+  .hamburger .bar{height:3px;background:#111;border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
   #menu-check:checked+label.hamburger{transform:translateX(var(--nav-w))}
   #menu-check:checked+label.hamburger .bar1{transform:translateY(10px) rotate(45deg);width:28px}
   #menu-check:checked+label.hamburger .bar2{opacity:0}
@@ -69,89 +46,58 @@
     transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;border-right:1px solid var(--line);
     box-shadow:0 10px 30px rgba(0,0,0,.18)
   }
-  .sidebar a,.sidebar button{
-    display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;border-radius:8px;text-decoration:none;
-    color:inherit;border:1px solid var(--line);background:#fff
-  }
+  .sidebar a,.sidebar button{display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--line);background:#fff}
   .sidebar a:hover{background:#111;color:#fff;border-color:#111}
   #menu-check:checked~.sidebar{transform:translateX(0)}
   label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
   #menu-check:checked~label.overlay{opacity:1;visibility:visible}
 
-  /* Grid & cards */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
   .card{
     --card-bg:var(--panel);--card-text:var(--ink);
-    width:100%;min-height:300px;background:var(--card-bg);border-radius:20px;position:relative;overflow:hidden;
+    width:100%;min-height:320px;background:var(--card-bg);border-radius:20px;position:relative;overflow:hidden;
     transition:.2s ease;box-shadow:0 8px 20px rgba(0,0,0,.08);border:1px solid var(--line);color:var(--card-text);
     display:flex;flex-direction:column
   }
   .card:hover{transform:translateY(-4px)}
 
-  .badge-lowok{
-    position:absolute;top:12px;right:12px;padding:.25em .5em;border-radius:999px;font-size:.7em;font-weight:600;
-    border:1px solid transparent
-  }
+  .badge-lowok{position:absolute;top:12px;right:12px;padding:.25em .5em;border-radius:999px;font-size:.7em;font-weight:600;border:1px solid transparent}
   .badge-lowok--low{background:#fee2e2;color:#991b1b;border-color:#fecaca}
   .badge-lowok--ok{background:#e6f7ef;color:#166534;border-color:#bbf7d0}
-  .badge-new{
-    position:absolute;top:-10px;right:-10px;background:#e11d48;color:#fff;padding:.35em .55em;border-radius:999px;font-weight:700;font-size:.7em;
-    box-shadow:0 8px 18px rgba(0,0,0,.15);cursor:pointer
-  }
+  .badge-new{position:absolute;top:-10px;right:-10px;background:#e11d48;color:#fff;padding:.35em .55em;border-radius:999px;font-weight:700;font-size:.7em;box-shadow:0 8px 18px rgba(0,0,0,.15);cursor:pointer}
 
-  .card__image{
-    width:100%;height:110px;background:#f3f4f6;background-size:cover;background-position:center;border-bottom:1px solid var(--line);
-    position:relative
-  }
-  .img-edit-btn{
-    position:absolute;top:6px;left:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:14px;
-    border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.95);color:var(--ink);cursor:pointer
-  }
-  .img-view-btn{
-    position:absolute;top:6px;right:6px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;padding:0 8px;
-    border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.95);color:var(--ink);cursor:pointer
-  }
-  .qty-badge{
-    position:absolute;bottom:8px;right:8px;background:#111;color:#fff;font-size:12px;padding:2px 6px;border-radius:999px;opacity:.9
-  }
+  .card__image{width:100%;height:110px;background:#f3f4f6;background-size:cover;background-position:center;border-bottom:1px solid var(--line);position:relative}
+  .img-edit-btn{position:absolute;top:6px;left:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:14px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.95);color:var(--ink);cursor:pointer}
+  .img-view-btn{position:absolute;top:6px;right:6px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;padding:0 8px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.95);color:var(--ink);cursor:pointer}
+  .qty-badge{position:absolute;bottom:8px;right:8px;background:#111;color:#fff;font-size:12px;padding:2px 6px;border-radius:999px;opacity:.9}
 
-  .card__body{display:flex;flex-direction:column;gap:6px;padding:10px 12px 0 12px;min-height:120px}
+  .card__body{display:flex;flex-direction:column;gap:6px;padding:10px 12px 0 12px;min-height:140px}
   .card__title{font-size:1.05rem;margin:2px 0 0;font-weight:700}
   .card__description{color:var(--muted);font-size:.83em;margin:0}
 
-  /* location list (more detailed) */
   .card__loclist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
   .card__locitem{display:flex;align-items:center;gap:8px;line-height:1.25}
   .chip{background:var(--chip);border:1px solid var(--line);padding:2px 8px;border-radius:999px;font-size:.75em;color:#111;white-space:nowrap}
-  .chip--old::before{content:"🏚️ ";} /* fun little icons */
+  .chip--old::before{content:"🏚️ ";}
   .chip--new::before{content:"🏢 ";}
+  .chip--office::before{content:"🏷️ ";}
 
   .kv{font-size:.86em;color:#111}
   .kv .label{color:var(--muted)}
   .kv .value{font-weight:600}
 
-  /* actions stick to the bottom */
-  .card__actions{
-    margin-top:auto;display:flex;justify-content:center;gap:12px;padding:12px 0 14px 0
-  }
-  .card__button{
-    width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;
-    background:#fff;border:1px solid var(--line);color:var(--ink)
-  }
+  .card__actions{margin-top:auto;display:flex;justify-content:center;gap:12px;padding:12px 0 14px 0}
+  .card__button{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;background:#fff;border:1px solid var(--line);color:var(--ink)}
   .card__button:hover{background:#111;color:#fff;border-color:#111}
   .card__button--trash{background:#fff;color:var(--ink);border:1px solid var(--line)}
 
-  /* Modals + toasts */
   .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:9999}
   .modal.open{display:flex}
   .modal-card{width:95%;max-width:520px;background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 20px 40px rgba(0,0,0,.15);border:1px solid var(--line);color:#111}
   .modal-card h3{margin:0 0 10px;color:#111}
   .modal-card label{display:block;margin:10px 0 4px;font-size:14px;color:#111}
   .input-container{position:relative;margin:8px 0}
-  .input{
-    width:100%;padding:10px;height:40px;border:2px solid #111;border-top:none;border-bottom:none;font-size:16px;background:transparent;outline:none;
-    box-shadow:7px 7px 0 0 #111;transition:.5s;box-sizing:border-box
-  }
+  .input{width:100%;padding:10px;height:40px;border:2px solid #111;border-top:none;border-bottom:none;font-size:16px;background:transparent;outline:none;box-shadow:7px 7px 0 0 #111;transition:.5s;box-sizing:border-box}
   .topline,.underline{position:absolute;background-color:#111;height:2px;right:0;transition:.5s}
   .topline{width:0;top:0}.underline{width:0;bottom:0}
   .input:focus~.topline{width:35%}.input:focus~.underline{width:100%}
@@ -201,7 +147,9 @@
     <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount" inputmode="numeric" class="input">
     <label for="adj-location">Location</label>
     <select id="adj-location" class="input">
-      <option>Old warehouse</option><option>New warehouse</option>
+      <option>Old warehouse</option>
+      <option>New warehouse</option>
+      <option>Office</option>
     </select>
     <div class="input-container">
       <input id="adj-name" type="text" class="input" placeholder=" " readonly>
@@ -321,10 +269,13 @@
     const s=(raw||'').trim().toLowerCase();
     if (s.startsWith('old')) return 'Old warehouse';
     if (s.startsWith('new')) return 'New warehouse';
-    if (['old warehouse','new warehouse'].includes(s)) return s.replace(/\b\w/g,m=>m.toUpperCase());
+    if (s.startsWith('off')) return 'Office';
+    if (['old warehouse','new warehouse','office'].includes(s)) return s.replace(/\b\w/g,m=>m.toUpperCase());
     return null;
   }
-  function totalQty(item){ return (Number(item.qtyOld) || 0) + (Number(item.qtyNew) || 0); }
+  function totalQty(item){
+    return (Number(item.qtyOld) || 0) + (Number(item.qtyNew) || 0) + (Number(item.qtyOffice) || 0);
+  }
   function withCacheBuster(url){ if (!url) return url; const sep = url.includes('?') ? '&' : '?'; return `${url}${sep}v=${Date.now()}`; }
 
   const SUPPORTED_IMAGE_TYPES=["image/jpeg","image/jpg","image/png","image/gif","image/webp","image/bmp","image/heic","image/heif"];
@@ -353,7 +304,7 @@
   imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
   window.openImageViewer = openImageViewer;
 
-  /* Render grid with detailed location lines and bottom actions */
+  /* Render grid (show Old/New/Office) */
   function renderStockGrid() {
     const grid = document.getElementById('stockGrid'); if (!grid) return;
     grid.innerHTML = '';
@@ -372,7 +323,7 @@
         <div class="card__image" ${bgStyle}>
           <button class="img-edit-btn" title="Set image" aria-label="Set image">🖼</button>
           <button class="img-view-btn" title="View image" aria-label="View image">View Image</button>
-          <span class="qty-badge" title="Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}">Qty: ${total}</span>
+          <span class="qty-badge" title="Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}, Office: ${item.qtyOffice ?? 0}">Qty: ${total}</span>
         </div>
 
         <div class="card__body">
@@ -386,6 +337,10 @@
             <li class="card__locitem">
               <span class="chip chip--new" title="New warehouse">New warehouse</span>
               <span class="kv"><span class="label"> — Qty: </span><span class="value">${item.qtyNew ?? 0}</span></span>
+            </li>
+            <li class="card__locitem">
+              <span class="chip chip--office" title="Office">Office</span>
+              <span class="kv"><span class="label"> — Qty: </span><span class="value">${item.qtyOffice ?? 0}</span></span>
             </li>
           </ul>
 
@@ -432,7 +387,8 @@
     pending = { index, mode };
     const item = inventory[index]; const total = totalQty(item);
     document.getElementById('adj-title').textContent = `${mode === 'add' ? 'Add to' : 'Minus from'} "${item.name}"`;
-    document.getElementById('adj-subtitle').textContent = `Current total: ${total} (Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0})`;
+    document.getElementById('adj-subtitle').textContent =
+      `Current total: ${total} (Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}, Office: ${item.qtyOffice ?? 0})`;
     document.getElementById('adj-amount').value = '1';
     document.getElementById('adj-name').value = CURRENT_USER;
     document.getElementById('adj-location').value = 'Old warehouse';
@@ -461,28 +417,36 @@
       const reason = (document.getElementById('adj-reason').value || '').trim();
       const adjustedBy = (document.getElementById('adj-by').value || '').trim();
       if (!Number.isInteger(amt) || amt <= 0) { notify('Enter a positive integer amount.','warn'); return; }
-      if (!loc) { notify('Location must be "Old warehouse" or "New warehouse".','warn'); return; }
+      if (!loc) { notify('Location must be "Old warehouse", "New warehouse", or "Office".','warn'); return; }
       if (!reason || !adjustedBy) { notify('Please fill Reason and Adjusted by (name).','warn'); return; }
+
       const mode = pending.mode === 'sub' ? 'sub' : 'add';
       const delta = mode === 'add' ? amt : -amt;
-      const prevOld = Number(item.qtyOld ?? 0), prevNew = Number(item.qtyNew ?? 0);
+      const prevOld    = Number(item.qtyOld ?? 0);
+      const prevNew    = Number(item.qtyNew ?? 0);
+      const prevOffice = Number(item.qtyOffice ?? 0);
+
       if (mode === 'sub') {
-        if (loc === 'Old warehouse' && amt > prevOld) { notify(`Not enough stock in Old warehouse (have ${prevOld}).`,'warn'); return; }
-        if (loc === 'New warehouse' && amt > prevNew) { notify(`Not enough stock in New warehouse (have ${prevNew}).`,'warn'); return; }
+        if (loc === 'Old warehouse' && amt > prevOld)    { notify(`Not enough stock in Old warehouse (have ${prevOld}).`,'warn'); return; }
+        if (loc === 'New warehouse' && amt > prevNew)    { notify(`Not enough stock in New warehouse (have ${prevNew}).`,'warn'); return; }
+        if (loc === 'Office'         && amt > prevOffice) { notify(`Not enough stock in Office (have ${prevOffice}).`,'warn'); return; }
       }
-      let newOld = prevOld, newNew = prevNew;
+
+      let newOld = prevOld, newNew = prevNew, newOffice = prevOffice;
       if (loc === 'Old warehouse') newOld = prevOld + delta;
       if (loc === 'New warehouse') newNew = prevNew + delta;
-      newOld = Math.max(0, newOld); newNew = Math.max(0, newNew);
-      const newTotal = newOld + newNew;
+      if (loc === 'Office')         newOffice = prevOffice + delta;
+      newOld = Math.max(0, newOld); newNew = Math.max(0, newNew); newOffice = Math.max(0, newOffice);
+      const newTotal = newOld + newNew + newOffice;
 
-      await updateDoc(doc(db, "inventory", item.id), { qtyOld: newOld, qtyNew: newNew, qty: newTotal });
+      await updateDoc(doc(db, "inventory", item.id), { qtyOld: newOld, qtyNew: newNew, qtyOffice: newOffice, qty: newTotal });
       await addDoc(colAdjustments, {
         ts: serverTimestamp(), item: item.name, itemId: item.id, location: loc, delta,
-        actor: CURRENT_USER, reason, adjustedBy, qtyAfterOld: newOld, qtyAfterNew: newNew, qtyAfter: newTotal
+        actor: CURRENT_USER, reason, adjustedBy,
+        qtyAfterOld: newOld, qtyAfterNew: newNew, qtyAfterOffice: newOffice, qtyAfter: newTotal
       });
 
-      notify(`${mode === 'add' ? 'Added' : 'Subtracted'} ${Math.abs(delta)} ${loc === 'Old warehouse' ? 'to/from Old' : 'to/from New'} for "${item.name}".`);
+      notify(`${mode === 'add' ? 'Added' : 'Subtracted'} ${Math.abs(delta)} to/from ${loc} for "${item.name}".`);
       closeAdjustDialog();
     } catch(err) { console.error(err); notify('Failed to adjust stock','error'); }
   });
@@ -490,11 +454,11 @@
   /* Delete item */
   let pendingDeleteId = null;
   function getItemById(id){ return inventory.find(i => i.id === id); }
-  function total(item){ return (Number(item.qtyOld) || 0) + (Number(item.qtyNew) || 0); }
+  function sumAll(it){ return (Number(it.qtyOld)||0)+(Number(it.qtyNew)||0)+(Number(it.qtyOffice)||0); }
   function openDeleteDialogById(id) {
     const item = getItemById(id); if (!item) return;
     pendingDeleteId = id;
-    const t = total(item);
+    const t = sumAll(item);
     document.getElementById('del-title').textContent = `Delete "${item.name}"`;
     document.getElementById('del-subtitle').textContent = `This will remove the item and log a history entry with -${t} (Qty after: 0).`;
     document.getElementById('del-name').value = CURRENT_USER;
@@ -516,9 +480,12 @@
     if (!reason || !adjustedBy) { notify('Please fill in Reason and Adjusted by (name).','warn'); return; }
     const removed = getItemById(pendingDeleteId);
     if (!removed) { pendingDeleteId = null; closeDeleteDialog(); return; }
-    const prevTotal = total(removed);
     try{
-      await addDoc(collection(db, "adjustments"), { ts: serverTimestamp(), item: removed.name, itemId: removed.id, location: 'ALL', delta: -prevTotal, actor, reason, adjustedBy, qtyAfterOld: 0, qtyAfterNew: 0, qtyAfter: 0 });
+      await addDoc(collection(db, "adjustments"), {
+        ts: serverTimestamp(), item: removed.name, itemId: removed.id, location: 'ALL',
+        delta: -sumAll(removed), actor, reason, adjustedBy,
+        qtyAfterOld: 0, qtyAfterNew: 0, qtyAfterOffice: 0, qtyAfter: 0
+      });
       await deleteDoc(doc(db,"inventory", removed.id));
       notify('Item deleted');
     } catch(err){ console.error(err); notify('Failed to delete item','error'); }
