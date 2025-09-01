@@ -63,8 +63,11 @@
   .status-chip{background:var(--s-badge);border-radius:999px;padding:2px 8px;font-size:12px}
   .chip--loan{background:#dcfce7;color:#065f46}
   .chip--rent{background:#fef3c7;color:#92400e}
+  .chip--where{background:#e0e7ff;color:#3730a3}
   .status-del{background:transparent;border:1px solid var(--s-line);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:#374151}
   .status-del:hover{background:#f9fafb}
+  .status-edit{background:transparent;border:1px solid var(--s-line);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:#374151}
+  .status-edit:hover{background:#f9fafb}
   .status-amt{font-weight:800}
 
   /* Modal + toasts */
@@ -118,7 +121,7 @@
   </section>
 </main>
 
-<!-- Status modal -->
+<!-- Status modal (used for Add + Edit) -->
 <div id="statusModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="status-title">
   <div class="modal-card">
     <h3 id="status-title">Add Status</h3>
@@ -130,6 +133,12 @@
     <input id="st-qty" type="number" min="1" step="1" value="1" placeholder="Quantity" class="input">
     <label for="st-type">Status</label>
     <select id="st-type" class="input"><option>Loan</option><option>Rent</option></select>
+    <label for="st-where">Location</label>
+    <select id="st-where" class="input">
+      <option>Client</option>
+      <option>On the way back</option>
+      <option>Office</option>
+    </select>
     <label for="st-remarks">Remarks</label>
     <textarea id="st-remarks" rows="3" placeholder="Optional notes…" class="input" style="height:auto"></textarea>
     <div class="modal-actions">
@@ -143,7 +152,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, collection, doc, addDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   /* ---------- Firebase ---------- */
   const firebaseConfig = {
@@ -199,18 +208,37 @@
   const stSave      = document.getElementById('st-save');
   const stSearch    = document.getElementById('status-search');
 
-  function openStatusModal(){
+  let editingId = null; // when set, Save will update instead of create
+
+  function openStatusModalNew(){
+    editingId = null;
+    document.getElementById('status-title').textContent = 'Add Status';
     document.getElementById('st-order').value   = '';
     document.getElementById('st-item').value    = '';
     document.getElementById('st-qty').value     = '1';
     document.getElementById('st-type').value    = 'Loan';
+    document.getElementById('st-where').value   = 'Client';
     document.getElementById('st-remarks').value = '';
     statusModal.classList.add('open');
     setTimeout(()=>document.getElementById('st-order').focus(),0);
   }
+
+  function openStatusModalEdit(row){
+    editingId = row.id;
+    document.getElementById('status-title').textContent = 'Edit Status';
+    document.getElementById('st-order').value   = row.order || '';
+    document.getElementById('st-item').value    = row.item  || '';
+    document.getElementById('st-qty').value     = row.qty   ?? 1;
+    document.getElementById('st-type').value    = row.status || 'Loan';
+    document.getElementById('st-where').value   = row.where  || 'Client';
+    document.getElementById('st-remarks').value = row.remarks || '';
+    statusModal.classList.add('open');
+    setTimeout(()=>document.getElementById('st-order').focus(),0);
+  }
+
   function closeStatusModal(){ statusModal.classList.remove('open'); }
 
-  stOpenBtn.addEventListener('click', openStatusModal);
+  stOpenBtn.addEventListener('click', openStatusModalNew);
   stCancel.addEventListener('click', closeStatusModal);
   statusModal.addEventListener('click', e => { if (e.target.id === 'statusModal') closeStatusModal(); });
   statusModal.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); stSave.click(); } });
@@ -220,13 +248,25 @@
     const item    = document.getElementById('st-item').value.trim();
     const qty     = parseInt(document.getElementById('st-qty').value,10);
     const stype   = document.getElementById('st-type').value; // Loan | Rent
+    const where   = document.getElementById('st-where').value; // Client | On the way back | Office
     const remarks = document.getElementById('st-remarks').value.trim();
     if (!order || !item || !Number.isInteger(qty) || qty<=0){
       notify('Please fill Order ID, Item Name, and a positive Quantity.','warn'); return;
     }
     try{
-      await addDoc(colStatuses, { ts:serverTimestamp(), order, item, qty, status:stype, remarks, actor:CURRENT_USER });
-      notify('Status saved'); closeStatusModal();
+      if (editingId){
+        await updateDoc(doc(db,'statuses',editingId), {
+          order, item, qty, status:stype, where, remarks,
+          editor: CURRENT_USER, updatedAt: serverTimestamp()
+        });
+        notify('Status updated');
+      } else {
+        await addDoc(colStatuses, {
+          ts:serverTimestamp(), order, item, qty, status:stype, where, remarks, actor:CURRENT_USER
+        });
+        notify('Status saved');
+      }
+      closeStatusModal();
     }catch(err){ console.error(err); notify('Failed to save status','error'); }
   });
 
@@ -239,29 +279,41 @@
     if (q) rows = rows.filter(r =>
       (r.order||'').toLowerCase().includes(q) ||
       (r.item||'').toLowerCase().includes(q) ||
-      (r.remarks||'').toLowerCase().includes(q)
+      (r.remarks||'').toLowerCase().includes(q) ||
+      (r.where||'').toLowerCase().includes(q)
     );
     for (const r of rows){
       const div = document.createElement('div'); div.className='status-card';
       const dt = r.ts?.toDate ? r.ts.toDate().toLocaleString() : (r.ts ? new Date(r.ts).toLocaleString() : '');
       const chipClass = (r.status||'').toLowerCase()==='rent' ? 'chip--rent' : 'chip--loan';
+      const whereTxt = r.where || 'Client';
       div.innerHTML = `
         <div class="status-card__top">
           <span>${escapeHtml(dt || '')}</span>
           <div style="display:flex; gap:8px; align-items:center;">
             <span class="status-chip ${chipClass}">${escapeHtml(r.status || '')}</span>
+            <span class="status-chip chip--where" title="Location">${escapeHtml(whereTxt)}</span>
+            <button class="status-edit" data-status-edit="${r.id}" title="Edit">✏️</button>
             <button class="status-del" data-status-del="${r.id}" title="Delete">🗑</button>
           </div>
         </div>
         <div class="status-card__title">Order: ${escapeHtml(r.order || '')}</div>
         <div class="status-meta">
           <div>Item Name</div><div>${escapeHtml(r.item || '')}</div>
-          <div>Quantities</div><div class="status-amt">${r.qty ?? ''}</div>
+          <div>Quantity</div><div class="status-amt">${r.qty ?? ''}</div>
+          <div>Location</div><div>${escapeHtml(whereTxt)}</div>
         </div>
         ${r.remarks ? `<div class="status-row"><div style="color:var(--s-muted);">Remarks</div><div>${escapeHtml(r.remarks)}</div></div>` : ''}`;
       wrap.appendChild(div);
     }
-    // wire delete
+    // wire edit + delete
+    wrap.querySelectorAll('[data-status-edit]').forEach(btn=>{
+      btn.onclick = (e)=>{
+        const id = e.currentTarget.getAttribute('data-status-edit');
+        const row = statuses.find(s=>s.id===id);
+        if (row) openStatusModalEdit(row);
+      };
+    });
     wrap.querySelectorAll('[data-status-del]').forEach(btn=>{
       btn.onclick = async (e)=>{
         const id = e.currentTarget.getAttribute('data-status-del');
