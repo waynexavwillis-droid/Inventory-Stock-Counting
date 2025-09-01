@@ -59,6 +59,7 @@
   .topline,.underline{position:absolute;background-color:var(--ink);height:2px;right:0;transition:.5s}
   .topline{width:0%;top:0}.underline{width:0%;bottom:0}
   .input-container input:focus~.topline{width:35%}.input-container input:focus~.underline{width:100%}.input-container input:focus~.label{top:-10px;transform:scale(1)}
+
   /* Helper card */
   .helper-row{display:grid;grid-template-columns:1fr;gap:16px;margin-top:12px}
   .card.helper{width:100%;border-radius:15px;box-shadow:1px 5px 60px 0 #100a;background:#0f0a1f;color:#fff;padding:16px}
@@ -114,7 +115,9 @@
       <input type="number" id="newItemQty" placeholder="Quantity" min="1" inputmode="numeric" aria-label="Quantity" />
       <div class="input-container">
         <select id="newItemLoc" class="input" style="height:40px">
-          <option>Old warehouse</option><option>New warehouse</option>
+          <option>Old warehouse</option>
+          <option>New warehouse</option>
+          <option>Office</option>
         </select>
         <span class="topline"></span><span class="underline"></span>
         <label for="newItemLoc" class="label">Location</label>
@@ -182,7 +185,8 @@
     const s=(raw||'').trim().toLowerCase();
     if (s.startsWith('old')) return 'Old warehouse';
     if (s.startsWith('new')) return 'New warehouse';
-    if (['old warehouse','new warehouse'].includes(s)) return s.replace(/\b\w/g,m=>m.toUpperCase());
+    if (s.startsWith('off')) return 'Office';
+    if (['old warehouse','new warehouse','office'].includes(s)) return s.replace(/\b\w/g,m=>m.toUpperCase());
     return null;
   }
 
@@ -202,26 +206,33 @@
   /* Open ImageKit instead of imgbb */
   window.openImgbb = () => window.open('https://imagekit.io/dashboard/media-library/L0VQRURVIElOVkVOVE9SWSA', '_blank', 'noopener');
 
-  /* Add item */
+  /* Add item (now supports Office) */
   async function addNewItem() {
     const name = (document.getElementById('newItemName').value || '').trim().replace(/\s+/g,' ');
     const qty  = parseInt(document.getElementById('newItemQty').value,10);
     const location = normLoc(document.getElementById('newItemLoc').value);
     if (!name || isNaN(qty) || qty <= 0) { notify("Enter a valid name and a quantity ≥ 1","warn"); return; }
-    if (!location) { notify('Location must be "Old warehouse" or "New warehouse".',"warn"); return; }
+    if (!location) { notify('Location must be "Old warehouse", "New warehouse", or "Office".',"warn"); return; }
 
     const existing = inventory.find(i => (i.name||'').toLowerCase() === name.toLowerCase());
     try{
       if (existing) {
-        const incOld = location === 'Old warehouse' ? qty : 0;
-        const incNew = location === 'New warehouse' ? qty : 0;
-        const newOld = Math.max(0, (existing.qtyOld ?? 0) + incOld);
-        const newNew = Math.max(0, (existing.qtyNew ?? 0) + incNew);
-        await updateDoc(doc(db, "inventory", existing.id), { qtyOld: newOld, qtyNew: newNew, qty: newOld + newNew, isNew:true });
+        const incOld    = location === 'Old warehouse' ? qty : 0;
+        const incNew    = location === 'New warehouse' ? qty : 0;
+        const incOffice = location === 'Office'         ? qty : 0;
+        const newOld    = Math.max(0, (existing.qtyOld ?? 0)    + incOld);
+        const newNew    = Math.max(0, (existing.qtyNew ?? 0)    + incNew);
+        const newOffice = Math.max(0, (existing.qtyOffice ?? 0) + incOffice);
+        await updateDoc(doc(db, "inventory", existing.id), {
+          qtyOld: newOld, qtyNew: newNew, qtyOffice: newOffice, qty: newOld + newNew + newOffice, isNew:true
+        });
       } else {
-        const qtyOld = location === 'Old warehouse' ? qty : 0;
-        const qtyNew = location === 'New warehouse' ? qty : 0;
-        await addDoc(colInventory, { name, qtyOld, qtyNew, qty: qtyOld + qtyNew, goal:0, img:null, isNew:true, createdAt: serverTimestamp() });
+        const qtyOld    = location === 'Old warehouse' ? qty : 0;
+        const qtyNew    = location === 'New warehouse' ? qty : 0;
+        const qtyOffice = location === 'Office'         ? qty : 0;
+        await addDoc(colInventory, {
+          name, qtyOld, qtyNew, qtyOffice, qty: qtyOld + qtyNew + qtyOffice, goal:0, img:null, isNew:true, createdAt: serverTimestamp()
+        });
       }
       notify(`Item "${name}" added to ${location}.`);
     } catch(err){ console.error(err); notify('Failed to add item','error'); }
