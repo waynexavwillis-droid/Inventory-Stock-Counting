@@ -30,7 +30,8 @@
     --ink:#111;          /* main text */
     --muted:#6b7280;     /* secondary text */
     --line:#e5e7eb;      /* borders */
-    --accent:#111;       /* controls (kept neutral to match goal.html hover) */
+    --accent:#111;       /* neutral action color */
+    --chip:#eef2f7;
   }
 
   html,body{height:100%}
@@ -39,7 +40,7 @@
   .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
   input,button,select,textarea{padding:8px;margin:4px;font-family:inherit}
 
-  /* buttons match goal.html */
+  /* buttons (goal.html style) */
   button{
     background:linear-gradient(#fafafa,#f3f4f6);
     border:1px solid var(--line);
@@ -48,7 +49,7 @@
   }
   button:hover{background:#111;color:#fff;border-color:#111}
 
-  /* Sidebar + hamburger (light style) */
+  /* Sidebar + hamburger (light) */
   #menu-check{display:none}
   .hamburger{
     position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;
@@ -77,26 +78,30 @@
   label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
   #menu-check:checked~label.overlay{opacity:1;visibility:visible}
 
-  /* Grid cards (light) */
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+  /* Grid & cards */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
   .card{
     --card-bg:var(--panel);--card-text:var(--ink);
-    width:190px;height:274px;background:var(--card-bg);border-radius:20px;position:relative;overflow:visible;
-    transition:.2s ease;box-shadow:0 8px 20px rgba(0,0,0,.08);border:1px solid var(--line);color:var(--card-text)
+    width:100%;min-height:300px;background:var(--card-bg);border-radius:20px;position:relative;overflow:hidden;
+    transition:.2s ease;box-shadow:0 8px 20px rgba(0,0,0,.08);border:1px solid var(--line);color:var(--card-text);
+    display:flex;flex-direction:column
   }
   .card:hover{transform:translateY(-4px)}
+
   .badge-lowok{
-    position:absolute;top:12px;right:12px;padding:.25em .5em;border-radius:999px;font-size:.7em;font-weight:600;opacity:0;transform:scale(.9);
-    transition:all .2s
+    position:absolute;top:12px;right:12px;padding:.25em .5em;border-radius:999px;font-size:.7em;font-weight:600;
+    border:1px solid transparent
   }
-  .badge-lowok--low{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
-  .badge-lowok--ok{background:#e6f7ef;color:#166534;border:1px solid #bbf7d0}
+  .badge-lowok--low{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+  .badge-lowok--ok{background:#e6f7ef;color:#166534;border-color:#bbf7d0}
   .badge-new{
     position:absolute;top:-10px;right:-10px;background:#e11d48;color:#fff;padding:.35em .55em;border-radius:999px;font-weight:700;font-size:.7em;
     box-shadow:0 8px 18px rgba(0,0,0,.15);cursor:pointer
   }
+
   .card__image{
-    width:100%;height:100px;border-radius:12px;background:#f3f4f6;background-size:cover;background-position:center;position:relative;overflow:hidden;border:1px solid var(--line)
+    width:100%;height:110px;background:#f3f4f6;background-size:cover;background-position:center;border-bottom:1px solid var(--line);
+    position:relative
   }
   .img-edit-btn{
     position:absolute;top:6px;left:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:14px;
@@ -109,16 +114,31 @@
   .qty-badge{
     position:absolute;bottom:8px;right:8px;background:#111;color:#fff;font-size:12px;padding:2px 6px;border-radius:999px;opacity:.9
   }
-  .card__text{display:flex;flex-direction:column;gap:.25em;padding:0 10px}
-  .card__title{font-size:1.1em;margin:6px 0 0;font-weight:700}
-  .card__description{color:var(--muted);font-size:.78em;margin:0}
-  .card__actions{display:flex;justify-content:center;gap:12px;margin-top:8px}
+
+  .card__body{display:flex;flex-direction:column;gap:6px;padding:10px 12px 0 12px;min-height:120px}
+  .card__title{font-size:1.05rem;margin:2px 0 0;font-weight:700}
+  .card__description{color:var(--muted);font-size:.83em;margin:0}
+
+  /* location list (more detailed) */
+  .card__loclist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .card__locitem{display:flex;align-items:center;gap:8px;line-height:1.25}
+  .chip{background:var(--chip);border:1px solid var(--line);padding:2px 8px;border-radius:999px;font-size:.75em;color:#111;white-space:nowrap}
+  .chip--old::before{content:"🏚️ ";} /* fun little icons */
+  .chip--new::before{content:"🏢 ";}
+
+  .kv{font-size:.86em;color:#111}
+  .kv .label{color:var(--muted)}
+  .kv .value{font-weight:600}
+
+  /* actions stick to the bottom */
+  .card__actions{
+    margin-top:auto;display:flex;justify-content:center;gap:12px;padding:12px 0 14px 0
+  }
   .card__button{
-    width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;
+    width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;
     background:#fff;border:1px solid var(--line);color:var(--ink)
   }
   .card__button:hover{background:#111;color:#fff;border-color:#111}
-  .card__button--minus{background:#fff}
   .card__button--trash{background:#fff;color:var(--ink);border:1px solid var(--line)}
 
   /* Modals + toasts */
@@ -297,8 +317,6 @@
 
   /* Utils */
   function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-  function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
-  function toLocalDateTime(ts){ if (!ts) return ''; const d = ts.toDate ? ts.toDate() : new Date(ts); return isNaN(+d)?'':d.toLocaleString(); }
   function normLoc(raw){
     const s=(raw||'').trim().toLowerCase();
     if (s.startsWith('old')) return 'Old warehouse';
@@ -311,10 +329,6 @@
 
   const SUPPORTED_IMAGE_TYPES=["image/jpeg","image/jpg","image/png","image/gif","image/webp","image/bmp","image/heic","image/heif"];
   function isSupportedImage(file){ if (!file) return false; if (file.type && SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) return true; const n=(file.name||"").toLowerCase(); return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/.test(n); }
-  function guessContentType(file){ const t=file?.type||""; if(t) return t; const n=(file?.name||"").toLowerCase();
-    if(/\.jpe?g$/.test(n))return"image/jpeg"; if(/\.png$/.test(n))return"image/png"; if(/\.gif$/.test(n))return"image/gif";
-    if(/\.webp$/.test(n))return"image/webp"; if(/\.bmp$/.test(n))return"image/bmp"; if(/\.heic$/.test(n))return"image/heic";
-    if(/\.heif$/.test(n))return"image/heif"; return"application/octet-stream"; }
 
   /* Firestore refs */
   const colInventory   = collection(db, "inventory");
@@ -339,7 +353,7 @@
   imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
   window.openImageViewer = openImageViewer;
 
-  /* Render grid */
+  /* Render grid with detailed location lines and bottom actions */
   function renderStockGrid() {
     const grid = document.getElementById('stockGrid'); if (!grid) return;
     grid.innerHTML = '';
@@ -347,31 +361,44 @@
       const total = totalQty(item);
       const isLow = (item.goal > 0) && (total <= item.goal);
       const card = document.createElement('div'); card.className = 'card';
+
       const bgUrl = item.img ? withCacheBuster(item.img) : '';
       const safeBgUrl = bgUrl ? bgUrl.replace(/"/g,'%22').replace(/'/g,'%27') : '';
       const bgStyle = bgUrl ? `style="background-image:url('${safeBgUrl}')"` : '';
+
       card.innerHTML = `
-        <div class="badge-lowok ${isLow ? 'badge-lowok--low' : 'badge-lowok--ok'}" style="opacity:1; transform:scale(1);">${isLow ? 'LOW' : 'OK'}</div>
+        <div class="badge-lowok ${isLow ? 'badge-lowok--low' : 'badge-lowok--ok'}">${isLow ? 'LOW' : 'OK'}</div>
         ${item.isNew ? `<div class="badge-new" title="Dismiss">NEW</div>` : ''}
-        <div class="card__content">
-          <div class="card__image" ${bgStyle}>
-            <button class="img-edit-btn" title="Set image" aria-label="Set image">🖼</button>
-            <button class="img-view-btn" title="View image" aria-label="View image">View Image</button>
-            <span class="qty-badge" title="Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}">Qty: ${total}</span>
-          </div>
-          <div class="card__text">
-            <h3 class="card__title" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</h3>
-            <!-- NEW: split quantities line -->
-            <p class="card__description">Old: ${item.qtyOld ?? 0} | New: ${item.qtyNew ?? 0}</p>
-            <!-- Keep total + goal for quick context -->
-            <p class="card__description">Total: ${total} • Goal: ${item.goal || 0}</p>
-          </div>
+        <div class="card__image" ${bgStyle}>
+          <button class="img-edit-btn" title="Set image" aria-label="Set image">🖼</button>
+          <button class="img-view-btn" title="View image" aria-label="View image">View Image</button>
+          <span class="qty-badge" title="Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}">Qty: ${total}</span>
+        </div>
+
+        <div class="card__body">
+          <h3 class="card__title" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</h3>
+
+          <ul class="card__loclist">
+            <li class="card__locitem">
+              <span class="chip chip--old" title="Old warehouse">Old warehouse</span>
+              <span class="kv"><span class="label"> — Qty: </span><span class="value">${item.qtyOld ?? 0}</span></span>
+            </li>
+            <li class="card__locitem">
+              <span class="chip chip--new" title="New warehouse">New warehouse</span>
+              <span class="kv"><span class="label"> — Qty: </span><span class="value">${item.qtyNew ?? 0}</span></span>
+            </li>
+          </ul>
+
+          <p class="card__description">Total: ${total} • Goal: ${item.goal || 0}</p>
+
           <div class="card__actions">
             <div class="card__button" data-plus aria-label="Add" title="Add (Shift=Set image)">+</div>
-            <div class="card__button card__button--minus" data-minus aria-label="Minus" title="Minus">–</div>
+            <div class="card__button" data-minus aria-label="Minus" title="Minus">–</div>
             <div class="card__button card__button--trash" data-del-id="${item.id}" aria-label="Delete" title="Delete">🗑</div>
           </div>
-        </div>`;
+        </div>
+      `;
+
       card.querySelector('.img-edit-btn').addEventListener('click', () => openImagePickerById(item.id));
       card.querySelector('.img-view-btn').addEventListener('click', () => {
         const current = inventory.find(i=>i.id===item.id);
@@ -382,6 +409,7 @@
       card.querySelector('[data-plus]').addEventListener('click', (e)=>{ if (e.shiftKey){ openImagePickerById(item.id); return; } openAdjustDialogById(item.id,'add'); });
       card.querySelector('[data-minus]').addEventListener('click', ()=> openAdjustDialogById(item.id,'sub'));
       card.querySelector('[data-del-id]').addEventListener('click', ()=> openDeleteDialogById(item.id));
+
       grid.appendChild(card);
     });
   }
