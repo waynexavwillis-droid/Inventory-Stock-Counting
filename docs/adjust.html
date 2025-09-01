@@ -81,7 +81,7 @@
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
   .card{
     --card-bg:var(--panel);--card-text:var(--ink);
-    width:190px;height:254px;background:var(--card-bg);border-radius:20px;position:relative;overflow:visible;
+    width:190px;height:274px;background:var(--card-bg);border-radius:20px;position:relative;overflow:visible;
     transition:.2s ease;box-shadow:0 8px 20px rgba(0,0,0,.08);border:1px solid var(--line);color:var(--card-text)
   }
   .card:hover{transform:translateY(-4px)}
@@ -111,7 +111,7 @@
   }
   .card__text{display:flex;flex-direction:column;gap:.25em;padding:0 10px}
   .card__title{font-size:1.1em;margin:6px 0 0;font-weight:700}
-  .card__description{color:var(--muted);font-size:.75em;margin:0}
+  .card__description{color:var(--muted);font-size:.78em;margin:0}
   .card__actions{display:flex;justify-content:center;gap:12px;margin-top:8px}
   .card__button{
     width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;
@@ -361,7 +361,10 @@
           </div>
           <div class="card__text">
             <h3 class="card__title" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</h3>
-            <p class="card__description">Goal: ${item.goal || 0}</p>
+            <!-- NEW: split quantities line -->
+            <p class="card__description">Old: ${item.qtyOld ?? 0} | New: ${item.qtyNew ?? 0}</p>
+            <!-- Keep total + goal for quick context -->
+            <p class="card__description">Total: ${total} • Goal: ${item.goal || 0}</p>
           </div>
           <div class="card__actions">
             <div class="card__button" data-plus aria-label="Add" title="Add (Shift=Set image)">+</div>
