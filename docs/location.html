@@ -157,4 +157,209 @@
     <h3 id="img-title">Image</h3>
     <img id="img-view" src="" alt="" style="width:100%; max-height:70vh; object-fit:contain; border:1px solid var(--line); border-radius:8px;" />
     <div class="modal-actions">
-      <a id="img-open" href="#" target="_blank" rel="noopener" style="margin-right:auto;color:#111;text-decoration:underline">O_
+      <a id="img-open" href="#" target="_blank" rel="noopener" style="margin-right:auto;color:#111;text-decoration:underline">Open in new tab</a>
+      <button id="img-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden file picker -->
+<input type="file" id="hiddenLocationFileInput" accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.heif" capture="environment" style="display:none" />
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+  import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+
+  /* ---------- Firebase ---------- */
+  const firebaseConfig = {
+    apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
+    authDomain: "epedu-inventory-database.firebaseapp.com",
+    projectId: "epedu-inventory-database",
+    storageBucket: "epedu-inventory-database.appspot.com",
+    messagingSenderId: "124437251040",
+    appId: "1:124437251040:web:4989c73efc2f4afbf22185",
+    measurementId: "G-GFEEP49VRP"
+  };
+  const app = initializeApp(firebaseConfig);
+  try { getAnalytics(app); } catch(e) {}
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+  const st   = getStorage(app);
+  signInAnonymously(auth).catch(console.error);
+
+  const CURRENT_USER = localStorage.getItem('auth_user') || 'Unknown';
+
+  /* ---------- Sidebar ARIA ---------- */
+  const menuCheck = document.getElementById('menu-check');
+  const hamb = document.querySelector('label.hamburger');
+  function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
+  menuCheck.addEventListener('change', syncAria); syncAria();
+
+  /* ---------- Toasts / utils ---------- */
+  const toastWrap = document.getElementById('toast-wrap');
+  function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  function notify(msg, type='info', timeout=3200){
+    const el = document.createElement('div');
+    el.className = 'toast' + (type==='warn' ? ' toast--warn' : type==='error' ? ' toast--error' : '');
+    el.innerHTML = `${escapeHtml(msg)} <span class="toast__close" aria-label="Dismiss" role="button">×</span>`;
+    toastWrap.appendChild(el);
+    const close = ()=>{ if (el && el.parentNode) el.parentNode.removeChild(el); };
+    el.querySelector('.toast__close').addEventListener('click', close);
+    if (timeout>0) setTimeout(close, timeout);
+  }
+  function withCacheBuster(url){ if (!url) return url; const sep = url.includes('?') ? '&' : '?'; return `${url}${sep}v=${Date.now()}`; }
+  const SUPPORTED_IMAGE_TYPES=["image/jpeg","image/jpg","image/png","image/gif","image/webp","image/bmp","image/heic","image/heif"];
+  function isSupportedImage(file){ if (!file) return false; if (file.type && SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) return true; const n=(file.name||"").toLowerCase(); return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/.test(n); }
+  function guessContentType(file){ const t=file?.type||""; if(t) return t; const n=(file?.name||"").toLowerCase();
+    if(/\.jpe?g$/.test(n))return"image/jpeg"; if(/\.png$/.test(n))return"image/png"; if(/\.gif$/.test(n))return"image/gif";
+    if(/\.webp$/.test(n))return"image/webp"; if(/\.bmp$/.test(n))return"image/bmp"; if(/\.heic$/.test(n))return"image/heic";
+    if(/\.heif$/.test(n))return"image/heif"; return"application/octet-stream"; }
+  function isLikelyHttpUrl(s){ const u=(s||'').trim(); return /^https?:\/\//i.test(u) || /^data:image\//i.test(u); }
+
+  /* ---------- Firestore ---------- */
+  const colLocations = collection(db, "locations");
+
+  /* ---------- State & listeners ---------- */
+  let locations = [];
+  onSnapshot(colLocations, (snap) => {
+    locations = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderLocationGrid();
+  });
+
+  /* ---------- Image viewer ---------- */
+  const imageModal   = document.getElementById('imageModal');
+  const imgView      = document.getElementById('img-view');
+  const imgTitle     = document.getElementById('img-title');
+  const imgOpenLink  = document.getElementById('img-open');
+  const imgCloseBtn  = document.getElementById('img-close');
+  function openImageViewer(url, title='Image'){ imgView.src = url; imgView.alt = title; imgTitle.textContent = title; imgOpenLink.href = url || '#'; imageModal.classList.add('open'); }
+  function closeImageViewer(){ imageModal.classList.remove('open'); imgView.src = ''; imgView.alt = ''; }
+  imgCloseBtn.addEventListener('click', closeImageViewer);
+  imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
+  window.openImageViewer = openImageViewer;
+
+  /* ---------- Render grid (with + add card) ---------- */
+  function renderLocationGrid(){
+    const grid = document.getElementById('locationGrid'); if (!grid) return;
+    grid.innerHTML = '';
+
+    // add tile
+    const addCard = document.createElement('div'); addCard.className = 'card card--add';
+    addCard.innerHTML = `<div style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:28px;border:1px solid var(--line);">+</div>`;
+    addCard.title = 'Add location card';
+    addCard.addEventListener('click', openAddLocationDialog);
+    grid.appendChild(addCard);
+
+    // existing
+    locations.forEach((loc, index) => {
+      const card = document.createElement('div'); card.className = 'card';
+      const bgUrl = loc.img ? withCacheBuster(loc.img) : '';
+      const safeBgUrl = bgUrl ? bgUrl.replace(/"/g,'%22').replace(/'/g,'%27') : '';
+      const bgStyle = bgUrl ? `style="background-image:url('${safeBgUrl}')"` : '';
+      card.innerHTML = `
+        ${loc.isNew ? `<div class="badge-new" title="Dismiss">NEW</div>` : ''}
+        <div class="card__content">
+          <div class="card__image" ${bgStyle}>
+            <button class="img-edit-btn" title="Set image (camera/gallery)" aria-label="Set image">🖼</button>
+            <button class="img-view-btn" title="View image" aria-label="View image">View Image</button>
+          </div>
+          <div class="card__text">
+            <h3 class="card__title" title="${escapeHtml(loc.name)}">${escapeHtml(loc.name)}</h3>
+            <p class="card__description">${escapeHtml(loc.description || '')}</p>
+          </div>
+          <div class="card__actions">
+            <div class="card__button--trash" data-del title="Delete">🗑</div>
+          </div>
+        </div>`;
+      card.querySelector('.img-edit-btn').addEventListener('click', () => openLocationImagePicker(index));
+      card.querySelector('.img-view-btn').addEventListener('click', () => {
+        const currentLoc = locations[index];
+        if (!currentLoc || !currentLoc.img) { notify('No image set yet. Click 🖼 to add one.','warn'); return; }
+        openImageViewer(withCacheBuster(currentLoc.img), `Location: ${currentLoc.name}`);
+      });
+      if (loc.isNew) card.querySelector('.badge-new')?.addEventListener('click', async ()=>{
+        try{ await updateDoc(doc(db,"locations", loc.id), { isNew:false }); }catch(e){}
+      });
+      card.querySelector('[data-del]').addEventListener('click', async ()=>{
+        if (!confirm(`Delete location card "${loc.name}"?`)) return;
+        try { await deleteDoc(doc(db,"locations",loc.id)); notify('Location card deleted'); }
+        catch(err){ console.error(err); notify('Failed to delete','error'); }
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  /* ---------- Add location modal ---------- */
+  function openAddLocationDialog(){
+    document.getElementById('loc-item-name').value = '';
+    document.getElementById('loc-desc').value = '';
+    document.getElementById('locAddModal').classList.add('open');
+    setTimeout(()=>document.getElementById('loc-item-name').focus(), 0);
+  }
+  function closeAddLocationDialog(){ document.getElementById('locAddModal').classList.remove('open'); }
+  document.getElementById('loc-add-cancel').addEventListener('click', closeAddLocationDialog);
+  document.getElementById('locAddModal').addEventListener('click', e => { if (e.target.id === 'locAddModal') closeAddLocationDialog(); });
+  document.getElementById('loc-add-confirm').addEventListener('click', async ()=>{
+    const name = document.getElementById('loc-item-name').value.trim();
+    const description = document.getElementById('loc-desc').value.trim();
+    if (!name) { notify('Please enter an item name.','warn'); return; }
+    try{
+      await addDoc(colLocations, { name, description, img:null, createdAt:serverTimestamp(), isNew:true, actor: CURRENT_USER });
+      notify('Location card created');
+    }catch(err){ console.error(err); notify('Failed to create card','error'); }
+    closeAddLocationDialog();
+  });
+
+  /* ---------- Image picker for locations ---------- */
+  let locImgTargetIndex = null;
+  const locFileInput = document.getElementById('hiddenLocationFileInput');
+
+  function openLocationImagePicker(index){
+    locImgTargetIndex = index;
+    const choice=prompt("Set image for this location:\n- Paste an image URL (http/https) and press OK, OR\n- Leave blank to take/select a photo (uploads to Firebase Storage).");
+    if (choice && choice.trim()){
+      if (!isLikelyHttpUrl(choice.trim())) { notify('Please enter a valid http(s) or data: image URL','warn'); locImgTargetIndex=null; return; }
+      setLocationImageFromURL(choice.trim());
+    } else locFileInput.click();
+  }
+  window.openLocationImagePicker = openLocationImagePicker;
+
+  locFileInput.addEventListener('change', async (e)=>{
+    const file = e.target.files && e.target.files[0]; e.target.value='';
+    if (!file || locImgTargetIndex===null) return;
+    if (!isSupportedImage(file)) { notify(`Unsupported image format: ${file.type || file.name}`,'warn', 6000); locImgTargetIndex = null; return; }
+    const loc = locations[locImgTargetIndex];
+    try{
+      const ref  = storageRef(st, `locationImages/${loc.id}/${Date.now()}_${(file.name||'photo').replace(/[^\w.\-]+/g,'_')}`);
+      await uploadBytes(ref, file, { contentType: file.type || "application/octet-stream" });
+      const url = await getDownloadURL(ref);
+      await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false });
+      openImageViewer(withCacheBuster(url), `Location: ${loc.name}`);
+    }catch(err){ console.error(err); notify('Upload failed','error'); }
+    locImgTargetIndex=null;
+  });
+
+  async function setLocationImageFromURL(url){
+    if (locImgTargetIndex===null) return;
+    const loc = locations[locImgTargetIndex];
+    try{
+      await updateDoc(doc(db,"locations",loc.id),{ img:url, isNew:false });
+      openImageViewer(withCacheBuster(url), `Location: ${loc.name}`);
+    }catch(err){ console.error(err); notify('Failed to set image URL','error'); }
+    locImgTargetIndex=null;
+  }
+  window.setLocationImageFromURL = setLocationImageFromURL;
+
+  /* ---------- ESC closes modals ---------- */
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape'){
+      document.getElementById('locAddModal').classList.remove('open');
+      document.getElementById('imageModal').classList.remove('open');
+    }
+  });
+</script>
+</body>
+</html>
