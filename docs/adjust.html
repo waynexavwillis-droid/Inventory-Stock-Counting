@@ -36,7 +36,6 @@
   #menu-check{display:none}
   .hamburger{position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;cursor:pointer;user-select:none;z-index:1200;transition:transform .3s}
   .hamburger .bar{height:3px;background:#111;border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
-  .hamburger .bar1,.hamburger .bar3{width:18px}.hamburger .bar2{width:28px}
   #menu-check:checked+label.hamburger{transform:translateX(var(--nav-w))}
   #menu-check:checked+label.hamburger .bar1{transform:translateY(10px) rotate(45deg);width:28px}
   #menu-check:checked+label.hamburger .bar2{opacity:0}
@@ -158,9 +157,9 @@
       <option>Office</option>
     </select>
 
-    <!-- NEW fields styled like first two -->
+    <!-- Account = auto-filled from signed-in user, read-only -->
     <label for="adj-account">Account</label>
-    <input id="adj-account" type="text" class="input" placeholder="Enter account">
+    <input id="adj-account" type="text" class="input" placeholder="Auto-filled" readonly aria-readonly="true">
 
     <label for="adj-purpose">Purpose</label>
     <input id="adj-purpose" type="text" class="input" placeholder="Enter purpose">
@@ -175,7 +174,7 @@
   </div>
 </div>
 
-<!-- Delete dialog (unchanged) -->
+<!-- Delete dialog -->
 <div id="deleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="del-title">
   <div class="modal-card">
     <h3 id="del-title">Delete Item</h3>
@@ -306,7 +305,7 @@
   imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
   window.openImageViewer = openImageViewer;
 
-  /* Render grid */
+  /* Render grid (show Old/New/Office) */
   function renderStockGrid() {
     const grid = document.getElementById('stockGrid'); if (!grid) return;
     grid.innerHTML = '';
@@ -388,15 +387,24 @@
   function openAdjustDialog(index, mode) {
     pending = { index, mode };
     const item = inventory[index]; const total = totalQty(item);
-    document.getElementById('adj-title').textContent = `${mode === 'add' ? 'Add to' : 'Minus from'} "${item.name}"`;
+    document.getElementById('adj-title').textContent =
+      `${mode === 'add' ? 'Add to' : 'Minus from'} "${item.name}"`;
     document.getElementById('adj-subtitle').textContent =
       `Current total: ${total} (Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}, Office: ${item.qtyOffice ?? 0})`;
 
     document.getElementById('adj-amount').value = '1';
     document.getElementById('adj-location').value = 'Old warehouse';
 
-    // clear new fields
-    ['adj-account','adj-purpose','adj-takenby'].forEach(id=>{
+    // Prefill & lock the Account field with the signed-in user
+    const accEl = document.getElementById('adj-account');
+    if (accEl){
+      accEl.value = CURRENT_USER;
+      accEl.readOnly = true;
+      accEl.setAttribute('aria-readonly','true');
+    }
+
+    // Clear the rest
+    ['adj-purpose','adj-takenby'].forEach(id=>{
       const el=document.getElementById(id); if(el) el.value='';
     });
 
@@ -423,17 +431,18 @@
       const amt = parseInt(amountRaw, 10);
       const loc = normLoc(document.getElementById('adj-location').value);
 
-      // NEW fields
-      const account = (document.getElementById('adj-account').value || '').trim();
+      // Account always = CURRENT_USER (do not read from the input to avoid tampering)
+      const account = CURRENT_USER;
       const purpose = (document.getElementById('adj-purpose').value || '').trim();
       const takenBy = (document.getElementById('adj-takenby').value || '').trim();
 
       if (!Number.isInteger(amt) || amt <= 0) { notify('Enter a positive integer amount.','warn'); return; }
       if (!loc) { notify('Location must be "Old warehouse", "New warehouse", or "Office".','warn'); return; }
-      if (!account || !purpose || !takenBy) { notify('Please fill Account, Purpose, and Taken by.','warn'); return; }
+      if (!purpose || !takenBy) { notify('Please fill Purpose and Taken by.','warn'); return; }
 
       const mode = pending.mode === 'sub' ? 'sub' : 'add';
       const delta = mode === 'add' ? amt : -amt;
+
       const prevOld    = Number(item.qtyOld ?? 0);
       const prevNew    = Number(item.qtyNew ?? 0);
       const prevOffice = Number(item.qtyOffice ?? 0);
@@ -448,6 +457,7 @@
       if (loc === 'Old warehouse') newOld = prevOld + delta;
       if (loc === 'New warehouse') newNew = prevNew + delta;
       if (loc === 'Office')        newOffice = prevOffice + delta;
+
       newOld = Math.max(0, newOld); newNew = Math.max(0, newNew); newOffice = Math.max(0, newOffice);
       const newTotal = newOld + newNew + newOffice;
 
@@ -455,14 +465,14 @@
         qtyOld: newOld, qtyNew: newNew, qtyOffice: newOffice, qty: newTotal
       });
 
-      // Save new fields with adjustment
       await addDoc(colAdjustments, {
         ts: serverTimestamp(),
         item: item.name, itemId: item.id,
         location: loc,
         delta,
-        actor: CURRENT_USER,
-        account, purpose, takenBy,
+        actor: CURRENT_USER,   // who performed the action
+        account,               // locked to signed-in account
+        purpose, takenBy,
         qtyAfterOld: newOld, qtyAfterNew: newNew, qtyAfterOffice: newOffice, qtyAfter: newTotal
       });
 
