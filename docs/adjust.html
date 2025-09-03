@@ -21,54 +21,103 @@
 </script>
 
 <style>
+  /* ==== Modern & Sleek (dark) ==== */
   :root{
     --nav-w:260px;
-    --bg:#f6f7f8; --panel:#fff; --ink:#111; --muted:#6b7280; --line:#e5e7eb; --accent:#111; --chip:#eef2f7;
+
+    /* Theme */
+    --bg:#111827;          /* near-black */
+    --panel:#1F2937;       /* charcoal */
+    --ink:#F3F4F6;         /* light gray text */
+    --muted:#9CA3AF;       /* muted text */
+    --line:#374151;        /* slate borders */
+    --accent:#06B6D4;      /* cyan accent */
+    --chip:#0F172A;        /* subtle chip background */
   }
+
   html,body{height:100%}
-  body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
   h1,h2,h3{color:var(--ink)}
   .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
   input,button,select,textarea{padding:8px;margin:4px;font-family:inherit}
-  button{background:linear-gradient(#fafafa,#f3f4f6);border:1px solid var(--line);color:var(--ink);border-radius:8px;cursor:pointer}
-  button:hover{background:#111;color:#fff;border-color:#111}
 
+  /* keep your original button style but adapt colors for dark */
+  button{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:8px;
+    cursor:pointer
+  }
+  button:hover{
+    background:var(--accent);
+    color:#0B1220;          /* readable on cyan */
+    border-color:var(--accent)
+  }
+
+  /* Sidebar + hamburger */
   #menu-check{display:none}
-  .hamburger{position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;cursor:pointer;user-select:none;z-index:1200;transition:transform .3s}
-  .hamburger .bar{height:3px;background:#111;border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
+  .hamburger{
+    position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;
+    cursor:pointer;user-select:none;z-index:1200;transition:transform .3s
+  }
+  .hamburger .bar{
+    height:3px;background:var(--ink);border-radius:10px;
+    transition:transform .35s,opacity .25s,width .35s
+  }
+  .hamburger .bar1,.hamburger .bar3{width:18px}.hamburger .bar2{width:28px}
   #menu-check:checked+label.hamburger{transform:translateX(var(--nav-w))}
   #menu-check:checked+label.hamburger .bar1{transform:translateY(10px) rotate(45deg);width:28px}
   #menu-check:checked+label.hamburger .bar2{opacity:0}
   #menu-check:checked+label.hamburger .bar3{transform:translateY(-10px) rotate(-45deg);width:28px}
 
   .sidebar{
-    position:fixed;inset:0 auto 0 0;width:var(--nav-w);background:#f3f4f6;padding:20px;box-sizing:border-box;
-    transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;border-right:1px solid var(--line);
-    box-shadow:0 10px 30px rgba(0,0,0,.18)
+    position:fixed;inset:0 auto 0 0;width:var(--nav-w);
+    background:var(--panel);padding:20px;box-sizing:border-box;
+    transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;
+    border-right:1px solid var(--line);
+    box-shadow:0 10px 30px rgba(0,0,0,.35)
   }
-  .sidebar a,.sidebar button{display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--line);background:#fff}
-  .sidebar a:hover{background:#111;color:#fff;border-color:#111}
+  .sidebar a,.sidebar button{
+    display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;
+    border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--line);
+    background:transparent
+  }
+  .sidebar a:hover{background:var(--accent);color:#0B1220;border-color:var(--accent)}
   #menu-check:checked~.sidebar{transform:translateX(0)}
-  label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
+  label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
   #menu-check:checked~label.overlay{opacity:1;visibility:visible}
 
+  /* Cards / grid */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
   .card{
     --card-bg:var(--panel);--card-text:var(--ink);
     width:100%;min-height:320px;background:var(--card-bg);border-radius:20px;position:relative;overflow:hidden;
-    transition:.2s ease;box-shadow:0 8px 20px rgba(0,0,0,.08);border:1px solid var(--line);color:var(--card-text);
+    transition:.2s ease;box-shadow:0 8px 20px rgba(0,0,0,.25);border:1px solid var(--line);color:var(--card-text);
     display:flex;flex-direction:column
   }
   .card:hover{transform:translateY(-4px)}
 
   .badge-lowok{position:absolute;top:12px;right:12px;padding:.25em .5em;border-radius:999px;font-size:.7em;font-weight:600;border:1px solid transparent}
   .badge-lowok--low{background:#fee2e2;color:#991b1b;border-color:#fecaca}
-  .badge-lowok--ok{background:#e6f7ef;color:#166534;border-color:#bbf7d0}
-  .badge-new{position:absolute;top:-10px;right:-10px;background:#e11d48;color:#fff;padding:.35em .55em;border-radius:999px;font-weight:700;font-size:.7em;box-shadow:0 8px 18px rgba(0,0,0,.15);cursor:pointer}
+  .badge-lowok--ok{background:#064e3b;color:#d1fae5;border-color:#065f46}
 
-  .card__image{width:100%;height:110px;background:#f3f4f6;background-size:cover;background-position:center;border-bottom:1px solid var(--line);position:relative}
-  .img-edit-btn{position:absolute;top:6px;left:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:14px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.95);color:var(--ink);cursor:pointer}
-  .img-view-btn{position:absolute;top:6px;right:6px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;padding:0 8px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.95);color:var(--ink);cursor:pointer}
+  .badge-new{position:absolute;top:-10px;right:-10px;background:#e11d48;color:#fff;padding:.35em .55em;border-radius:999px;font-weight:700;font-size:.7em;box-shadow:0 8px 18px rgba(0,0,0,.3);cursor:pointer}
+
+  .card__image{
+    width:100%;height:110px;background:#374151; /* slate placeholder on dark */
+    background-size:cover;background-position:center;border-bottom:1px solid var(--line);position:relative
+  }
+  .img-edit-btn,.img-view-btn{
+    border:1px solid var(--line);border-radius:999px;background:rgba(17,24,39,.85);color:var(--ink)
+  }
+  .img-edit-btn{position:absolute;top:6px;left:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer}
+  .img-view-btn{position:absolute;top:6px;right:6px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;padding:0 8px;cursor:pointer}
   .qty-badge{position:absolute;bottom:8px;right:8px;background:#111;color:#fff;font-size:12px;padding:2px 6px;border-radius:999px;opacity:.9}
 
   .card__body{display:flex;flex-direction:column;gap:6px;padding:10px 12px 0 12px;min-height:140px}
@@ -77,27 +126,31 @@
 
   .card__loclist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
   .card__locitem{display:flex;align-items:center;gap:8px;line-height:1.25}
-  .chip{background:var(--chip);border:1px solid var(--line);padding:2px 8px;border-radius:999px;font-size:.75em;color:#111;white-space:nowrap}
+  .chip{background:var(--chip);border:1px solid var(--line);padding:2px 8px;border-radius:999px;font-size:.75em;color:var(--ink);white-space:nowrap}
   .chip--old::before{content:"🏚️ ";}
   .chip--new::before{content:"🏢 ";}
   .chip--office::before{content:"🏷️ ";}
 
-  .kv{font-size:.86em;color:#111}
+  .kv{font-size:.86em;color:var(--ink)}
   .kv .label{color:var(--muted)}
   .kv .value{font-weight:600}
 
   .card__actions{margin-top:auto;display:flex;justify-content:center;gap:12px;padding:12px 0 14px 0}
-  .card__button{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;background:#fff;border:1px solid var(--line);color:var(--ink)}
-  .card__button:hover{background:#111;color:#fff;border-color:#111}
-  .card__button--trash{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .card__button{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;background:var(--panel);border:1px solid var(--line);color:var(--ink)}
+  .card__button:hover{background:var(--accent);color:#0B1220;border-color:var(--accent)}
+  .card__button--trash{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
 
-  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:9999}
+  /* Modals */
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:9999}
   .modal.open{display:flex}
-  .modal-card{width:95%;max-width:520px;background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 20px 40px rgba(0,0,0,.15);border:1px solid var(--line);color:#111}
-  .modal-card h3{margin:0 0 10px;color:#111}
-  .modal-card label{display:block;margin:10px 0 4px;font-size:14px;color:#111}
+  .modal-card{
+    width:95%;max-width:520px;background:var(--panel);border-radius:8px;padding:16px 18px;
+    box-shadow:0 20px 40px rgba(0,0,0,.45);border:1px solid var(--line);color:var(--ink)
+  }
+  .modal-card h3{margin:0 0 10px;color:var(--ink)}
+  .modal-card label{display:block;margin:10px 0 4px;font-size:14px;color:var(--ink)}
 
-  /* Fancy black-outline input look */
+  /* Keep your fancy input styling exactly the same */
   .input-container{position:relative;margin:8px 0}
   .input{width:100%;padding:10px;height:40px;border:2px solid #111;border-top:none;border-bottom:none;font-size:16px;background:transparent;outline:none;box-shadow:7px 7px 0 0 #111;transition:.5s;box-sizing:border-box}
   .topline,.underline{position:absolute;background-color:#111;height:2px;right:0;transition:.5s}
@@ -108,8 +161,9 @@
 
   .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
 
+  /* Toasts */
   .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
-  .toast{background:#111;color:#fff;padding:10px 12px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+  .toast{background:#374151;color:#F3F4F6;padding:10px 12px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
   .toast--warn{background:#b45309}.toast--error{background:#991b1b}.toast__close{margin-left:12px;cursor:pointer;font-weight:700}
 </style>
 </head>
@@ -145,7 +199,7 @@
 <div id="adjustModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adj-title">
   <div class="modal-card">
     <h3 id="adj-title">Adjust Stock</h3>
-    <div id="adj-subtitle" style="color:#6b7280"></div>
+    <div id="adj-subtitle" style="color:var(--muted)"></div>
 
     <label for="adj-amount">Amount</label>
     <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount" inputmode="numeric" class="input">
@@ -178,7 +232,7 @@
 <div id="deleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="del-title">
   <div class="modal-card">
     <h3 id="del-title">Delete Item</h3>
-    <div id="del-subtitle" style="color:#6b7280"></div>
+    <div id="del-subtitle" style="color:var(--muted)"></div>
     <div class="input-container">
       <input id="del-name" type="text" class="input" placeholder=" " readonly>
       <span class="topline"></span><span class="underline"></span>
@@ -207,7 +261,7 @@
     <h3 id="img-title">Image</h3>
     <img id="img-view" src="" alt="" style="width:100%; max-height:70vh; object-fit:contain; border:1px solid var(--line); border-radius:8px;" />
     <div class="modal-actions">
-      <a id="img-open" href="#" target="_blank" rel="noopener" style="margin-right:auto;color:#111;text-decoration:underline">Open in new tab</a>
+      <a id="img-open" href="#" target="_blank" rel="noopener" style="margin-right:auto;color:var(--ink);text-decoration:underline">Open in new tab</a>
       <button id="img-close">Close</button>
     </div>
   </div>
