@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-accent="cyan">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="color-scheme" content="dark">
-<title>Inventory System — Adjust Stock</title>
+<title>Inventory System — Stock Goals</title>
 
 <script>
   const AUTH_OK   = localStorage.getItem('auth_v1') === 'ok';
@@ -13,352 +12,80 @@
   if (!AUTH_OK || !AUTH_USER) { window.location.replace('login.html'); }
   else if (AUTH_ROLE === 'viewer') { window.location.replace('viewer.html'); }
   function logout(){
-    localStorage.removeItem('auth_v1');
-    localStorage.removeItem('auth_user');
-    localStorage.removeItem('auth_role');
-    localStorage.removeItem('auth_time');
+    localStorage.removeItem('auth_v1'); localStorage.removeItem('auth_user');
+    localStorage.removeItem('auth_role'); localStorage.removeItem('auth_time');
     window.location.replace('login.html');
   }
 </script>
 
 <style>
-  /* ---------- THEME: Modern & Sleek (Dark) ---------- */
   :root{
-    --nav-w:260px;
-
-    /* Palette */
-    --bg:#111827;          /* Near-black */
-    --panel:#1F2937;       /* Charcoal */
-    --ink:#F3F4F6;         /* Text */
-    --muted:#D1D5DB;       /* Muted text */
-    --line:#374151;        /* Slate lines */
-
-    /* Accent + focus ring */
-    --accent:#06B6D4;      /* Cyan (default) */
-    --accent-ink:#0B1220;
-    --ring:0 0 0 3px color-mix(in oklab, var(--accent) 35%, transparent);
-
-    /* Controls */
-    --ctrl-bg:#0F172A;     /* Inputs */
-    --ctrl-border:#374151;
-    --chip:#0B1323;        /* Chip bg */
-    --chip-text:#E5E7EB;
-
-    /* Elevation */
-    --shadow-md:0 8px 20px rgba(0,0,0,.35);
-    --shadow-lg:0 14px 36px rgba(0,0,0,.45);
-
-    /* Status */
-    --ok:#059669;
-    --ok-bg:color-mix(in oklab, var(--ok) 22%, #0B1323);
-    --ok-br:color-mix(in oklab, var(--ok) 50%, var(--line));
-    --low:#DC2626;
-    --low-bg:color-mix(in oklab, var(--low) 22%, #1a0b0b);
-    --low-br:color-mix(in oklab, var(--low) 50%, var(--line));
-    --warn:#B45309;
-    --error:#991B1B;
+    --nav-w:260px; --bg:#f6f7f8; --panel:#fff; --ink:#111; --muted:#6b7280; --line:#e5e7eb;
   }
-
-  /* Optional neon accent */
-  html[data-accent="neon"]{ --accent:#22D3EE; }
-
-  html,body{height:100%}
-  body{
-    margin:0;
-    font-family:system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
-    background:var(--bg);
-    color:var(--ink);
-  }
-  ::selection{ background: color-mix(in oklab, var(--accent) 45%, transparent); color:#081018; }
-
-  h1,h2,h3{ color:var(--ink); margin:0 0 .5rem }
-  .content{ padding:20px; padding-top:80px; min-height:100vh; box-sizing:border-box }
-
-  /* Controls */
-  input,button,select,textarea{
-    padding:12px; margin:4px; font-family:inherit; font-size:16px;
-    border-radius:10px; border:1px solid var(--ctrl-border);
-    background:var(--ctrl-bg); color:var(--ink); outline:none; transition:.2s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-  input:focus, select:focus, textarea:focus{ border-color:var(--accent); box-shadow:var(--ring) }
-
-  button{
-    cursor:pointer; background: linear-gradient(0deg, color-mix(in oklab, var(--panel) 70%, black), var(--panel));
-    border-color:var(--line); color:var(--ink);
-  }
-  button:hover{ transform:translateY(-1px); box-shadow:var(--shadow-md); border-color:color-mix(in oklab, var(--accent) 40%, var(--line)) }
-  button:active{ transform:translateY(0) }
-  .btn-accent{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:700 }
-  .btn-accent:hover{ filter:brightness(.96); box-shadow:0 8px 30px color-mix(in oklab, var(--accent) 25%, transparent) }
-
-  /* Hamburger */
+  html,body{height:100%} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  h2{color:var(--ink)} .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
+  input,button,select,textarea{padding:8px;margin:4px;font-family:inherit}
+  button{background:linear-gradient(#fafafa,#f3f4f6);border:1px solid var(--line);color:var(--ink);border-radius:8px;cursor:pointer}
+  button:hover{background:#111;color:#fff;border-color:#111}
+  table{width:100%;margin-top:12px;border-collapse:collapse} table,th,td{border:1px solid var(--line)}
+  thead th{background:#f3f4f6;color:var(--muted)} th,td{padding:8px;text-align:left;vertical-align:top}
   #menu-check{display:none}
-  .hamburger{
-    position:fixed; left:12px; top:12px; width:42px; height:42px;
-    display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; user-select:none;
-    z-index:1200; transition:transform .3s; border-radius:12px;
-    background:var(--panel); border:1px solid var(--line); box-shadow:var(--shadow-md);
-  }
-  .hamburger .bar{width:24px; height:2px; background:var(--ink); border-radius:10px; transition:transform .35s,opacity .25s,width .35s}
-  #menu-check:checked+label.hamburger{ transform:translateX(calc(var(--nav-w) - 10px)) }
-  #menu-check:checked+label.hamburger .bar:nth-child(1){ transform:translateY(6px) rotate(45deg); width:24px }
-  #menu-check:checked+label.hamburger .bar:nth-child(2){ opacity:0 }
-  #menu-check:checked+label.hamburger .bar:nth-child(3){ transform:translateY(-6px) rotate(-45deg); width:24px }
-
-  /* Sidebar */
-  .sidebar{
-    position:fixed; inset:0 auto 0 0; width:var(--nav-w);
-    background:var(--panel); color:var(--ink); padding:18px; box-sizing:border-box;
-    transform:translateX(-100%); transition:.3s; z-index:1100; overflow:auto;
-    border-right:1px solid var(--line); box-shadow:var(--shadow-lg)
-  }
-  .sidebar h3{ font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:6px 0 10px }
-  .sidebar a,.sidebar button{
-    display:block; width:100%; margin-bottom:10px; padding:12px 14px; text-align:left;
-    border-radius:10px; text-decoration:none; color:inherit; border:1px solid var(--line); background:#0F172A;
-  }
-  .sidebar a:hover{ border-color:var(--accent); box-shadow:var(--ring) }
-  #menu-check:checked~.sidebar{ transform:translateX(0) }
-
-  label.overlay{ position:fixed; inset:0; background:rgba(0,0,0,.5); opacity:0; visibility:hidden; transition:.3s; z-index:1090 }
-  #menu-check:checked~label.overlay{ opacity:1; visibility:visible }
-
-  /* Grid & cards */
-  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px }
-  .card{
-    --card-bg:var(--panel); --card-text:var(--ink);
-    width:100%; min-height:320px; background:var(--card-bg); color:var(--card-text);
-    border-radius:18px; position:relative; overflow:hidden; transition:.2s ease;
-    box-shadow:var(--shadow-md); border:1px solid var(--line); display:flex; flex-direction:column;
-  }
-  .card:hover{ transform:translateY(-4px) }
-
-  .badge-lowok{
-    position:absolute; top:12px; right:12px; padding:.25em .5em; border-radius:999px; font-size:.7em; font-weight:700;
-    border:1px solid transparent;
-  }
-  .badge-lowok--low{ background:var(--low-bg); color:#FCA5A5; border-color:var(--low-br) }
-  .badge-lowok--ok{ background:var(--ok-bg); color:#A7F3D0; border-color:var(--ok-br) }
-  .badge-new{
-    position:absolute; top:-10px; right:-10px; background:var(--accent); color:var(--accent-ink);
-    padding:.35em .55em; border-radius:999px; font-weight:800; font-size:.7em; box-shadow:0 8px 18px rgba(0,0,0,.25); cursor:pointer
-  }
-
-  .card__image{
-    width:100%; height:110px; background:#0B1323; background-size:cover; background-position:center;
-    border-bottom:1px solid var(--line); position:relative;
-  }
-  .img-edit-btn,.img-view-btn{
-    position:absolute; top:6px; display:flex; align-items:center; justify-content:center;
-    border:1px solid var(--line); border-radius:999px; background:rgba(17,24,39,.9); color:var(--ink); cursor:pointer;
-    backdrop-filter:saturate(120%) blur(6px);
-  }
-  .img-edit-btn{ left:6px; width:28px; height:28px; font-size:14px }
-  .img-view-btn{ right:6px; height:28px; padding:0 10px; font-size:12px; border-radius:999px }
-  .img-edit-btn:hover,.img-view-btn:hover{ border-color:var(--accent); box-shadow:var(--ring) }
-
-  .qty-badge{
-    position:absolute; bottom:8px; right:8px; background:var(--accent);
-    color:var(--accent-ink); font-size:12px; padding:3px 8px; border-radius:999px; opacity:.95
-  }
-
-  .card__body{ display:flex; flex-direction:column; gap:8px; padding:10px 12px 0 12px; min-height:140px }
-  .card__title{ font-size:1.05rem; margin:2px 0 0; font-weight:800 }
-  .card__description{ color:var(--muted); font-size:.83em; margin:0 }
-
-  .card__loclist{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px }
-  .card__locitem{ display:flex; align-items:center; gap:8px; line-height:1.25 }
-  .chip{
-    background:var(--chip); border:1px solid var(--line); padding:3px 10px; border-radius:999px; font-size:.75em;
-    color:var(--chip-text); white-space:nowrap
-  }
-  .chip--old::before{content:"🏚️ "}
-  .chip--new::before{content:"🏢 "}
-  .chip--office::before{content:"🏷️ "}
-
-  .kv{ font-size:.86em; color:var(--ink) }
-  .kv .label{ color:var(--muted) }
-  .kv .value{ font-weight:700 }
-
-  .card__actions{ margin-top:auto; display:flex; justify-content:center; gap:12px; padding:12px 0 14px 0 }
-  .card__button{
-    width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-    cursor:pointer; transition:.2s; background:#0F172A; border:1px solid var(--line); color:var(--ink)
-  }
-  .card__button:hover{ border-color:var(--accent); box-shadow:var(--ring) }
-
-  /* Modals */
-  .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); z-index:9999 }
-  .modal.open{ display:flex }
-  .modal-card{
-    width:95%; max-width:560px; background:var(--panel); border-radius:14px; padding:18px 18px;
-    box-shadow:var(--shadow-lg); border:1px solid var(--line); color:var(--ink)
-  }
-  .modal-card h3{ margin:0 0 10px; color:var(--ink) }
-  .modal-card label{ display:block; margin:10px 0 6px; font-size:14px; color:var(--ink) }
-
-  /* Floating-label inputs (dark) */
-  .input-container{ position:relative; margin:8px 0 }
-  .input{
-    width:100%; padding:12px 12px 12px 14px; height:44px; font-size:16px;
-    border:1px solid var(--ctrl-border); background:var(--ctrl-bg); color:var(--ink); outline:none; border-radius:10px;
-  }
-  .label{
-    position:absolute; top:12px; left:14px; color:var(--muted); transition:.25s; background:transparent; padding:0 4px; pointer-events:none;
-  }
-  .topline,.underline{ display:none }
-  .input:focus ~ .label,
-  .input:not(:placeholder-shown) ~ .label,
-  select.input:focus ~ .label{
-    top:-9px; transform:scale(.9); background:var(--bg); color:var(--accent);
-  }
-  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:14px }
-
-  /* Image viewer link */
-  .modal-card a{ color:var(--accent); }
+  .hamburger{position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;cursor:pointer;user-select:none;z-index:1200;transition:transform .3s}
+  .hamburger .bar{height:3px;background:#111;border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
+  .hamburger .bar1,.hamburger .bar3{width:18px}.hamburger .bar2{width:28px}
+  #menu-check:checked+label.hamburger{transform:translateX(var(--nav-w))}
+  #menu-check:checked+label.hamburger .bar1{transform:translateY(10px) rotate(45deg);width:28px}
+  #menu-check:checked+label.hamburger .bar2{opacity:0}
+  #menu-check:checked+label.hamburger .bar3{transform:translateY(-10px) rotate(-45deg);width:28px}
+  .sidebar{position:fixed;inset:0 auto 0 0;width:var(--nav-w);background:#f3f4f6;padding:20px;box-sizing:border-box;transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;border-right:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.18)}
+  .sidebar a,.sidebar button{display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--line);background:#fff}
+  .sidebar a:hover{background:#111;color:#fff;border-color:#111}
+  #menu-check:checked~.sidebar{transform:translateX(0)}
+  label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
+  #menu-check:checked~label.overlay{opacity:1;visibility:visible}
 
   /* Toasts */
-  .toast-wrap{ position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:8px; z-index:10000 }
-  .toast{
-    background:var(--panel); color:var(--ink); padding:10px 12px; border-radius:10px; box-shadow:var(--shadow-lg);
-    border:1px solid var(--line); max-width:86vw
-  }
-  .toast--warn{ background: color-mix(in oklab, var(--warn) 25%, var(--panel)); border-color: color-mix(in oklab, var(--warn) 55%, var(--line)) }
-  .toast--error{ background: color-mix(in oklab, var(--error) 25%, var(--panel)); border-color: color-mix(in oklab, var(--error) 55%, var(--line)) }
-  .toast__close{ margin-left:12px; cursor:pointer; font-weight:700 }
-
-  /* Mobile */
-  @media (max-width: 820px){
-    .grid{ grid-template-columns:repeat(auto-fill,minmax(180px,1fr)) }
-    .hamburger{ transform:none !important }
-  }
-  @media (prefers-reduced-motion: reduce){
-    *{ transition:none !important; animation:none !important }
-  }
+  .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
+  .toast{background:#111;color:#fff;padding:10px 12px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+  .toast--warn{background:#b45309}.toast--error{background:#991b1b}.toast__close{margin-left:12px;cursor:pointer;font-weight:700}
 </style>
 </head>
 <body>
 
 <input id="menu-check" type="checkbox" />
 <label for="menu-check" class="hamburger" aria-label="Toggle menu" aria-controls="side" role="button" tabindex="0">
-  <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+  <span class="bar bar1"></span><span class="bar bar2"></span><span class="bar bar3"></span>
 </label>
 
 <nav class="sidebar" id="side" role="navigation" aria-label="Main">
-  <h3>Inventory</h3>
   <a href="index.html">Add New Stock</a>
   <a href="adjust.html">Adjust Stock</a>
   <a href="location.html">Location</a>
   <a href="goal.html">Set Stock Count Goal</a>
   <a href="history.html">History</a>
   <a href="status.html">Status</a>
-  <hr style="border:none;border-top:1px solid var(--line);margin:12px 0">
+  <hr>
   <button onclick="logout()">Logout</button>
-
-  <h3>Accent</h3>
-  <div style="display:flex; gap:8px">
-    <button type="button" class="btn-accent" onclick="setAccent('cyan')" title="Cyan">Cyan</button>
-    <button type="button" class="btn-accent" onclick="setAccent('neon')" title="Neon">Neon</button>
-  </div>
 </nav>
 <label class="overlay" for="menu-check" aria-hidden="true"></label>
 
-<div class="toast-wrap" id="toast-wrap" aria-live="polite" aria-atomic="true"></div>
+<div class="toast-wrap" id="toast-wrap"></div>
 
 <main class="content">
-  <section aria-labelledby="adjustPageTitle">
-    <h2 id="adjustPageTitle">Adjust Stock</h2>
-    <div id="stockGrid" class="grid"></div>
+  <section aria-labelledby="goalPageTitle">
+    <h2 id="goalPageTitle">Set Stock Count Goal</h2>
+    <table id="goalTable">
+      <thead><tr><th>Item Name</th><th>Current Goal</th><th>New Goal</th><th>Action</th></tr></thead>
+      <tbody></tbody>
+    </table>
   </section>
 </main>
-
-<!-- Adjust dialog -->
-<div id="adjustModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adj-title">
-  <div class="modal-card">
-    <h3 id="adj-title">Adjust Stock</h3>
-    <div id="adj-subtitle" style="color:var(--muted)"></div>
-    <label for="adj-amount">Amount</label>
-    <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount" inputmode="numeric" class="input">
-    <label for="adj-location">Location</label>
-    <select id="adj-location" class="input">
-      <option>Old warehouse</option>
-      <option>New warehouse</option>
-      <option>Office</option>
-    </select>
-    <div class="input-container">
-      <input id="adj-name" type="text" class="input" placeholder=" " readonly>
-      <span class="topline"></span><span class="underline"></span>
-      <label for="adj-name" class="label">Your name (auto)</label>
-    </div>
-    <div class="input-container">
-      <input id="adj-reason" type="text" class="input" placeholder=" ">
-      <span class="topline"></span><span class="underline"></span>
-      <label for="adj-reason" class="label">Reason</label>
-    </div>
-    <div class="input-container">
-      <input id="adj-by" type="text" class="input" placeholder=" ">
-      <span class="topline"></span><span class="underline"></span>
-      <label for="adj-by" class="label">Adjusted by (name)</label>
-    </div>
-    <div class="modal-actions">
-      <button id="adj-cancel">Cancel</button>
-      <button id="adj-confirm" class="btn-accent">Confirm</button>
-    </div>
-  </div>
-</div>
-
-<!-- Delete dialog -->
-<div id="deleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="del-title">
-  <div class="modal-card">
-    <h3 id="del-title">Delete Item</h3>
-    <div id="del-subtitle" style="color:var(--muted)"></div>
-    <div class="input-container">
-      <input id="del-name" type="text" class="input" placeholder=" " readonly>
-      <span class="topline"></span><span class="underline"></span>
-      <label for="del-name" class="label">Your name (auto)</label>
-    </div>
-    <div class="input-container">
-      <input id="del-reason" type="text" class="input" placeholder=" ">
-      <span class="topline"></span><span class="underline"></span>
-      <label for="del-reason" class="label">Reason (e.g., discontinued)</label>
-    </div>
-    <div class="input-container">
-      <input id="del-by" type="text" class="input" placeholder=" ">
-      <span class="topline"></span><span class="underline"></span>
-      <label for="del-by" class="label">Adjusted by (name)</label>
-    </div>
-    <div class="modal-actions">
-      <button id="del-cancel">Cancel</button>
-      <button id="del-confirm" class="btn-accent">Delete</button>
-    </div>
-  </div>
-</div>
-
-<!-- Image viewer modal -->
-<div id="imageModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="img-title">
-  <div class="modal-card">
-    <h3 id="img-title">Image</h3>
-    <img id="img-view" src="" alt="" style="width:100%; max-height:70vh; object-fit:contain; border:1px solid var(--line); border-radius:8px;" />
-    <div class="modal-actions">
-      <a id="img-open" href="#" target="_blank" rel="noopener" style="margin-right:auto;">Open in new tab</a>
-      <button id="img-close">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- Hidden file picker -->
-<input type="file" id="hiddenFileInput" accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.heif" capture="environment" style="display:none" />
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import {
-    getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-    onSnapshot, serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+  import { getFirestore, collection, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
@@ -374,20 +101,7 @@
   try { getAnalytics(app); } catch(e) {}
   const auth = getAuth(app);
   const db   = getFirestore(app);
-  const st   = getStorage(app);
   signInAnonymously(auth).catch(console.error);
-
-  const CURRENT_USER = localStorage.getItem('auth_user') || 'Unknown';
-
-  /* Accent toggle persistence */
-  const ACCENT_KEY = 'ui_accent';
-  const savedAccent = localStorage.getItem(ACCENT_KEY);
-  if (savedAccent) document.documentElement.setAttribute('data-accent', savedAccent);
-  window.setAccent = (name) => {
-    const val = (name === 'neon') ? 'neon' : 'cyan';
-    document.documentElement.setAttribute('data-accent', val);
-    localStorage.setItem(ACCENT_KEY, val);
-  };
 
   /* Sidebar ARIA */
   const menuCheck = document.getElementById('menu-check');
@@ -407,283 +121,52 @@
     if (timeout>0) setTimeout(close, timeout);
   }
   const notify = toast;
-
-  /* Utils */
   function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-  function normLoc(raw){
-    const s=(raw||'').trim().toLowerCase();
-    if (s.startsWith('old')) return 'Old warehouse';
-    if (s.startsWith('new')) return 'New warehouse';
-    if (s.startsWith('off')) return 'Office';
-    if (['old warehouse','new warehouse','office'].includes(s)) return s.replace(/\b\w/g,m=>m.toUpperCase());
-    return null;
-  }
-  function totalQty(item){ return (Number(item.qtyOld) || 0) + (Number(item.qtyNew) || 0) + (Number(item.qtyOffice) || 0); }
-  function withCacheBuster(url){ if (!url) return url; const sep = url.includes('?') ? '&' : '?'; return `${url}${sep}v=${Date.now()}`; }
 
-  const SUPPORTED_IMAGE_TYPES=["image/jpeg","image/jpg","image/png","image/gif","image/webp","image/bmp","image/heic","image/heif"];
-  function isSupportedImage(file){ if (!file) return false; if (file.type && SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) return true; const n=(file.name||"").toLowerCase(); return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/.test(n); }
-
-  /* Firestore refs */
-  const colInventory   = collection(db, "inventory");
-  const colAdjustments = collection(db, "adjustments");
-
-  /* State */
+  const colInventory = collection(db, "inventory");
   let inventory = [];
-  const lowState = new Map();
+  onSnapshot(colInventory, (snap) => { inventory = snap.docs.map(d => ({ id:d.id, ...d.data() })); renderGoalTable(); });
 
-  /* Live listeners */
-  onSnapshot(colInventory, (snap) => { inventory = snap.docs.map(d => ({ id:d.id, ...d.data() })); renderStockGrid(); checkLowStockAlerts(); });
-
-  /* Image viewer */
-  const imageModal   = document.getElementById('imageModal');
-  const imgView      = document.getElementById('img-view');
-  const imgTitle     = document.getElementById('img-title');
-  const imgOpenLink  = document.getElementById('img-open');
-  const imgCloseBtn  = document.getElementById('img-close');
-  function openImageViewer(url, title='Image'){ imgView.src = url; imgView.alt = title; imgTitle.textContent = title; imgOpenLink.href = url || '#'; imageModal.classList.add('open'); }
-  function closeImageViewer(){ imageModal.classList.remove('open'); imgView.src = ''; imgView.alt = ''; }
-  imgCloseBtn.addEventListener('click', closeImageViewer);
-  imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
-  window.openImageViewer = openImageViewer;
-
-  /* Render grid (show Old/New/Office) */
-  function renderStockGrid() {
-    const grid = document.getElementById('stockGrid'); if (!grid) return;
-    grid.innerHTML = '';
-    inventory.forEach((item) => {
-      const total = totalQty(item);
-      const isLow = (item.goal > 0) && (total <= item.goal);
-      const card = document.createElement('div'); card.className = 'card';
-
-      const bgUrl = item.img ? withCacheBuster(item.img) : '';
-      const safeBgUrl = bgUrl ? bgUrl.replace(/"/g,'%22').replace(/'/g,'%27') : '';
-      const bgStyle = bgUrl ? `style="background-image:url('${safeBgUrl}')"` : '';
-
-      card.innerHTML = `
-        <div class="badge-lowok ${isLow ? 'badge-lowok--low' : 'badge-lowok--ok'}">${isLow ? 'LOW' : 'OK'}</div>
-        ${item.isNew ? `<div class="badge-new" title="Dismiss">NEW</div>` : ''}
-        <div class="card__image" ${bgStyle}>
-          <button class="img-edit-btn" title="Set image" aria-label="Set image">🖼</button>
-          <button class="img-view-btn" title="View image" aria-label="View image">View Image</button>
-          <span class="qty-badge" title="Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}, Office: ${item.qtyOffice ?? 0}">Qty: ${total}</span>
-        </div>
-
-        <div class="card__body">
-          <h3 class="card__title" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</h3>
-
-          <ul class="card__loclist">
-            <li class="card__locitem">
-              <span class="chip chip--old" title="Old warehouse">Old warehouse</span>
-              <span class="kv"><span class="label"> — Qty: </span><span class="value">${item.qtyOld ?? 0}</span></span>
-            </li>
-            <li class="card__locitem">
-              <span class="chip chip--new" title="New warehouse">New warehouse</span>
-              <span class="kv"><span class="label"> — Qty: </span><span class="value">${item.qtyNew ?? 0}</span></span>
-            </li>
-            <li class="card__locitem">
-              <span class="chip chip--office" title="Office">Office</span>
-              <span class="kv"><span class="label"> — Qty: </span><span class="value">${item.qtyOffice ?? 0}</span></span>
-            </li>
-          </ul>
-
-          <p class="card__description">Total: ${total} • Goal: ${item.goal || 0}</p>
-
-          <div class="card__actions">
-            <div class="card__button" data-plus aria-label="Add" title="Add (Shift=Set image)">+</div>
-            <div class="card__button" data-minus aria-label="Minus" title="Minus">–</div>
-            <div class="card__button" data-del-id="${item.id}" aria-label="Delete" title="Delete">🗑</div>
-          </div>
-        </div>
-      `;
-
-      card.querySelector('.img-edit-btn').addEventListener('click', () => openImagePickerById(item.id));
-      card.querySelector('.img-view-btn').addEventListener('click', () => {
-        const current = inventory.find(i=>i.id===item.id);
-        if (!current || !current.img) { notify('No image set yet. Click 🖼 to add one.','warn'); return; }
-        openImageViewer(withCacheBuster(current.img), `Item: ${current.name}`);
+  function renderGoalTable(){
+    const tbody = document.querySelector('#goalTable tbody');
+    if (!tbody) return; tbody.innerHTML = '';
+    const rows = inventory.slice().sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+    for (const item of rows){
+      const currentGoal = Number.isFinite(item.goal) ? item.goal : 0;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(item.name || '')}</td>
+        <td>${currentGoal}</td>
+        <td><input type="number" min="0" step="1" value="${currentGoal}" style="width:120px" inputmode="numeric" data-goal-input="${item.id}"></td>
+        <td><button data-save-goal="${item.id}">Save</button> <button data-clear-goal="${item.id}" title="Set goal to 0">Clear</button></td>`;
+      tbody.appendChild(tr);
+    }
+    tbody.querySelectorAll('[data-save-goal]').forEach(btn=>{
+      btn.addEventListener('click', async e=>{
+        const id = e.currentTarget.getAttribute('data-save-goal');
+        const input = tbody.querySelector(`[data-goal-input="${id}"]`);
+        const raw = (input?.value ?? '').trim(); const val = Math.max(0, parseInt(raw,10) || 0);
+        try{ await updateDoc(doc(db,'inventory', id), { goal: val }); notify('Goal saved'); }
+        catch(err){ console.error(err); notify('Failed to save goal','error'); }
       });
-      if (item.isNew) card.querySelector('.badge-new')?.addEventListener('click', async ()=>{ try{ await updateDoc(doc(db,"inventory", item.id), { isNew:false }); }catch(e){} });
-      card.querySelector('[data-plus]').addEventListener('click', (e)=>{ if (e.shiftKey){ openImagePickerById(item.id); return; } openAdjustDialogById(item.id,'add'); });
-      card.querySelector('[data-minus]').addEventListener('click', ()=> openAdjustDialogById(item.id,'sub'));
-      card.querySelector('[data-del-id]').addEventListener('click', ()=> openDeleteDialogById(item.id));
-
-      grid.appendChild(card);
+    });
+    tbody.querySelectorAll('[data-clear-goal]').forEach(btn=>{
+      btn.addEventListener('click', async e=>{
+        const id = e.currentTarget.getAttribute('data-clear-goal');
+        try{ await updateDoc(doc(db,'inventory', id), { goal: 0 }); notify('Goal cleared'); }
+        catch(err){ console.error(err); notify('Failed to clear goal','error'); }
+      });
+    });
+    tbody.querySelectorAll('[data-goal-input]').forEach(inp=>{
+      inp.addEventListener('keydown', e=>{
+        if (e.key === 'Enter'){
+          e.preventDefault();
+          const id = e.currentTarget.getAttribute('data-goal-input');
+          tbody.querySelector(`[data-save-goal="${id}"]`)?.click();
+        }
+      });
     });
   }
-
-  /* Low-stock toasts */
-  const lowState = new Map();
-  function checkLowStockAlerts(){
-    for (const item of inventory){
-      const goal = Number.isFinite(item.goal) ? item.goal : 0;
-      const total = totalQty(item);
-      const isLow = goal > 0 && total <= goal;
-      const prev = lowState.get(item.id) || false;
-      if (isLow && !prev){ notify(`LOW: "${item.name}" at ${total} (goal ${goal}).`, 'warn', 6000); }
-      lowState.set(item.id, isLow);
-    }
-  }
-
-  /* Adjust dialog & actions */
-  let pending = { index:null, mode:'add' };
-  function openAdjustDialog(index, mode) {
-    pending = { index, mode };
-    const item = inventory[index]; const total = totalQty(item);
-    document.getElementById('adj-title').textContent = `${mode === 'add' ? 'Add to' : 'Minus from'} "${item.name}"`;
-    document.getElementById('adj-subtitle').textContent =
-      `Current total: ${total} (Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}, Office: ${item.qtyOffice ?? 0})`;
-    document.getElementById('adj-amount').value = '1';
-    document.getElementById('adj-name').value = CURRENT_USER;
-    document.getElementById('adj-location').value = 'Old warehouse';
-    document.getElementById('adj-reason').value = ''; document.getElementById('adj-by').value = '';
-    document.getElementById('adjustModal').classList.add('open');
-    setTimeout(() => document.getElementById('adj-amount').focus(), 0);
-  }
-  function openAdjustDialogById(id, mode){
-    const index = inventory.findIndex(i => i.id === id);
-    if (index < 0) return;
-    openAdjustDialog(index, mode);
-  }
-  window.openAdjustDialogById = openAdjustDialogById;
-  function closeAdjustDialog(){ document.getElementById('adjustModal').classList.remove('open'); }
-  document.getElementById('adj-cancel').addEventListener('click', closeAdjustDialog);
-  document.getElementById('adjustModal').addEventListener('click', (e) => { if (e.target.id === 'adjustModal') closeAdjustDialog(); });
-  document.getElementById('adjustModal').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('adj-confirm').click(); } });
-
-  document.getElementById('adj-confirm').addEventListener('click', async () => {
-    try {
-      if (pending?.index == null) { closeAdjustDialog(); return; }
-      const item = inventory[pending.index]; if (!item) { closeAdjustDialog(); return; }
-      const amountRaw = document.getElementById('adj-amount').value;
-      const amt = parseInt(amountRaw, 10);
-      const loc = normLoc(document.getElementById('adj-location').value);
-      const reason = (document.getElementById('adj-reason').value || '').trim();
-      const adjustedBy = (document.getElementById('adj-by').value || '').trim();
-      if (!Number.isInteger(amt) || amt <= 0) { notify('Enter a positive integer amount.','warn'); return; }
-      if (!loc) { notify('Location must be "Old warehouse", "New warehouse", or "Office".','warn'); return; }
-      if (!reason || !adjustedBy) { notify('Please fill Reason and Adjusted by (name).','warn'); return; }
-
-      const mode = pending.mode === 'sub' ? 'sub' : 'add';
-      const delta = mode === 'add' ? amt : -amt;
-      const prevOld    = Number(item.qtyOld ?? 0);
-      const prevNew    = Number(item.qtyNew ?? 0);
-      const prevOffice = Number(item.qtyOffice ?? 0);
-
-      if (mode === 'sub') {
-        if (loc === 'Old warehouse' && amt > prevOld)    { notify(`Not enough stock in Old warehouse (have ${prevOld}).`,'warn'); return; }
-        if (loc === 'New warehouse' && amt > prevNew)    { notify(`Not enough stock in New warehouse (have ${prevNew}).`,'warn'); return; }
-        if (loc === 'Office'         && amt > prevOffice) { notify(`Not enough stock in Office (have ${prevOffice}).`,'warn'); return; }
-      }
-
-      let newOld = prevOld, newNew = prevNew, newOffice = prevOffice;
-      if (loc === 'Old warehouse') newOld = prevOld + delta;
-      if (loc === 'New warehouse') newNew = prevNew + delta;
-      if (loc === 'Office')         newOffice = prevOffice + delta;
-      newOld = Math.max(0, newOld); newNew = Math.max(0, newNew); newOffice = Math.max(0, newOffice);
-      const newTotal = newOld + newNew + newOffice;
-
-      await updateDoc(doc(db, "inventory", item.id), { qtyOld: newOld, qtyNew: newNew, qtyOffice: newOffice, qty: newTotal });
-      await addDoc(colAdjustments, {
-        ts: serverTimestamp(), item: item.name, itemId: item.id, location: loc, delta,
-        actor: CURRENT_USER, reason, adjustedBy,
-        qtyAfterOld: newOld, qtyAfterNew: newNew, qtyAfterOffice: newOffice, qtyAfter: newTotal
-      });
-
-      notify(`${mode === 'add' ? 'Added' : 'Subtracted'} ${Math.abs(delta)} to/from ${loc} for "${item.name}".`);
-      closeAdjustDialog();
-    } catch(err) { console.error(err); notify('Failed to adjust stock','error'); }
-  });
-
-  /* Delete item */
-  let pendingDeleteId = null;
-  function getItemById(id){ return inventory.find(i => i.id === id); }
-  function sumAll(it){ return (Number(it.qtyOld)||0)+(Number(it.qtyNew)||0)+(Number(it.qtyOffice)||0); }
-  function openDeleteDialogById(id) {
-    const item = getItemById(id); if (!item) return;
-    pendingDeleteId = id;
-    const t = sumAll(item);
-    document.getElementById('del-title').textContent = `Delete "${item.name}"`;
-    document.getElementById('del-subtitle').textContent = `This will remove the item and log a history entry with -${t} (Qty after: 0).`;
-    document.getElementById('del-name').value = CURRENT_USER;
-    document.getElementById('del-reason').value = '';
-    document.getElementById('del-by').value = '';
-    document.getElementById('deleteModal').classList.add('open');
-    setTimeout(() => document.getElementById('del-reason').focus(), 0);
-  }
-  window.openDeleteDialogById = openDeleteDialogById;
-  function closeDeleteDialog(){ document.getElementById('deleteModal').classList.remove('open'); }
-  document.getElementById('del-cancel').addEventListener('click', closeDeleteDialog);
-  document.getElementById('deleteModal').addEventListener('click', e => { if (e.target.id === 'deleteModal') closeDeleteDialog(); });
-  document.getElementById('deleteModal').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('del-confirm').click(); } });
-  document.getElementById('del-confirm').addEventListener('click', async () => {
-    if (!pendingDeleteId) return closeDeleteDialog();
-    const actor = CURRENT_USER;
-    const reason = document.getElementById('del-reason').value.trim();
-    const adjustedBy = document.getElementById('del-by').value.trim();
-    if (!reason || !adjustedBy) { notify('Please fill in Reason and Adjusted by (name).','warn'); return; }
-    const removed = getItemById(pendingDeleteId);
-    if (!removed) { pendingDeleteId = null; closeDeleteDialog(); return; }
-    try{
-      await addDoc(collection(db, "adjustments"), {
-        ts: serverTimestamp(), item: removed.name, itemId: removed.id, location: 'ALL',
-        delta: -sumAll(removed), actor, reason, adjustedBy,
-        qtyAfterOld: 0, qtyAfterNew: 0, qtyAfterOffice: 0, qtyAfter: 0
-      });
-      await deleteDoc(doc(db,"inventory", removed.id));
-      notify('Item deleted');
-    } catch(err){ console.error(err); notify('Failed to delete item','error'); }
-    pendingDeleteId = null; closeDeleteDialog();
-  });
-
-  /* Image picker */
-  let imgTargetIndex=null;
-  const fileInput=document.getElementById('hiddenFileInput');
-  function isLikelyHttpUrl(s){ const u=(s||'').trim(); return /^https?:\/\//i.test(u) || /^data:image\//i.test(u); }
-  function openImagePicker(index){
-    imgTargetIndex=index;
-    const choice=prompt("Set image:\n- Paste an image URL (http/https) and press OK, OR\n- Leave blank to choose a file (uploads to Firebase Storage).");
-    if (choice && choice.trim()){
-      if (!isLikelyHttpUrl(choice.trim())) { notify('Please enter a valid http(s) or data: image URL','warn'); imgTargetIndex=null; return; }
-      setItemImageFromURL(choice.trim());
-    } else fileInput.click();
-  }
-  function openImagePickerById(id){
-    const idx = inventory.findIndex(i=>i.id===id);
-    if (idx>=0) openImagePicker(idx);
-  }
-  window.openImagePickerById = openImagePickerById;
-
-  fileInput.addEventListener('change', async (e)=>{
-    const file=e.target.files && e.target.files[0]; e.target.value='';
-    if(!file || imgTargetIndex===null) return;
-    if (!isSupportedImage(file)) { notify(`Unsupported image format: ${file.type || file.name}`,'warn', 6000); imgTargetIndex = null; return; }
-    const item=inventory[imgTargetIndex];
-    try{
-      const ref  = storageRef(st, `itemImages/${item.id}/${Date.now()}_${(file.name||'photo').replace(/[^\w.\-]+/g,'_')}`);
-      await uploadBytes(ref, file, { contentType: file.type || "application/octet-stream" });
-      const url = await getDownloadURL(ref);
-      await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true });
-      openImageViewer(withCacheBuster(url), `Item: ${item.name}`);
-    }catch(err){ console.error(err); notify('Upload failed','error'); }
-    imgTargetIndex=null;
-  });
-  async function setItemImageFromURL(url){
-    if(imgTargetIndex===null) return; const item=inventory[imgTargetIndex];
-    try{ await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true }); openImageViewer(withCacheBuster(url), `Item: ${item.name}`); }
-    catch(err){ console.error(err); notify('Failed to set image URL','error'); }
-    imgTargetIndex=null;
-  }
-  window.setItemImageFromURL=setItemImageFromURL;
-
-  /* ESC closes modals */
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape'){
-      document.getElementById('adjustModal').classList.remove('open');
-      document.getElementById('deleteModal').classList.remove('open');
-      document.getElementById('imageModal').classList.remove('open');
-    }
-  });
 </script>
 </body>
 </html>
