@@ -36,6 +36,7 @@
   #menu-check{display:none}
   .hamburger{position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;cursor:pointer;user-select:none;z-index:1200;transition:transform .3s}
   .hamburger .bar{height:3px;background:#111;border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
+  .hamburger .bar1,.hamburger .bar3{width:18px}.hamburger .bar2{width:28px}
   #menu-check:checked+label.hamburger{transform:translateX(var(--nav-w))}
   #menu-check:checked+label.hamburger .bar1{transform:translateY(10px) rotate(45deg);width:28px}
   #menu-check:checked+label.hamburger .bar2{opacity:0}
@@ -96,6 +97,8 @@
   .modal-card{width:95%;max-width:520px;background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 20px 40px rgba(0,0,0,.15);border:1px solid var(--line);color:#111}
   .modal-card h3{margin:0 0 10px;color:#111}
   .modal-card label{display:block;margin:10px 0 4px;font-size:14px;color:#111}
+
+  /* Fancy black-outline input look */
   .input-container{position:relative;margin:8px 0}
   .input{width:100%;padding:10px;height:40px;border:2px solid #111;border-top:none;border-bottom:none;font-size:16px;background:transparent;outline:none;box-shadow:7px 7px 0 0 #111;transition:.5s;box-sizing:border-box}
   .topline,.underline{position:absolute;background-color:#111;height:2px;right:0;transition:.5s}
@@ -103,6 +106,7 @@
   .input:focus~.topline{width:35%}.input:focus~.underline{width:100%}
   .label{position:absolute;top:10px;left:10px;color:#111;transition:.5s;transform:scale(0);z-index:-1;background:#fff;padding:0 4px}
   .input:focus~.label{top:-10px;transform:scale(1)}
+
   .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
 
   .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
@@ -143,29 +147,27 @@
   <div class="modal-card">
     <h3 id="adj-title">Adjust Stock</h3>
     <div id="adj-subtitle" style="color:#6b7280"></div>
+
     <label for="adj-amount">Amount</label>
     <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount" inputmode="numeric" class="input">
+
     <label for="adj-location">Location</label>
     <select id="adj-location" class="input">
       <option>Old warehouse</option>
       <option>New warehouse</option>
       <option>Office</option>
     </select>
-    <div class="input-container">
-      <input id="adj-name" type="text" class="input" placeholder=" " readonly>
-      <span class="topline"></span><span class="underline"></span>
-      <label for="adj-name" class="label">Your name (auto)</label>
-    </div>
-    <div class="input-container">
-      <input id="adj-reason" type="text" class="input" placeholder=" ">
-      <span class="topline"></span><span class="underline"></span>
-      <label for="adj-reason" class="label">Reason</label>
-    </div>
-    <div class="input-container">
-      <input id="adj-by" type="text" class="input" placeholder=" ">
-      <span class="topline"></span><span class="underline"></span>
-      <label for="adj-by" class="label">Adjusted by (name)</label>
-    </div>
+
+    <!-- NEW fields styled like first two -->
+    <label for="adj-account">Account</label>
+    <input id="adj-account" type="text" class="input" placeholder="Enter account">
+
+    <label for="adj-purpose">Purpose</label>
+    <input id="adj-purpose" type="text" class="input" placeholder="Enter purpose">
+
+    <label for="adj-takenby">Taken by</label>
+    <input id="adj-takenby" type="text" class="input" placeholder="Who took it">
+
     <div class="modal-actions">
       <button id="adj-cancel">Cancel</button>
       <button id="adj-confirm">Confirm</button>
@@ -173,7 +175,7 @@
   </div>
 </div>
 
-<!-- Delete dialog -->
+<!-- Delete dialog (unchanged) -->
 <div id="deleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="del-title">
   <div class="modal-card">
     <h3 id="del-title">Delete Item</h3>
@@ -304,7 +306,7 @@
   imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
   window.openImageViewer = openImageViewer;
 
-  /* Render grid (show Old/New/Office) */
+  /* Render grid */
   function renderStockGrid() {
     const grid = document.getElementById('stockGrid'); if (!grid) return;
     grid.innerHTML = '';
@@ -389,10 +391,15 @@
     document.getElementById('adj-title').textContent = `${mode === 'add' ? 'Add to' : 'Minus from'} "${item.name}"`;
     document.getElementById('adj-subtitle').textContent =
       `Current total: ${total} (Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}, Office: ${item.qtyOffice ?? 0})`;
+
     document.getElementById('adj-amount').value = '1';
-    document.getElementById('adj-name').value = CURRENT_USER;
     document.getElementById('adj-location').value = 'Old warehouse';
-    document.getElementById('adj-reason').value = ''; document.getElementById('adj-by').value = '';
+
+    // clear new fields
+    ['adj-account','adj-purpose','adj-takenby'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.value='';
+    });
+
     document.getElementById('adjustModal').classList.add('open');
     setTimeout(() => document.getElementById('adj-amount').focus(), 0);
   }
@@ -411,14 +418,19 @@
     try {
       if (pending?.index == null) { closeAdjustDialog(); return; }
       const item = inventory[pending.index]; if (!item) { closeAdjustDialog(); return; }
+
       const amountRaw = document.getElementById('adj-amount').value;
       const amt = parseInt(amountRaw, 10);
       const loc = normLoc(document.getElementById('adj-location').value);
-      const reason = (document.getElementById('adj-reason').value || '').trim();
-      const adjustedBy = (document.getElementById('adj-by').value || '').trim();
+
+      // NEW fields
+      const account = (document.getElementById('adj-account').value || '').trim();
+      const purpose = (document.getElementById('adj-purpose').value || '').trim();
+      const takenBy = (document.getElementById('adj-takenby').value || '').trim();
+
       if (!Number.isInteger(amt) || amt <= 0) { notify('Enter a positive integer amount.','warn'); return; }
       if (!loc) { notify('Location must be "Old warehouse", "New warehouse", or "Office".','warn'); return; }
-      if (!reason || !adjustedBy) { notify('Please fill Reason and Adjusted by (name).','warn'); return; }
+      if (!account || !purpose || !takenBy) { notify('Please fill Account, Purpose, and Taken by.','warn'); return; }
 
       const mode = pending.mode === 'sub' ? 'sub' : 'add';
       const delta = mode === 'add' ? amt : -amt;
@@ -435,14 +447,22 @@
       let newOld = prevOld, newNew = prevNew, newOffice = prevOffice;
       if (loc === 'Old warehouse') newOld = prevOld + delta;
       if (loc === 'New warehouse') newNew = prevNew + delta;
-      if (loc === 'Office')         newOffice = prevOffice + delta;
+      if (loc === 'Office')        newOffice = prevOffice + delta;
       newOld = Math.max(0, newOld); newNew = Math.max(0, newNew); newOffice = Math.max(0, newOffice);
       const newTotal = newOld + newNew + newOffice;
 
-      await updateDoc(doc(db, "inventory", item.id), { qtyOld: newOld, qtyNew: newNew, qtyOffice: newOffice, qty: newTotal });
+      await updateDoc(doc(db, "inventory", item.id), {
+        qtyOld: newOld, qtyNew: newNew, qtyOffice: newOffice, qty: newTotal
+      });
+
+      // Save new fields with adjustment
       await addDoc(colAdjustments, {
-        ts: serverTimestamp(), item: item.name, itemId: item.id, location: loc, delta,
-        actor: CURRENT_USER, reason, adjustedBy,
+        ts: serverTimestamp(),
+        item: item.name, itemId: item.id,
+        location: loc,
+        delta,
+        actor: CURRENT_USER,
+        account, purpose, takenBy,
         qtyAfterOld: newOld, qtyAfterNew: newNew, qtyAfterOffice: newOffice, qtyAfter: newTotal
       });
 
@@ -543,5 +563,3 @@
 </script>
 </body>
 </html>
-
-this one also
