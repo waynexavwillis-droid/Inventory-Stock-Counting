@@ -19,35 +19,97 @@
 </script>
 
 <style>
+  /* ==== Light theme based on #F7F4EA ==== */
   :root{
-    --nav-w:260px; --bg:#f6f7f8; --panel:#fff; --ink:#111; --muted:#6b7280; --line:#e5e7eb;
+    --nav-w:260px;
+
+    /* Theme */
+    --bg:#F7F4EA;        /* paper background */
+    --panel:#EEE6D8;     /* cards / panels */
+    --ink:#1F2937;       /* primary text */
+    --muted:#6B7280;     /* muted text */
+    --line:#D9CFC1;      /* borders/outlines */
+    --accent:#0EA5A4;    /* teal accent */
+    --chip:#EDE7DA;      /* chips/pills (not used here but kept for parity) */
   }
-  html,body{height:100%} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
-  h2{color:var(--ink)} .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
-  input,button,select,textarea{padding:8px;margin:4px;font-family:inherit}
-  button{background:linear-gradient(#fafafa,#f3f4f6);border:1px solid var(--line);color:var(--ink);border-radius:8px;cursor:pointer}
-  button:hover{background:#111;color:#fff;border-color:#111}
-  table{width:100%;margin-top:12px;border-collapse:collapse} table,th,td{border:1px solid var(--line)}
-  thead th{background:#f3f4f6;color:var(--muted)} th,td{padding:8px;text-align:left;vertical-align:top}
+
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink)
+  }
+  h2{color:var(--ink)}
+  .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
+
+  /* Controls — legibility & theme consistency */
+  input,button,select,textarea{
+    padding:8px;margin:4px;font-family:inherit;
+    color:var(--ink);
+    background:var(--panel);
+    border:1px solid var(--line);
+    caret-color:var(--ink);
+  }
+  input::placeholder, textarea::placeholder{ color:var(--muted); opacity:1 }
+
+  button{
+    border-radius:8px;
+    cursor:pointer;
+  }
+  button:hover{
+    background:var(--accent);
+    color:#ffffff;
+    border-color:var(--accent);
+  }
+
+  /* Table */
+  table{width:100%;margin-top:12px;border-collapse:collapse;background:var(--panel);border:1px solid var(--line)}
+  thead th{
+    background:#F0E8DB; /* slightly lighter than panel for header separation */
+    color:var(--muted);
+    border-bottom:1px solid var(--line);
+  }
+  th,td{padding:10px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+  tbody tr:hover{background:#F3ECDD}
+
+  /* Sidebar + hamburger */
   #menu-check{display:none}
-  .hamburger{position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;cursor:pointer;user-select:none;z-index:1200;transition:transform .3s}
-  .hamburger .bar{height:3px;background:#111;border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
+  .hamburger{
+    position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;
+    cursor:pointer;user-select:none;z-index:1200;transition:transform .3s
+  }
+  .hamburger .bar{
+    height:3px;background:var(--ink);border-radius:10px;
+    transition:transform .35s,opacity .25s,width .35s
+  }
   .hamburger .bar1,.hamburger .bar3{width:18px}.hamburger .bar2{width:28px}
   #menu-check:checked+label.hamburger{transform:translateX(var(--nav-w))}
   #menu-check:checked+label.hamburger .bar1{transform:translateY(10px) rotate(45deg);width:28px}
   #menu-check:checked+label.hamburger .bar2{opacity:0}
   #menu-check:checked+label.hamburger .bar3{transform:translateY(-10px) rotate(-45deg);width:28px}
-  .sidebar{position:fixed;inset:0 auto 0 0;width:var(--nav-w);background:#f3f4f6;padding:20px;box-sizing:border-box;transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;border-right:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.18)}
-  .sidebar a,.sidebar button{display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--line);background:#fff}
-  .sidebar a:hover{background:#111;color:#fff;border-color:#111}
+
+  .sidebar{
+    position:fixed;inset:0 auto 0 0;width:var(--nav-w);
+    background:var(--panel);padding:20px;box-sizing:border-box;
+    transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;
+    border-right:1px solid var(--line);
+    box-shadow:0 10px 30px rgba(0,0,0,.08)
+  }
+  .sidebar a,.sidebar button{
+    display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;
+    border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--line);
+    background:transparent
+  }
+  .sidebar a:hover{background:var(--accent);color:#ffffff;border-color:var(--accent)}
   #menu-check:checked~.sidebar{transform:translateX(0)}
-  label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
+  label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.25);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
   #menu-check:checked~label.overlay{opacity:1;visibility:visible}
 
   /* Toasts */
   .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
-  .toast{background:#111;color:#fff;padding:10px 12px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
-  .toast--warn{background:#b45309}.toast--error{background:#991b1b}.toast__close{margin-left:12px;cursor:pointer;font-weight:700}
+  .toast{background:#E9E2D6;color:var(--ink);padding:10px 12px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+  .toast--warn{background:#F2C97D;color:#4A2E00}.toast--error{background:#F3B8B8;color:#711313}.toast__close{margin-left:12px;cursor:pointer;font-weight:700}
 </style>
 </head>
 <body>
@@ -69,15 +131,23 @@
 </nav>
 <label class="overlay" for="menu-check" aria-hidden="true"></label>
 
-<div class="toast-wrap" id="toast-wrap"></div>
+<div class="toast-wrap" id="toast-wrap" aria-live="polite" aria-atomic="true"></div>
 
 <main class="content">
   <section aria-labelledby="goalPageTitle">
     <h2 id="goalPageTitle">Set Stock Count Goal</h2>
-    <table id="goalTable">
-      <thead><tr><th>Item Name</th><th>Current Goal</th><th>New Goal</th><th>Action</th></tr></thead>
+    <table id="goalTable" aria-describedby="goalTableHelp">
+      <thead>
+        <tr>
+          <th scope="col">Item Name</th>
+          <th scope="col">Current Goal</th>
+          <th scope="col">New Goal</th>
+          <th scope="col">Action</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
+    <p id="goalTableHelp" style="color:var(--muted);margin-top:8px">Press Enter inside the New Goal field to save quickly.</p>
   </section>
 </main>
 
@@ -125,11 +195,16 @@
 
   const colInventory = collection(db, "inventory");
   let inventory = [];
-  onSnapshot(colInventory, (snap) => { inventory = snap.docs.map(d => ({ id:d.id, ...d.data() })); renderGoalTable(); });
+  onSnapshot(colInventory, (snap) => {
+    inventory = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderGoalTable();
+  });
 
   function renderGoalTable(){
     const tbody = document.querySelector('#goalTable tbody');
-    if (!tbody) return; tbody.innerHTML = '';
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
     const rows = inventory.slice().sort((a,b)=> (a.name||'').localeCompare(b.name||''));
     for (const item of rows){
       const currentGoal = Number.isFinite(item.goal) ? item.goal : 0;
@@ -137,26 +212,48 @@
       tr.innerHTML = `
         <td>${escapeHtml(item.name || '')}</td>
         <td>${currentGoal}</td>
-        <td><input type="number" min="0" step="1" value="${currentGoal}" style="width:120px" inputmode="numeric" data-goal-input="${item.id}"></td>
-        <td><button data-save-goal="${item.id}">Save</button> <button data-clear-goal="${item.id}" title="Set goal to 0">Clear</button></td>`;
+        <td>
+          <input
+            type="number" min="0" step="1" value="${currentGoal}"
+            inputmode="numeric" data-goal-input="${item.id}" aria-label="New goal for ${escapeHtml(item.name || '')}"
+            style="width:140px"
+          >
+        </td>
+        <td>
+          <button data-save-goal="${item.id}" aria-label="Save goal for ${escapeHtml(item.name || '')}">Save</button>
+          <button data-clear-goal="${item.id}" title="Set goal to 0" aria-label="Clear goal for ${escapeHtml(item.name || '')}">Clear</button>
+        </td>`;
       tbody.appendChild(tr);
     }
+
     tbody.querySelectorAll('[data-save-goal]').forEach(btn=>{
       btn.addEventListener('click', async e=>{
         const id = e.currentTarget.getAttribute('data-save-goal');
         const input = tbody.querySelector(`[data-goal-input="${id}"]`);
-        const raw = (input?.value ?? '').trim(); const val = Math.max(0, parseInt(raw,10) || 0);
-        try{ await updateDoc(doc(db,'inventory', id), { goal: val }); notify('Goal saved'); }
-        catch(err){ console.error(err); notify('Failed to save goal','error'); }
+        const raw = (input?.value ?? '').trim();
+        const valNum = parseInt(raw,10);
+        const val = Number.isFinite(valNum) && valNum >= 0 ? valNum : 0;
+        try{
+          await updateDoc(doc(db,'inventory', id), { goal: val });
+          notify('Goal saved');
+        }catch(err){
+          console.error(err); notify('Failed to save goal','error');
+        }
       });
     });
+
     tbody.querySelectorAll('[data-clear-goal]').forEach(btn=>{
       btn.addEventListener('click', async e=>{
         const id = e.currentTarget.getAttribute('data-clear-goal');
-        try{ await updateDoc(doc(db,'inventory', id), { goal: 0 }); notify('Goal cleared'); }
-        catch(err){ console.error(err); notify('Failed to clear goal','error'); }
+        try{
+          await updateDoc(doc(db,'inventory', id), { goal: 0 });
+          notify('Goal cleared');
+        }catch(err){
+          console.error(err); notify('Failed to clear goal','error');
+        }
       });
     });
+
     tbody.querySelectorAll('[data-goal-input]').forEach(inp=>{
       inp.addEventListener('keydown', e=>{
         if (e.key === 'Enter'){
@@ -170,4 +267,3 @@
 </script>
 </body>
 </html>
-
