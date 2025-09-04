@@ -19,55 +19,92 @@
 </script>
 
 <style>
+  /* ==== Light theme based on #F7F4EA ==== */
   :root{
-    /* match goal.html palette */
-    --nav-w:260px; --bg:#f6f7f8; --panel:#fff; --ink:#111; --muted:#6b7280; --line:#e5e7eb;
+    --nav-w:260px;
+
+    /* Theme */
+    --bg:#F7F4EA;        /* paper background */
+    --panel:#EEE6D8;     /* cards / panels */
+    --ink:#1F2937;       /* primary text */
+    --muted:#6B7280;     /* muted text */
+    --line:#D9CFC1;      /* borders/outlines */
+    --accent:#0EA5A4;    /* teal accent */
+    --chip:#EDE7DA;      /* pills/chips */
+
+    --header-bg:#F0E8DB; /* subtle table/header tint */
   }
+
   html,body{height:100%}
   body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
   h2{color:var(--ink)}
   .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
-  input,button,select,textarea{padding:8px;margin:4px;font-family:inherit}
 
-  /* buttons match goal.html */
-  button{
-    background:linear-gradient(#fafafa,#f3f4f6);
-    border:1px solid var(--line);
+  /* Controls — legibility & theme consistency */
+  input,button,select,textarea{
+    padding:8px;margin:4px;font-family:inherit;
     color:var(--ink);
-    border-radius:8px; cursor:pointer
+    background:var(--panel);
+    border:1px solid var(--line);
+    caret-color:var(--ink);
   }
-  button:hover{background:#111;color:#fff;border-color:#111}
+  input::placeholder, textarea::placeholder{ color:var(--muted); opacity:1 }
 
-  /* hamburger + sidebar (light) */
+  button{border-radius:8px; cursor:pointer; transition:.15s ease}
+  button:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  /* Hamburger + sidebar (light) */
   #menu-check{display:none}
-  .hamburger{position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;cursor:pointer;user-select:none;z-index:1200;transition:transform .3s}
-  .hamburger .bar{height:3px;background:#111;border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
+  .hamburger{
+    position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;
+    cursor:pointer;user-select:none;z-index:1200;transition:transform .3s
+  }
+  .hamburger .bar{
+    height:3px;background:var(--ink);border-radius:10px;
+    transition:transform .35s,opacity .25s,width .35s
+  }
   .hamburger .bar1,.hamburger .bar3{width:18px}.hamburger .bar2{width:28px}
   #menu-check:checked+label.hamburger{transform:translateX(var(--nav-w))}
   #menu-check:checked+label.hamburger .bar1{transform:translateY(10px) rotate(45deg);width:28px}
   #menu-check:checked+label.hamburger .bar2{opacity:0}
   #menu-check:checked+label.hamburger .bar3{transform:translateY(-10px) rotate(-45deg);width:28px}
+
   .sidebar{
-    position:fixed;inset:0 auto 0 0;width:var(--nav-w);background:#f3f4f6;padding:20px;box-sizing:border-box;transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;border-right:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.18)
+    position:fixed;inset:0 auto 0 0;width:var(--nav-w);
+    background:var(--panel);padding:20px;box-sizing:border-box;
+    transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;
+    border-right:1px solid var(--line);
+    box-shadow:0 10px 30px rgba(0,0,0,.08)
   }
-  .sidebar a,.sidebar button{display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--line);background:#fff}
-  .sidebar a:hover{background:#111;color:#fff;border-color:#111}
+  .sidebar a,.sidebar button{
+    display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;
+    border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--line);
+    background:transparent
+  }
+  .sidebar a:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
   #menu-check:checked~.sidebar{transform:translateX(0)}
-  label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
+  label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.25);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
   #menu-check:checked~label.overlay{opacity:1;visibility:visible}
 
+  /* Cards grid */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
   .card{
     width:190px;height:254px;background:var(--panel);border-radius:20px;position:relative;overflow:visible;transition:.2s;
     box-shadow:0 8px 20px rgba(0,0,0,.08);border:1px solid var(--line);color:var(--ink)
   }
   .card:hover{transform:translateY(-4px)}
-  .badge-new{position:absolute;top:-10px;right:-10px;background:#e11d48;color:#fff;padding:.35em .55em;border-radius:999px;font-weight:700;font-size:.7em;box-shadow:0 8px 18px rgba(0,0,0,.15);cursor:pointer}
+  .badge-new{
+    position:absolute;top:-10px;right:-10px;background:#e11d48;color:#fff;
+    padding:.35em .55em;border-radius:999px;font-weight:700;font-size:.7em;
+    box-shadow:0 8px 18px rgba(0,0,0,.12);cursor:pointer
+  }
   .card__image{
-    width:100%;height:100px;border-radius:12px;background:#f3f4f6;position:relative;overflow:hidden;background-size:cover;background-position:center;border:1px solid var(--line)
+    width:100%;height:100px;border-radius:12px;background:var(--header-bg);position:relative;overflow:hidden;
+    background-size:cover;background-position:center;border:1px solid var(--line)
   }
   .img-edit-btn,.img-view-btn{
-    position:absolute;top:6px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.95);color:var(--ink);cursor:pointer
+    position:absolute;top:6px;height:26px;display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.95);color:var(--ink);cursor:pointer
   }
   .img-edit-btn{left:6px;width:26px}
   .img-view-btn{right:6px;padding:0 8px;font-size:12px}
@@ -76,32 +113,55 @@
   .card__description{color:var(--muted);font-size:.75em;margin:0}
   .card__actions{display:flex;justify-content:center;gap:12px;margin-top:8px}
   .card__button--trash{
-    background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer
+    background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer
   }
-  .card__button--trash:hover{background:#111;color:#fff;border-color:#111}
+  .card__button--trash:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 
-  /* add-tile look */
-  .card--add{display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px dashed var(--line);background:#fff}
-  .card--add:hover{background:#1110a;filter:brightness(.98)}
+  /* Add-tile look */
+  .card.card--add{
+    display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px dashed var(--line);
+    background:var(--panel)
+  }
+  .card.card--add:hover{filter:brightness(.98)}
 
-  /* Modals, inputs, toasts */
-  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:9999}
+  /* Modals */
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.25);z-index:9999}
   .modal.open{display:flex}
-  .modal-card{width:95%;max-width:520px;background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 20px 40px rgba(0,0,0,.15);border:1px solid var(--line);color:#111}
-  .modal-card h3{margin:0 0 10px;color:#111}
-  .modal-card label{display:block;margin:10px 0 4px;font-size:14px;color:#111}
+  .modal-card{
+    width:95%;max-width:520px;background:var(--panel);border-radius:8px;padding:16px 18px;
+    box-shadow:0 20px 40px rgba(0,0,0,.12);border:1px solid var(--line);color:var(--ink)
+  }
+  .modal-card h3{margin:0 0 10px;color:var(--ink)}
+  .modal-card label{display:block;margin:10px 0 4px;font-size:14px;color:var(--ink)}
+
+  /* Fancy input theming */
   .input-container{position:relative;margin:8px 0}
-  .input{width:100%;padding:10px;height:40px;border:2px solid #111;border-top:none;border-bottom:none;font-size:16px;background:transparent;outline:none;box-shadow:7px 7px 0 0 #111;transition:.5s;box-sizing:border-box}
-  .topline,.underline{position:absolute;background-color:#111;height:2px;right:0;transition:.5s}
+  .input{
+    width:100%;padding:10px;height:40px;
+    border:2px solid var(--line);
+    border-top:none;border-bottom:none;
+    font-size:16px;background:transparent;outline:none;
+    box-shadow:7px 7px 0 0 var(--line);
+    transition:.5s;box-sizing:border-box;
+    color:var(--ink);caret-color:var(--ink);
+  }
+  .topline,.underline{position:absolute;background-color:var(--line);height:2px;right:0;transition:.5s}
   .topline{width:0;top:0}.underline{width:0;bottom:0}
   .input:focus~.topline{width:35%}.input:focus~.underline{width:100%}
-  .label{position:absolute;top:10px;left:10px;color:#111;transition:.5s;transform:scale(0);z-index:-1;background:#fff;padding:0 4px}
+  .label{
+    position:absolute;top:10px;left:10px;color:var(--ink);
+    transition:.5s;transform:scale(0);z-index:-1;background:var(--bg);padding:0 4px
+  }
   .input:focus~.label{top:-10px;transform:scale(1)}
+  textarea.input{min-height:100px}
+
   .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
 
+  /* Toasts */
   .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
-  .toast{background:#111;color:#fff;padding:10px 12px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
-  .toast--warn{background:#b45309}.toast--error{background:#991b1b}.toast__close{margin-left:12px;cursor:pointer;font-weight:700}
+  .toast{background:#E9E2D6;color:var(--ink);padding:10px 12px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+  .toast--warn{background:#F2C97D;color:#4A2E00}.toast--error{background:#F3B8B8;color:#711313}.toast__close{margin-left:12px;cursor:pointer;font-weight:700}
 </style>
 </head>
 <body>
@@ -123,7 +183,7 @@
 </nav>
 <label class="overlay" for="menu-check" aria-hidden="true"></label>
 
-<div class="toast-wrap" id="toast-wrap"></div>
+<div class="toast-wrap" id="toast-wrap" aria-live="polite" aria-atomic="true"></div>
 
 <main class="content">
   <section aria-labelledby="locationPageTitle">
@@ -143,7 +203,7 @@
     </div>
     <label for="loc-desc">Details / placement notes</label>
     <textarea id="loc-desc" rows="4" class="input" style="height:auto" placeholder="e.g., Rack A3, top shelf, behind boxes"></textarea>
-    <div style="color:#6b7280">After creating, tap the 🖼 button on the card to add a photo (camera/gallery) or paste an image URL.</div>
+    <div style="color:var(--muted)">After creating, tap the 🖼 button on the card to add a photo (camera/gallery) or paste an image URL.</div>
     <div class="modal-actions">
       <button id="loc-add-cancel">Cancel</button>
       <button id="loc-add-confirm">Create</button>
@@ -157,7 +217,7 @@
     <h3 id="img-title">Image</h3>
     <img id="img-view" src="" alt="" style="width:100%; max-height:70vh; object-fit:contain; border:1px solid var(--line); border-radius:8px;" />
     <div class="modal-actions">
-      <a id="img-open" href="#" target="_blank" rel="noopener" style="margin-right:auto;color:#111;text-decoration:underline">Open in new tab</a>
+      <a id="img-open" href="#" target="_blank" rel="noopener" style="margin-right:auto;color:var(--ink);text-decoration:underline">Open in new tab</a>
       <button id="img-close">Close</button>
     </div>
   </div>
