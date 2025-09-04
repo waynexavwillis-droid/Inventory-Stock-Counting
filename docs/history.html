@@ -44,7 +44,7 @@
   .muted{color:var(--muted)}
   .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
 
-  /* Controls — legibility & theme consistency */
+  /* Controls */
   input,button,select,textarea{
     padding:8px;margin:4px;font-family:inherit;
     color:var(--ink);
@@ -54,20 +54,13 @@
   }
   input::placeholder, textarea::placeholder{ color:var(--muted); opacity:1 }
 
-  button{
-    border-radius:8px;
-    cursor:pointer;
-  }
-  button:hover{
-    background:var(--accent);
-    color:#ffffff;
-    border-color:var(--accent);
-  }
+  button{ border-radius:8px; cursor:pointer; }
+  button:hover{ background:var(--accent); color:#fff; border-color:var(--accent); }
 
   /* Table */
   table{width:100%;margin-top:12px;border-collapse:collapse;background:var(--panel);border:1px solid var(--line)}
   thead th{
-    background:#F0E8DB; /* slightly lighter header */
+    background:#F0E8DB;
     color:var(--muted);
     border-bottom:1px solid var(--line);
     white-space:nowrap;
@@ -78,13 +71,8 @@
 
   .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 16px}
   .pill{
-    display:inline-block;
-    padding:4px 10px;
-    border:1px solid var(--line);
-    border-radius:999px;
-    font-size:12px;
-    color:var(--ink);
-    background:var(--chip);
+    display:inline-block;padding:4px 10px;border:1px solid var(--line);
+    border-radius:999px;font-size:12px;color:var(--ink);background:var(--chip);
   }
 
   /* Sidebar + hamburger */
@@ -93,10 +81,7 @@
     position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;
     cursor:pointer;user-select:none;z-index:1200;transition:transform .3s
   }
-  .hamburger .bar{
-    height:3px;background:var(--ink);border-radius:10px;
-    transition:transform .35s,opacity .25s,width .35s
-  }
+  .hamburger .bar{height:3px;background:var(--ink);border-radius:10px;transition:transform .35s,opacity .25s,width .35s}
   .hamburger .bar1,.hamburger .bar3{width:18px}.hamburger .bar2{width:28px}
   #menu-check:checked+label.hamburger{transform:translateX(var(--nav-w))}
   #menu-check:checked+label.hamburger .bar1{transform:translateY(10px) rotate(45deg);width:28px}
@@ -112,24 +97,19 @@
   }
   .sidebar a,.sidebar button{
     display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;
-    border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--line);
-    background:transparent
+    border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--line);background:transparent
   }
-  .sidebar a:hover{background:var(--accent);color:#ffffff;border-color:var(--accent)}
+  .sidebar a:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
   #menu-check:checked~.sidebar{transform:translateX(0)}
   label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.25);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
   #menu-check:checked~label.overlay{opacity:1;visibility:visible}
 
-  /* Fancy input (search) themed to variables */
+  /* Fancy input */
   .input-container{position:relative;margin:8px 4px;min-width:260px}
   .input{
-    width:100%;padding:10px;height:40px;
-    border:2px solid var(--line);
-    border-top:none;border-bottom:none;
-    font-size:16px;background:transparent;outline:none;
-    box-shadow:7px 7px 0 0 var(--line);
-    transition:.5s;box-sizing:border-box;
-    color:var(--ink);caret-color:var(--ink);
+    width:100%;padding:10px;height:40px;border:2px solid var(--line);
+    border-top:none;border-bottom:none;font-size:16px;background:transparent;outline:none;
+    box-shadow:7px 7px 0 0 var(--line);transition:.5s;box-sizing:border-box;color:var(--ink);caret-color:var(--ink);
   }
   .topline,.underline{position:absolute;background-color:var(--line);height:2px;right:0;transition:.5s}
   .topline{width:0;top:0}.underline{width:0;bottom:0}
@@ -179,6 +159,7 @@
       <button onclick="exportHistoryCSV()">Export CSV</button>
       <button onclick="clearHistory()">Clear History</button>
     </div>
+
     <table id="historyTable">
       <thead>
         <tr>
@@ -194,7 +175,10 @@
       </thead>
       <tbody></tbody>
     </table>
-    <div class="muted" style="margin-top:8px">History syncs across devices (Firestore). “Clear” deletes all adjustment records.</div>
+
+    <div class="muted" style="margin-top:8px">
+      History syncs across devices (Firestore). “Clear” deletes all adjustment records.
+    </div>
   </section>
 </main>
 
@@ -247,25 +231,6 @@
   function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
   function toLocalDateTime(ts){ if (!ts) return ''; const d = ts.toDate ? ts.toDate() : new Date(ts); return isNaN(+d)?'':d.toLocaleString(); }
 
-  /* === NEW: support multiple people names === */
-  function asList(v){
-    if (Array.isArray(v)) return v.filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
-    if (typeof v === 'string'){
-      return v.split(/[;,/]+/).map(s=>s.trim()).filter(Boolean); // "Alex, Ben" / "Alex; Ben" / "Alex/Ben"
-    }
-    return v ? [String(v)] : [];
-  }
-  function peopleList(row, keys){
-    for (const k of keys){
-      if (row[k] !== undefined){
-        const list = asList(row[k]);
-        if (list.length) return list;
-      }
-    }
-    return [];
-  }
-  const joinPeople = list => list.join(', ');
-
   const colAdjustments = collection(db, "adjustments");
   let adjustments = [];
   let unsubHistory = null;
@@ -288,7 +253,9 @@
     sel.innerHTML = '<option value="">All items</option>' + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
     if ([...sel.options].some(o => o.value === current)) sel.value = current;
     sel.onchange = renderHistory;
-    const searchEl = document.getElementById('hist-search'); if (searchEl && !searchEl._bound){ searchEl._bound=true; searchEl.oninput = renderHistory; }
+
+    const searchEl = document.getElementById('hist-search');
+    if (searchEl && !searchEl._bound){ searchEl._bound=true; searchEl.oninput = renderHistory; }
   }
 
   function renderHistory() {
@@ -297,15 +264,14 @@
     let rows = adjustments.slice();
 
     const q = (document.getElementById('hist-search').value || '').trim().toLowerCase();
-    if (q) rows = rows.filter(r => {
-      const byNames  = peopleList(r, ['actors','by','actor']);
-      const adjNames = peopleList(r, ['adjustedBy','forWhom','recipient','recipients','who']);
-      const txt =
-        [(r.item||''), (r.location||''), (r.reason||r.purpose||''), ...byNames, ...adjNames]
-        .join(' ')
-        .toLowerCase();
-      return txt.includes(q);
-    });
+    if (q) rows = rows.filter(r =>
+      (r.item||'').toLowerCase().includes(q) ||
+      (r.actor||'').toLowerCase().includes(q) ||
+      ((r.reason ?? r.purpose ?? '').toLowerCase().includes(q)) ||
+      // ✅ include 'takenBy' in search as well
+      ((r.takenBy ?? r.adjustedBy ?? r.forWhom ?? '').toLowerCase().includes(q)) ||
+      ((r.location ?? '').toLowerCase().includes(q))
+    );
 
     const itemFilter = document.getElementById('hist-item-filter').value;
     if (itemFilter) rows = rows.filter(r => r.item === itemFilter);
@@ -314,11 +280,13 @@
 
     for (const r of rows) {
       const tr = document.createElement('tr');
-      const dtStr    = toLocalDateTime(r.ts);
+      const dtStr = toLocalDateTime(r.ts);
       const deltaStr = (r.delta > 0 ? '+' : '') + (r.delta ?? 0);
-      const reason   = r.reason ?? r.purpose ?? '';
-      const byNames  = peopleList(r, ['actors','by','actor']);
-      const adjNames = peopleList(r, ['adjustedBy','forWhom','recipient','recipients','who']);
+
+      // ✅ show reason (delete uses 'reason', adjust uses 'purpose')
+      const reason = r.reason ?? r.purpose ?? '';
+      // ✅ FIX: show whoever actually took it: takenBy OR adjustedBy OR forWhom
+      const adjustedFor = r.takenBy ?? r.adjustedBy ?? r.forWhom ?? '';
 
       tr.innerHTML = `
         <td class="nowrap">${dtStr}</td>
@@ -326,14 +294,14 @@
         <td>${escapeHtml(r.location ?? '')}</td>
         <td class="nowrap">${deltaStr}</td>
         <td>${r.qtyAfter ?? ''}</td>
-        <td>${escapeHtml(joinPeople(byNames))}</td>
+        <td>${escapeHtml(r.actor ?? '')}</td>
         <td>${escapeHtml(reason)}</td>
-        <td>${escapeHtml(joinPeople(adjNames))}</td>`;
+        <td>${escapeHtml(adjustedFor)}</td>`;
       tbody.appendChild(tr);
     }
   }
 
-  /* Export + Clear (supports multiple names) */
+  /* Export + Clear */
   async function exportHistoryCSV(){
     const qAdj = query(colAdjustments, orderBy("ts","desc"));
     const snap = await getDocs(qAdj);
@@ -341,18 +309,18 @@
     const header = ['Date/Time','Item','Location','Change','Qty After (Total)','By (Name)','Reason','Adjusted by (name)'];
     const csvRows = [header.join(',')];
     for (const r of rows){
-      const byNames  = peopleList(r, ['actors','by','actor']);
-      const adjNames = peopleList(r, ['adjustedBy','forWhom','recipient','recipients','who']);
-      const reason   = r.reason ?? r.purpose ?? '';
+      const reason = r.reason ?? r.purpose ?? '';
+      // ✅ include takenBy for export too
+      const adjustedFor = r.takenBy ?? r.adjustedBy ?? r.forWhom ?? '';
       csvRows.push([
         toLocalDateTime(r.ts),
         csvEscape(r.item),
         csvEscape(r.location ?? ''),
         (r.delta>0?'+':'') + (r.delta ?? 0),
         r.qtyAfter ?? '',
-        csvEscape(joinPeople(byNames)),
+        csvEscape(r.actor ?? ''),
         csvEscape(reason),
-        csvEscape(joinPeople(adjNames))
+        csvEscape(adjustedFor)
       ].join(','));
     }
     const BOM = "\uFEFF";
