@@ -19,7 +19,7 @@
 </script>
 
 <style>
-  /* ==== Light theme based on #F7F4EA ==== */
+  /* ==== Light theme based on #F7F4EA (theme-only changes) ==== */
   :root{
     --nav-w:260px;
 
@@ -31,7 +31,6 @@
     --line:#D9CFC1;      /* borders/outlines */
     --accent:#0EA5A4;    /* teal accent */
     --chip:#EDE7DA;      /* subtle chip / badge bg */
-    --header-bg:#F0E8DB; /* soft tint */
 
     /* Status chips */
     --chip-loan-bg:#DCFCE7; --chip-loan-ink:#065F46;
@@ -44,7 +43,7 @@
   h2{color:var(--ink)}
   .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
 
-  /* Controls — legibility & theme consistency */
+  /* Buttons/inputs (visuals only) */
   input,button,select,textarea{
     padding:8px;margin:4px;font-family:inherit;
     color:var(--ink);
@@ -54,20 +53,12 @@
   }
   input::placeholder, textarea::placeholder{ color:var(--muted); opacity:1 }
 
-  button{
-    border-radius:8px; cursor:pointer; transition:.15s ease;
-  }
+  button{ border-radius:8px; cursor:pointer; transition:.15s ease; }
   button:hover{ background:var(--accent); color:#fff; border-color:var(--accent) }
-
-  /* Primary action buttons */
-  .action-btn{
-    background:var(--accent);
-    color:#fff;
-    border:1px solid var(--accent);
-  }
+  .action-btn{ background:var(--accent); color:#fff; border:1px solid var(--accent); }
   .action-btn:hover{ filter:brightness(.95) }
 
-  /* Hamburger + sidebar */
+  /* Hamburger + sidebar (visuals only) */
   #menu-check{display:none}
   .hamburger{
     position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;
@@ -102,7 +93,7 @@
   /* Toolbar */
   .status-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 16px}
 
-  /* Fancy input (search) themed */
+  /* Fancy input (visuals only) */
   .input-container{position:relative;margin:8px 4px;min-width:280px;flex:1}
   .input{
     width:100%;padding:10px;height:40px;
@@ -122,7 +113,7 @@
   }
   .input:focus~.label{top:-10px;transform:scale(1)}
 
-  /* Status cards */
+  /* Status cards (visuals only) */
   .status-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
   .status-card{
     background:var(--panel);border:1px solid var(--line);border-radius:16px;
@@ -143,7 +134,7 @@
   .status-del:hover,.status-edit:hover{background:#F9FAFB}
   .status-amt{font-weight:800;color:var(--ink)}
 
-  /* Modal */
+  /* Modal (visuals only) */
   .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.25);z-index:9999}
   .modal.open{display:flex}
   .modal-card{
@@ -154,7 +145,7 @@
   .modal-card label{display:block;margin:10px 0 4px;font-size:14px;color:var(--ink)}
   .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
 
-  /* Toasts */
+  /* Toasts (visuals only) */
   .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
   .toast{background:#E9E2D6;color:var(--ink);padding:10px 12px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
   .toast--warn{background:#F2C97D;color:#4A2E00}.toast--error{background:#F3B8B8;color:#711313}.toast__close{margin-left:12px;cursor:pointer;font-weight:700}
@@ -234,6 +225,7 @@
 </div>
 
 <script type="module">
+  /* === ORIGINAL LOGIC — unchanged === */
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -419,4 +411,3 @@
 </script>
 </body>
 </html>
-
