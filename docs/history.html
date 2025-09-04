@@ -247,6 +247,25 @@
   function csvEscape(v){ const s = (v ?? '').toString(); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
   function toLocalDateTime(ts){ if (!ts) return ''; const d = ts.toDate ? ts.toDate() : new Date(ts); return isNaN(+d)?'':d.toLocaleString(); }
 
+  /* === NEW: support multiple people names === */
+  function asList(v){
+    if (Array.isArray(v)) return v.filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
+    if (typeof v === 'string'){
+      return v.split(/[;,/]+/).map(s=>s.trim()).filter(Boolean); // "Alex, Ben" / "Alex; Ben" / "Alex/Ben"
+    }
+    return v ? [String(v)] : [];
+  }
+  function peopleList(row, keys){
+    for (const k of keys){
+      if (row[k] !== undefined){
+        const list = asList(row[k]);
+        if (list.length) return list;
+      }
+    }
+    return [];
+  }
+  const joinPeople = list => list.join(', ');
+
   const colAdjustments = collection(db, "adjustments");
   let adjustments = [];
   let unsubHistory = null;
@@ -276,37 +295,45 @@
     const tbody = document.querySelector('#historyTable tbody'); if (!tbody) return;
     tbody.innerHTML = '';
     let rows = adjustments.slice();
+
     const q = (document.getElementById('hist-search').value || '').trim().toLowerCase();
-    if (q) rows = rows.filter(r =>
-      (r.item||'').toLowerCase().includes(q) ||
-      (r.actor||'').toLowerCase().includes(q) ||
-      ((r.reason ?? r.purpose ?? '').toLowerCase().includes(q)) ||
-      ((r.adjustedBy ?? r.forWhom ?? '').toLowerCase().includes(q)) ||
-      ((r.location ?? '').toLowerCase().includes(q))
-    );
+    if (q) rows = rows.filter(r => {
+      const byNames  = peopleList(r, ['actors','by','actor']);
+      const adjNames = peopleList(r, ['adjustedBy','forWhom','recipient','recipients','who']);
+      const txt =
+        [(r.item||''), (r.location||''), (r.reason||r.purpose||''), ...byNames, ...adjNames]
+        .join(' ')
+        .toLowerCase();
+      return txt.includes(q);
+    });
+
     const itemFilter = document.getElementById('hist-item-filter').value;
     if (itemFilter) rows = rows.filter(r => r.item === itemFilter);
+
     document.getElementById('hist-count').textContent = `${rows.length} record${rows.length===1?'':'s'}`;
+
     for (const r of rows) {
       const tr = document.createElement('tr');
-      const dtStr = toLocalDateTime(r.ts);
+      const dtStr    = toLocalDateTime(r.ts);
       const deltaStr = (r.delta > 0 ? '+' : '') + (r.delta ?? 0);
-      const reason = r.reason ?? r.purpose ?? '';
-      const adjustedBy = r.adjustedBy ?? r.forWhom ?? '';
+      const reason   = r.reason ?? r.purpose ?? '';
+      const byNames  = peopleList(r, ['actors','by','actor']);
+      const adjNames = peopleList(r, ['adjustedBy','forWhom','recipient','recipients','who']);
+
       tr.innerHTML = `
         <td class="nowrap">${dtStr}</td>
         <td>${escapeHtml(r.item)}</td>
         <td>${escapeHtml(r.location ?? '')}</td>
         <td class="nowrap">${deltaStr}</td>
         <td>${r.qtyAfter ?? ''}</td>
-        <td>${escapeHtml(r.actor ?? '')}</td>
+        <td>${escapeHtml(joinPeople(byNames))}</td>
         <td>${escapeHtml(reason)}</td>
-        <td>${escapeHtml(adjustedBy)}</td>`;
+        <td>${escapeHtml(joinPeople(adjNames))}</td>`;
       tbody.appendChild(tr);
     }
   }
 
-  /* Export + Clear */
+  /* Export + Clear (supports multiple names) */
   async function exportHistoryCSV(){
     const qAdj = query(colAdjustments, orderBy("ts","desc"));
     const snap = await getDocs(qAdj);
@@ -314,17 +341,18 @@
     const header = ['Date/Time','Item','Location','Change','Qty After (Total)','By (Name)','Reason','Adjusted by (name)'];
     const csvRows = [header.join(',')];
     for (const r of rows){
-      const reason = r.reason ?? r.purpose ?? '';
-      const adjustedBy = r.adjustedBy ?? r.forWhom ?? '';
+      const byNames  = peopleList(r, ['actors','by','actor']);
+      const adjNames = peopleList(r, ['adjustedBy','forWhom','recipient','recipients','who']);
+      const reason   = r.reason ?? r.purpose ?? '';
       csvRows.push([
         toLocalDateTime(r.ts),
         csvEscape(r.item),
         csvEscape(r.location ?? ''),
         (r.delta>0?'+':'') + (r.delta ?? 0),
         r.qtyAfter ?? '',
-        csvEscape(r.actor ?? ''),
+        csvEscape(joinPeople(byNames)),
         csvEscape(reason),
-        csvEscape(adjustedBy)
+        csvEscape(joinPeople(adjNames))
       ].join(','));
     }
     const BOM = "\uFEFF";
