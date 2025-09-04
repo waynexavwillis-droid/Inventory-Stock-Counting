@@ -1,4 +1,6 @@
+Here’s the **fully updated `viewer.html`** with the History tab matching your working `history.html` logic (shows/exports **takenBy → adjustedBy → forWhom**), while keeping everything else exactly the same.
 
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -300,20 +302,24 @@
       if ([...sel.options].some(o => o.value === current)) sel.value = current;
     }
 
+    // ✅ mirror history.html behavior for the "person" field (takenBy → adjustedBy → forWhom)
     function renderHistory(){
       const tbody = $('#hist-body'); if (!tbody) return;
       tbody.innerHTML = '';
       let rows = adjustments.slice(); // already ordered desc
       const q = ($('#hist-search').value || '').trim().toLowerCase();
       const itemFilter = $('#hist-item-filter').value;
+
       if (q) rows = rows.filter(r =>
         (r.item||'').toLowerCase().includes(q) ||
         (r.actor||'').toLowerCase().includes(q) ||
-        (r.purpose||r.reason||'').toLowerCase().includes(q) ||
-        (r.forWhom||r.adjustedBy||'').toLowerCase().includes(q) ||
-        (r.location||'').toLowerCase().includes(q)
+        ((r.purpose ?? r.reason ?? '').toLowerCase().includes(q)) ||
+        ((r.takenBy ?? r.adjustedBy ?? r.forWhom ?? '').toLowerCase().includes(q)) ||
+        ((r.location||'').toLowerCase().includes(q))
       );
+
       if (itemFilter) rows = rows.filter(r => r.item === itemFilter);
+
       $('#hist-count').textContent = `${rows.length} record${rows.length===1?'':'s'}`;
 
       for (const r of rows) {
@@ -327,12 +333,12 @@
           <td>${r.qtyAfter ?? ''}</td>
           <td>${esc(r.actor ?? '')}</td>
           <td>${esc(r.purpose ?? r.reason ?? '')}</td>
-          <td>${esc(r.forWhom ?? r.adjustedBy ?? '')}</td>`;
+          <td>${esc(r.takenBy ?? r.adjustedBy ?? r.forWhom ?? '')}</td>`;
         tbody.appendChild(tr);
       }
     }
 
-    // Export CSV (read-only)
+    // Export CSV (read-only) — same fallback fields as table
     document.getElementById('export-btn').addEventListener('click', async ()=>{
       const snap = await getDocs(qAdj);
       const rows = snap.docs.map(d => ({ id:d.id, ...d.data() }));
@@ -347,10 +353,11 @@
           r.qtyAfter ?? '',
           csvEscape(r.actor ?? ''),
           csvEscape(r.purpose ?? r.reason ?? ''),
-          csvEscape(r.forWhom ?? r.adjustedBy ?? '')
+          csvEscape(r.takenBy ?? r.adjustedBy ?? r.forWhom ?? '')
         ].join(','));
       }
-      const blob = new Blob([csvRows.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const BOM = "\uFEFF"; // Excel-friendly
+      const blob = new Blob([BOM + csvRows.join('\n')], {type:'text/csv;charset=utf-8;'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url;
       a.download = `inventory-history-${new Date().toISOString().slice(0,10)}.csv`;
@@ -431,3 +438,4 @@
   </script>
 </body>
 </html>
+```
