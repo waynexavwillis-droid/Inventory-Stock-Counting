@@ -1,10 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inventory Viewer</title>
+  <!-- Favicon using your logo -->
+  <link rel="icon" href="https://media.licdn.com/dms/image/v2/C560BAQH1e7RqZpFCqA/company-logo_200_200/company-logo_200_200/0/1630649511750?e=2147483647&v=beta&t=Xt8U3KJxbI4FiV1rmcsehbP6Y2XdByD6pEP8X7K378g">
   <style>
     /* ==== Light theme based on #F7F4EA ==== */
     :root{
@@ -25,6 +26,11 @@
 
     /* top bar */
     .bar{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{
+      width:44px;height:44px;border-radius:10px;object-fit:cover;
+      box-shadow:0 6px 14px rgba(0,0,0,.08); border:1px solid var(--line); background:#fff;
+    }
     .title{margin:0;font-size:34px;font-weight:800;color:var(--ink)}
     .info{ margin:6px 0 0; color:var(--muted); }
     .right{display:flex; align-items:center; gap:10px}
@@ -94,9 +100,16 @@
 <body>
   <div class="wrap">
     <div class="bar">
-      <div>
-        <h1 class="title">Inventory (Read-only)</h1>
-        <p class="info">This page signs in anonymously and shows live data. Editing is disabled by design.</p>
+      <div class="brand">
+        <img
+          class="logo"
+          alt="Company logo"
+          src="https://media.licdn.com/dms/image/v2/C560BAQH1e7RqZpFCqA/company-logo_200_200/company-logo_200_200/0/1630649511750?e=2147483647&v=beta&t=Xt8U3KJxbI4FiV1rmcsehbP6Y2XdByD6pEP8X7K378g"
+        />
+        <div>
+          <h1 class="title">Inventory (Read-only)</h1>
+          <p class="info">This page signs in anonymously and shows live data. Editing is disabled by design.</p>
+        </div>
       </div>
       <div class="right">
         <span id="signedAs" class="signedas"></span>
