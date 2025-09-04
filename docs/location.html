@@ -40,20 +40,24 @@
   h2{color:var(--ink)}
   .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
 
-  /* Controls — legibility & theme consistency */
+  /* Controls */
   input,button,select,textarea{
     padding:8px;margin:4px;font-family:inherit;
     color:var(--ink);
     background:var(--panel);
     border:1px solid var(--line);
     caret-color:var(--ink);
+    border-radius:8px;
   }
   input::placeholder, textarea::placeholder{ color:var(--muted); opacity:1 }
-
-  button{border-radius:8px; cursor:pointer; transition:.15s ease}
+  button{ cursor:pointer; transition:.15s ease }
   button:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 
-  /* Hamburger + sidebar (light) */
+  /* Toolbar */
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 16px}
+  .pill{display:inline-block;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:12px;background:var(--chip);color:var(--ink)}
+
+  /* Hamburger + sidebar */
   #menu-check{display:none}
   .hamburger{
     position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;
@@ -97,6 +101,10 @@
     position:absolute;top:-10px;right:-10px;background:#e11d48;color:#fff;
     padding:.35em .55em;border-radius:999px;font-weight:700;font-size:.7em;
     box-shadow:0 8px 18px rgba(0,0,0,.12);cursor:pointer
+  }
+  .group-chip{
+    position:absolute;top:10px;left:10px;background:var(--chip);color:var(--ink);
+    font-size:11px;padding:2px 6px;border-radius:999px;border:1px solid var(--line)
   }
   .card__image{
     width:100%;height:100px;border-radius:12px;background:var(--header-bg);position:relative;overflow:hidden;
@@ -188,6 +196,18 @@
 <main class="content">
   <section aria-labelledby="locationPageTitle">
     <h2 id="locationPageTitle">Location</h2>
+
+    <!-- Filter toolbar -->
+    <div class="toolbar">
+      <select id="loc-filter" title="Filter by category">
+        <option value="all">All locations</option>
+        <option value="Office">Office</option>
+        <option value="Old warehouse">Old warehouse</option>
+        <option value="New warehouse">New warehouse</option>
+      </select>
+      <span id="loc-count" class="pill">0 cards</span>
+    </div>
+
     <div id="locationGrid" class="grid"></div>
   </section>
 </main>
@@ -196,13 +216,23 @@
 <div id="locAddModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="loc-title">
   <div class="modal-card">
     <h3 id="loc-title">Add Location Card</h3>
+
     <div class="input-container">
       <input id="loc-item-name" type="text" class="input" placeholder=" ">
       <span class="topline"></span><span class="underline"></span>
       <label for="loc-item-name" class="label">Item name</label>
     </div>
+
+    <label for="loc-group">Category</label>
+    <select id="loc-group" class="input">
+      <option>Office</option>
+      <option>Old warehouse</option>
+      <option>New warehouse</option>
+    </select>
+
     <label for="loc-desc">Details / placement notes</label>
     <textarea id="loc-desc" rows="4" class="input" style="height:auto" placeholder="e.g., Rack A3, top shelf, behind boxes"></textarea>
+
     <div style="color:var(--muted)">After creating, tap the 🖼 button on the card to add a photo (camera/gallery) or paste an image URL.</div>
     <div class="modal-actions">
       <button id="loc-add-cancel">Cancel</button>
@@ -301,12 +331,27 @@
   imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
   window.openImageViewer = openImageViewer;
 
+  /* ---------- Filter UI ---------- */
+  const locFilter = document.getElementById('loc-filter');
+  locFilter.addEventListener('change', renderLocationGrid);
+
   /* ---------- Render grid (with + add card) ---------- */
   function renderLocationGrid(){
     const grid = document.getElementById('locationGrid'); if (!grid) return;
     grid.innerHTML = '';
 
-    // add tile
+    // Apply filter
+    const filterVal = locFilter?.value || 'all';
+    let rows = locations.slice();
+    if (filterVal !== 'all'){
+      rows = rows.filter(l => (l.group || '').toLowerCase() === filterVal.toLowerCase());
+    }
+
+    // count
+    const countEl = document.getElementById('loc-count');
+    if (countEl) countEl.textContent = `${rows.length} card${rows.length===1?'':'s'}`;
+
+    // add tile (only when viewing all, still useful in filtered view)
     const addCard = document.createElement('div'); addCard.className = 'card card--add';
     addCard.innerHTML = `<div style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:28px;border:1px solid var(--line);">+</div>`;
     addCard.title = 'Add location card';
@@ -314,15 +359,17 @@
     grid.appendChild(addCard);
 
     // existing
-    locations.forEach((loc, index) => {
+    rows.forEach((loc, index) => {
       const card = document.createElement('div'); card.className = 'card';
       const bgUrl = loc.img ? withCacheBuster(loc.img) : '';
       const safeBgUrl = bgUrl ? bgUrl.replace(/"/g,'%22').replace(/'/g,'%27') : '';
       const bgStyle = bgUrl ? `style="background-image:url('${safeBgUrl}')"` : '';
+      const groupLabel = loc.group ? `<span class="group-chip">${escapeHtml(loc.group)}</span>` : '';
       card.innerHTML = `
         ${loc.isNew ? `<div class="badge-new" title="Dismiss">NEW</div>` : ''}
         <div class="card__content">
           <div class="card__image" ${bgStyle}>
+            ${groupLabel}
             <button class="img-edit-btn" title="Set image (camera/gallery)" aria-label="Set image">🖼</button>
             <button class="img-view-btn" title="View image" aria-label="View image">View Image</button>
           </div>
@@ -334,9 +381,13 @@
             <div class="card__button--trash" data-del title="Delete">🗑</div>
           </div>
         </div>`;
-      card.querySelector('.img-edit-btn').addEventListener('click', () => openLocationImagePicker(index));
+      card.querySelector('.img-edit-btn').addEventListener('click', () => {
+        // find actual index in locations so set image works in filtered view
+        const originalIndex = locations.findIndex(x => x.id === loc.id);
+        openLocationImagePicker(originalIndex);
+      });
       card.querySelector('.img-view-btn').addEventListener('click', () => {
-        const currentLoc = locations[index];
+        const currentLoc = loc;
         if (!currentLoc || !currentLoc.img) { notify('No image set yet. Click 🖼 to add one.','warn'); return; }
         openImageViewer(withCacheBuster(currentLoc.img), `Location: ${currentLoc.name}`);
       });
@@ -356,6 +407,7 @@
   function openAddLocationDialog(){
     document.getElementById('loc-item-name').value = '';
     document.getElementById('loc-desc').value = '';
+    document.getElementById('loc-group').value = 'Office';
     document.getElementById('locAddModal').classList.add('open');
     setTimeout(()=>document.getElementById('loc-item-name').focus(), 0);
   }
@@ -365,9 +417,10 @@
   document.getElementById('loc-add-confirm').addEventListener('click', async ()=>{
     const name = document.getElementById('loc-item-name').value.trim();
     const description = document.getElementById('loc-desc').value.trim();
+    const group = document.getElementById('loc-group').value;
     if (!name) { notify('Please enter an item name.','warn'); return; }
     try{
-      await addDoc(colLocations, { name, description, img:null, createdAt:serverTimestamp(), isNew:true, actor: CURRENT_USER });
+      await addDoc(colLocations, { name, description, group, img:null, createdAt:serverTimestamp(), isNew:true, actor: CURRENT_USER });
       notify('Location card created');
     }catch(err){ console.error(err); notify('Failed to create card','error'); }
     closeAddLocationDialog();
