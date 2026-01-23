@@ -7,37 +7,32 @@
 
 <!-- Auth gate with role check -->
 <script>
-  const AUTH_OK   = localStorage.getItem('auth_v1') === 'ok';
-  const AUTH_USER = localStorage.getItem('auth_user');
-  const AUTH_ROLE = localStorage.getItem('auth_role'); // 'editor' | 'viewer'
+  const AUTH_OK   = sessionStorage.getItem('auth_v1') === 'ok';
+  const AUTH_USER = sessionStorage.getItem('auth_user');
+  const AUTH_ROLE = sessionStorage.getItem('auth_role');
   if (!AUTH_OK || !AUTH_USER) { window.location.replace('login.html'); }
   else if (AUTH_ROLE === 'viewer') { window.location.replace('viewer.html'); }
   function logout(){
-    localStorage.removeItem('auth_v1');
-    localStorage.removeItem('auth_user');
-    localStorage.removeItem('auth_role');
-    localStorage.removeItem('auth_time');
+    sessionStorage.removeItem('auth_v1');
+    sessionStorage.removeItem('auth_user');
+    sessionStorage.removeItem('auth_role');
+    sessionStorage.removeItem('auth_time');
     window.location.replace('login.html');
   }
 </script>
 
 <style>
-  /* ==== Light theme based on #F7F4EA ==== */
   :root{
     --nav-w:260px;
-
-    /* Theme */
-    --bg:#F7F4EA;        /* paper background */
-    --panel:#EEE6D8;     /* cards / panels */
-    --ink:#1F2937;       /* primary text */
-    --muted:#6B7280;     /* muted text */
-    --line:#D9CFC1;      /* borders/outlines */
-    --accent:#0EA5A4;    /* teal accent */
-    --chip:#EDE7DA;      /* subtle chip/pill bg */
-
-    /* Helper card accents */
-    --helper-accent:#6D28D9;  /* purple accent line (kept as a fun pop) */
-    --helper-panel:#F3ECDF;   /* light panel inside helper */
+    --bg:#F7F4EA;
+    --panel:#EEE6D8;
+    --ink:#1F2937;
+    --muted:#6B7280;
+    --line:#D9CFC1;
+    --accent:#0EA5A4;
+    --chip:#EDE7DA;
+    --helper-accent:#6D28D9;
+    --helper-panel:#F3ECDF;
   }
 
   html,body{height:100%}
@@ -50,7 +45,6 @@
   h1,h2,h3{color:var(--ink)}
   .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
 
-  /* Controls — legibility & theme consistency */
   input,button,select,textarea{
     padding:8px;margin:4px;font-family:inherit;
     color:var(--ink);
@@ -73,7 +67,6 @@
 
   .muted{color:var(--muted);font-size:12px;margin-top:6px}
 
-  /* Sidebar + hamburger */
   #menu-check{display:none}
   .hamburger{
     position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;
@@ -104,7 +97,6 @@
   label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.25);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
   #menu-check:checked~label.overlay{opacity:1;visibility:visible}
 
-  /* Fancy input (uses theme vars) */
   .input-container{position:relative;margin:8px 4px}
   .input{
     width:100%;padding:10px;height:40px;
@@ -126,7 +118,6 @@
   .input-container input:focus~.label{top:-10px;transform:scale(1)}
   .input-container select{appearance:none}
 
-  /* Helper card (themed) */
   .helper-row{display:grid;grid-template-columns:1fr;gap:16px;margin-top:12px}
   .card.helper{
     width:100%;border-radius:15px;background:var(--helper-panel);color:var(--ink);padding:16px;
@@ -146,7 +137,6 @@
   .card.helper button:hover{filter:brightness(.95)}
   .helper-note{text-align:center;font-size:12px;color:var(--muted);margin-top:4px}
 
-  /* Toasts */
   .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
   .toast{
     background:#E9E2D6;color:var(--ink);padding:10px 12px;border-radius:8px;
@@ -154,17 +144,112 @@
   }
   .toast--warn{background:#F2C97D;color:#4A2E00}.toast--error{background:#F3B8B8;color:#711313}
   .toast__close{margin-left:12px;cursor:pointer;font-weight:700}
+
+  /* Barcode Scanner Button */
+  .scanner-btn{
+    position:fixed;
+    bottom:24px;
+    right:24px;
+    width:64px;
+    height:64px;
+    border-radius:50%;
+    background:var(--accent);
+    color:#fff;
+    border:3px solid var(--panel);
+    box-shadow:0 4px 16px rgba(14,165,164,.3);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:28px;
+    transition:.2s;
+    z-index:900;
+  }
+  .scanner-btn:hover{
+    transform:scale(1.1);
+    box-shadow:0 6px 20px rgba(14,165,164,.4);
+  }
+  .scanner-btn:active{transform:scale(.95)}
+
+  /* Scanner Modal */
+  .scanner-modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.85);
+    z-index:2000;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .scanner-modal.active{display:flex}
+  .scanner-content{
+    background:var(--panel);
+    border-radius:16px;
+    padding:20px;
+    max-width:500px;
+    width:100%;
+    position:relative;
+  }
+  .scanner-close{
+    position:absolute;
+    top:12px;
+    right:12px;
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    background:var(--line);
+    border:none;
+    cursor:pointer;
+    font-size:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #scanner-video{
+    width:100%;
+    border-radius:8px;
+    background:#000;
+    margin:12px 0;
+  }
+  .scanner-result{
+    margin-top:12px;
+    padding:12px;
+    background:var(--bg);
+    border-radius:8px;
+    border:1px solid var(--line);
+  }
+  .scanner-result strong{color:var(--accent)}
+  
+  /* Add form in modal */
+  .add-form{
+    margin-top:16px;
+    display:none;
+  }
+  .add-form.active{display:block}
+  .add-form input, .add-form select{
+    width:100%;
+    margin:8px 0;
+    box-sizing:border-box;
+  }
+  .add-form button{
+    width:100%;
+    margin-top:8px;
+    padding:12px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    font-weight:600;
+  }
 </style>
 </head>
 <body>
 
-<!-- Toggle checkbox + hamburger -->
 <input id="menu-check" type="checkbox" />
 <label for="menu-check" class="hamburger" aria-label="Toggle menu" aria-controls="side" role="button" tabindex="0">
   <span class="bar bar1"></span><span class="bar bar2"></span><span class="bar bar3"></span>
 </label>
 
-<!-- Off-canvas sidebar -->
 <nav class="sidebar" id="side" role="navigation" aria-label="Main">
   <a href="index.html">Add New Stock</a>
   <a href="adjust.html">Adjust Stock</a>
@@ -176,11 +261,38 @@
   <button onclick="logout()">Logout</button>
 </nav>
 
-<!-- Click-away overlay -->
 <label class="overlay" for="menu-check" aria-hidden="true"></label>
 
-<!-- Toast container -->
 <div class="toast-wrap" id="toast-wrap" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Floating Barcode Scanner Button -->
+<button class="scanner-btn" onclick="openScanner()" aria-label="Scan Barcode" title="Scan Barcode/QR Code">
+  📷
+</button>
+
+<!-- Scanner Modal -->
+<div class="scanner-modal" id="scannerModal">
+  <div class="scanner-content">
+    <button class="scanner-close" onclick="closeScanner()">×</button>
+    <h3 style="margin-top:0">Scan Barcode or QR Code</h3>
+    <video id="scanner-video" playsinline></video>
+    <div class="scanner-result" id="scannerResult" style="display:none">
+      <strong>Scanned Code:</strong> <span id="scannedCode"></span>
+    </div>
+    
+    <div class="add-form" id="addForm">
+      <h4>Add Item Details</h4>
+      <input type="text" id="scannedItemName" placeholder="Item Name" />
+      <input type="number" id="scannedItemQty" placeholder="Quantity" min="1" value="1" />
+      <select id="scannedItemLoc">
+        <option>Old warehouse</option>
+        <option>New warehouse</option>
+        <option>Office</option>
+      </select>
+      <button onclick="addScannedItem()">Add Item</button>
+    </div>
+  </div>
+</div>
 
 <main class="content">
   <section aria-labelledby="addPageTitle">
@@ -211,7 +323,7 @@
         <span>Need an image URL?</span>
         <span class="job">Upload to ImageKit, copy the link, then set it via the 🖼 button on an item.</span>
         <button type="button" onclick="openImgbb()">Open ImageKit</button>
-        <div class="helper-note">Tip: choose “Direct link” if available.</div>
+        <div class="helper-note">Tip: choose "Direct link" if available.</div>
       </div>
     </div>
 
@@ -219,7 +331,9 @@
   </section>
 </main>
 
-<!-- Firebase + App Logic -->
+<!-- Barcode Scanner Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
@@ -242,10 +356,9 @@
   const db   = getFirestore(app);
   signInAnonymously(auth).catch(console.error);
 
-  const CURRENT_USER = localStorage.getItem('auth_user') || 'Unknown';
+  const CURRENT_USER = sessionStorage.getItem('auth_user') || 'Unknown';
   const signedAs = document.getElementById('signedAs'); if (signedAs) signedAs.textContent = CURRENT_USER;
 
-  /* Toasts */
   const toastWrap = document.getElementById('toast-wrap');
   function toast(msg, type='info', timeout=3200){
     const el = document.createElement('div');
@@ -258,7 +371,6 @@
   }
   const notify = toast;
 
-  /* Utils */
   function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
   function normLoc(raw){
     const s=(raw||'').trim().toLowerCase();
@@ -269,23 +381,18 @@
     return null;
   }
 
-  /* Sidebar ARIA */
   const menuCheck = document.getElementById('menu-check');
   const hamb = document.querySelector('label.hamburger');
   function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
   menuCheck.addEventListener('change', syncAria); syncAria();
 
-  /* Firestore refs */
   const colInventory = collection(db, "inventory");
 
-  /* Keep a local copy of inventory so addNewItem can merge quantities if item exists */
   let inventory = [];
   onSnapshot(colInventory, (snap) => { inventory = snap.docs.map(d => ({ id:d.id, ...d.data() })); });
 
-  /* Open ImageKit instead of imgbb */
   window.openImgbb = () => window.open('https://imagekit.io/dashboard/media-library/L0VQRURVIElOVkVOVE9SWSA', '_blank', 'noopener');
 
-  /* Add item (now supports Office) */
   async function addNewItem() {
     const name = (document.getElementById('newItemName').value || '').trim().replace(/\s+/g,' ');
     const qty  = parseInt(document.getElementById('newItemQty').value,10);
@@ -319,6 +426,136 @@
     document.getElementById('newItemQty').value = '';
   }
   window.addNewItem = addNewItem;
+
+  // Scanner functionality
+  let scannerActive = false;
+  let scannedBarcode = '';
+
+  window.openScanner = function() {
+    const modal = document.getElementById('scannerModal');
+    modal.classList.add('active');
+    startScanner();
+  };
+
+  window.closeScanner = function() {
+    const modal = document.getElementById('scannerModal');
+    modal.classList.remove('active');
+    stopScanner();
+    document.getElementById('scannerResult').style.display = 'none';
+    document.getElementById('addForm').classList.remove('active');
+    scannedBarcode = '';
+  };
+
+  function startScanner() {
+    if (scannerActive) return;
+    
+    Quagga.init({
+      inputStream: {
+        name: "Live",
+        type: "LiveStream",
+        target: document.querySelector('#scanner-video'),
+        constraints: {
+          facingMode: "environment"
+        }
+      },
+      decoder: {
+        readers: [
+          "code_128_reader",
+          "ean_reader",
+          "ean_8_reader",
+          "code_39_reader",
+          "code_39_vin_reader",
+          "codabar_reader",
+          "upc_reader",
+          "upc_e_reader",
+          "i2of5_reader"
+        ]
+      }
+    }, function(err) {
+      if (err) {
+        console.error(err);
+        notify('Failed to start scanner. Please check camera permissions.', 'error');
+        return;
+      }
+      Quagga.start();
+      scannerActive = true;
+    });
+
+    Quagga.onDetected(function(result) {
+      const code = result.codeResult.code;
+      scannedBarcode = code;
+      document.getElementById('scannedCode').textContent = code;
+      document.getElementById('scannerResult').style.display = 'block';
+      document.getElementById('addForm').classList.add('active');
+      document.getElementById('scannedItemName').value = '';
+      document.getElementById('scannedItemName').focus();
+      notify('Barcode scanned! Enter item details.', 'info');
+      stopScanner();
+    });
+  }
+
+  function stopScanner() {
+    if (scannerActive) {
+      Quagga.stop();
+      scannerActive = false;
+    }
+  }
+
+  window.addScannedItem = async function() {
+    const name = (document.getElementById('scannedItemName').value || '').trim().replace(/\s+/g,' ');
+    const qty = parseInt(document.getElementById('scannedItemQty').value, 10);
+    const location = normLoc(document.getElementById('scannedItemLoc').value);
+
+    if (!name || isNaN(qty) || qty <= 0) {
+      notify("Enter a valid name and quantity", "warn");
+      return;
+    }
+    if (!location) {
+      notify('Select a valid location', "warn");
+      return;
+    }
+
+    const existing = inventory.find(i => (i.name||'').toLowerCase() === name.toLowerCase());
+    try {
+      if (existing) {
+        const incOld = location === 'Old warehouse' ? qty : 0;
+        const incNew = location === 'New warehouse' ? qty : 0;
+        const incOffice = location === 'Office' ? qty : 0;
+        const newOld = Math.max(0, (existing.qtyOld ?? 0) + incOld);
+        const newNew = Math.max(0, (existing.qtyNew ?? 0) + incNew);
+        const newOffice = Math.max(0, (existing.qtyOffice ?? 0) + incOffice);
+        await updateDoc(doc(db, "inventory", existing.id), {
+          qtyOld: newOld,
+          qtyNew: newNew,
+          qtyOffice: newOffice,
+          qty: newOld + newNew + newOffice,
+          barcode: scannedBarcode,
+          isNew: true
+        });
+      } else {
+        const qtyOld = location === 'Old warehouse' ? qty : 0;
+        const qtyNew = location === 'New warehouse' ? qty : 0;
+        const qtyOffice = location === 'Office' ? qty : 0;
+        await addDoc(colInventory, {
+          name,
+          qtyOld,
+          qtyNew,
+          qtyOffice,
+          qty: qtyOld + qtyNew + qtyOffice,
+          goal: 0,
+          img: null,
+          barcode: scannedBarcode,
+          isNew: true,
+          createdAt: serverTimestamp()
+        });
+      }
+      notify(`Item "${name}" added with barcode ${scannedBarcode}!`);
+      closeScanner();
+    } catch (err) {
+      console.error(err);
+      notify('Failed to add item', 'error');
+    }
+  };
 </script>
 </body>
 </html>
