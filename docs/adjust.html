@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Inventory System — Adjust Stock</title>
+<title>Inventory System — Add New Stock</title>
 
+<!-- Auth gate with role check -->
 <script>
   const AUTH_OK   = localStorage.getItem('auth_v1') === 'ok';
   const AUTH_USER = localStorage.getItem('auth_user');
@@ -21,18 +22,17 @@
 </script>
 
 <style>
-  /* ==== Light theme based on #F7F4EA ==== */
   :root{
     --nav-w:260px;
-
-    /* Theme */
-    --bg:#F7F4EA;         /* paper background */
-    --panel:#EEE6D8;      /* cards / panels */
-    --ink:#1F2937;        /* primary text */
-    --muted:#6B7280;      /* muted text */
-    --line:#D9CFC1;       /* borders/outlines */
-    --accent:#0EA5A4;     /* teal accent */
-    --chip:#EDE7DA;       /* chips/pills */
+    --bg:#F7F4EA;
+    --panel:#EEE6D8;
+    --ink:#1F2937;
+    --muted:#6B7280;
+    --line:#D9CFC1;
+    --accent:#0EA5A4;
+    --chip:#EDE7DA;
+    --helper-accent:#6D28D9;
+    --helper-panel:#F3ECDF;
   }
 
   html,body{height:100%}
@@ -40,12 +40,11 @@
     margin:0;
     font-family:Arial,sans-serif;
     background:var(--bg);
-    color:var(--ink);
+    color:var(--ink)
   }
   h1,h2,h3{color:var(--ink)}
   .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
 
-  /* Inputs / buttons — legibility fixes */
   input,button,select,textarea{
     padding:8px;margin:4px;font-family:inherit;
     color:var(--ink);
@@ -57,15 +56,17 @@
 
   button{
     border-radius:8px;
-    cursor:pointer
+    cursor:pointer;
+    transition:.15s ease;
   }
   button:hover{
     background:var(--accent);
     color:#ffffff;
-    border-color:var(--accent)
+    border-color:var(--accent);
   }
 
-  /* Sidebar + hamburger */
+  .muted{color:var(--muted);font-size:12px;margin-top:6px}
+
   #menu-check{display:none}
   .hamburger{
     position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;
@@ -85,78 +86,18 @@
     position:fixed;inset:0 auto 0 0;width:var(--nav-w);
     background:var(--panel);padding:20px;box-sizing:border-box;
     transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;
-    border-right:1px solid var(--line);
-    box-shadow:0 10px 30px rgba(0,0,0,.08)
+    box-shadow:0 10px 30px rgba(0,0,0,.08);border-right:1px solid var(--line)
   }
   .sidebar a,.sidebar button{
-    display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;
-    border-radius:8px;text-decoration:none;color:inherit;border:1px solid var(--line);
-    background:transparent
+    display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;border-radius:8px;text-decoration:none;
+    color:inherit;border:1px solid var(--line);background:transparent
   }
-  .sidebar a:hover{background:var(--accent);color:#ffffff;border-color:var(--accent)}
+  .sidebar a:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
   #menu-check:checked~.sidebar{transform:translateX(0)}
   label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.25);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
   #menu-check:checked~label.overlay{opacity:1;visibility:visible}
 
-  /* Cards / grid */
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
-  .card{
-    --card-bg:var(--panel);--card-text:var(--ink);
-    width:100%;min-height:320px;background:var(--card-bg);border-radius:20px;position:relative;overflow:hidden;
-    transition:.2s ease;box-shadow:0 8px 20px rgba(0,0,0,.06);border:1px solid var(--line);color:var(--card-text);
-    display:flex;flex-direction:column
-  }
-  .card:hover{transform:translateY(-4px)}
-
-  .badge-lowok{position:absolute;top:12px;right:12px;padding:.25em .5em;border-radius:999px;font-size:.7em;font-weight:600;border:1px solid transparent}
-  .badge-lowok--low{background:#fee2e2;color:#991b1b;border-color:#fecaca}
-  .badge-lowok--ok{background:#e6f6f2;color:#065f46;border-color:#bdeee1}
-
-  .badge-new{position:absolute;top:-10px;right:-10px;background:#e11d48;color:#fff;padding:.35em .55em;border-radius:999px;font-weight:700;font-size:.7em;box-shadow:0 8px 18px rgba(0,0,0,.12);cursor:pointer}
-
-  .card__image{
-    width:100%;height:110px;background:#E5DDD0; /* light placeholder */
-    background-size:cover;background-position:center;border-bottom:1px solid var(--line);position:relative
-  }
-  .img-edit-btn,.img-view-btn{
-    border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.75);color:var(--ink)
-  }
-  .img-edit-btn{position:absolute;top:6px;left:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer}
-  .img-view-btn{position:absolute;top:6px;right:6px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;padding:0 8px;cursor:pointer}
-  .qty-badge{position:absolute;bottom:8px;right:8px;background:#111;color:#fff;font-size:12px;padding:2px 6px;border-radius:999px;opacity:.9}
-
-  .card__body{display:flex;flex-direction:column;gap:6px;padding:10px 12px 0 12px;min-height:140px}
-  .card__title{font-size:1.05rem;margin:2px 0 0;font-weight:700}
-  .card__description{color:var(--muted);font-size:.83em;margin:0}
-
-  .card__loclist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-  .card__locitem{display:flex;align-items:center;gap:8px;line-height:1.25}
-  .chip{background:var(--chip);border:1px solid var(--line);padding:2px 8px;border-radius:999px;font-size:.75em;color:var(--ink);white-space:nowrap}
-  .chip--old::before{content:"🏚️ ";}
-  .chip--new::before{content:"🏢 ";}
-  .chip--office::before{content:"🏷️ ";}
-
-  .kv{font-size:.86em;color:var(--ink)}
-  .kv .label{color:var(--muted)}
-  .kv .value{font-weight:600}
-
-  .card__actions{margin-top:auto;display:flex;justify-content:center;gap:12px;padding:12px 0 14px 0}
-  .card__button{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;background:var(--panel);border:1px solid var(--line);color:var(--ink)}
-  .card__button:hover{background:var(--accent);color:#ffffff;border-color:var(--accent)}
-  .card__button--trash{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
-
-  /* Modals */
-  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.25);z-index:9999}
-  .modal.open{display:flex}
-  .modal-card{
-    width:95%;max-width:520px;background:var(--panel);border-radius:8px;padding:16px 18px;
-    box-shadow:0 20px 40px rgba(0,0,0,.12);border:1px solid var(--line);color:var(--ink)
-  }
-  .modal-card h3{margin:0 0 10px;color:var(--ink)}
-  .modal-card label{display:block;margin:10px 0 4px;font-size:14px;color:var(--ink)}
-
-  /* Fancy input styling updated to theme vars */
-  .input-container{position:relative;margin:8px 0}
+  .input-container{position:relative;margin:8px 4px}
   .input{
     width:100%;padding:10px;height:40px;
     border:2px solid var(--line);
@@ -166,18 +107,161 @@
     transition:.5s;box-sizing:border-box;
     color:var(--ink);caret-color:var(--ink);
   }
+  .label{
+    position:absolute;top:10px;left:10px;color:var(--ink);
+    transition:.5s;transform:scale(0);z-index:-1;background:var(--bg);padding:0 4px
+  }
   .topline,.underline{position:absolute;background-color:var(--line);height:2px;right:0;transition:.5s}
-  .topline{width:0;top:0}.underline{width:0;bottom:0}
-  .input:focus~.topline{width:35%}.input:focus~.underline{width:100%}
-  .label{position:absolute;top:10px;left:10px;color:var(--ink);transition:.5s;transform:scale(0);z-index:-1;background:var(--bg);padding:0 4px}
-  .input:focus~.label{top:-10px;transform:scale(1)}
+  .topline{width:0}.underline{width:0;bottom:0}
+  .input-container input:focus~.topline{width:35%}
+  .input-container input:focus~.underline{width:100%}
+  .input-container input:focus~.label{top:-10px;transform:scale(1)}
+  .input-container select{appearance:none}
 
-  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
+  .helper-row{display:grid;grid-template-columns:1fr;gap:16px;margin-top:12px}
+  .card.helper{
+    width:100%;border-radius:15px;background:var(--helper-panel);color:var(--ink);padding:16px;
+    box-shadow:0 8px 22px rgba(0,0,0,.08);border:1px solid var(--line)
+  }
+  .card-border-top{width:60%;height:3px;background:var(--helper-accent);margin:6px auto 10px;border-radius:0 0 15px 15px}
+  .card.helper .img{
+    width:70px;height:70px;background:var(--panel);border-radius:15px;margin:14px auto 6px;
+    display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid var(--line)
+  }
+  .card.helper span{display:block;text-align:center}
+  .card.helper .job{font-size:12px;color:var(--muted)}
+  .card.helper button{
+    padding:10px 16px;display:block;margin:12px auto 6px;border-radius:8px;border:1px solid var(--accent);
+    background:var(--accent);color:#fff;font-weight:600;cursor:pointer
+  }
+  .card.helper button:hover{filter:brightness(.95)}
+  .helper-note{text-align:center;font-size:12px;color:var(--muted);margin-top:4px}
 
-  /* Toasts */
   .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
-  .toast{background:#E9E2D6;color:var(--ink);padding:10px 12px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
-  .toast--warn{background:#F2C97D;color:#4A2E00}.toast--error{background:#F3B8B8;color:#711313}.toast__close{margin-left:12px;cursor:pointer;font-weight:700}
+  .toast{
+    background:#E9E2D6;color:var(--ink);padding:10px 12px;border-radius:8px;
+    box-shadow:0 10px 30px rgba(0,0,0,.12);max-width:86vw
+  }
+  .toast--warn{background:#F2C97D;color:#4A2E00}.toast--error{background:#F3B8B8;color:#711313}
+  .toast__close{margin-left:12px;cursor:pointer;font-weight:700}
+
+  /* Barcode Scanner Button */
+  .scanner-btn{
+    position:fixed;
+    bottom:24px;
+    right:24px;
+    width:64px;
+    height:64px;
+    border-radius:50%;
+    background:var(--accent);
+    color:#fff;
+    border:3px solid var(--panel);
+    box-shadow:0 4px 16px rgba(14,165,164,.3);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:28px;
+    transition:.2s;
+    z-index:900;
+  }
+  .scanner-btn:hover{
+    transform:scale(1.1);
+    box-shadow:0 6px 20px rgba(14,165,164,.4);
+  }
+  .scanner-btn:active{transform:scale(.95)}
+
+  /* Scanner Modal */
+  .scanner-modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.9);
+    z-index:2000;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .scanner-modal.active{display:flex}
+  .scanner-content{
+    background:var(--panel);
+    border-radius:16px;
+    padding:20px;
+    max-width:600px;
+    width:100%;
+    position:relative;
+  }
+  .scanner-close{
+    position:absolute;
+    top:12px;
+    right:12px;
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    background:var(--line);
+    border:none;
+    cursor:pointer;
+    font-size:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .scanner-viewport{
+    width:100%;
+    max-width:500px;
+    height:350px;
+    margin:12px auto;
+    position:relative;
+    overflow:hidden;
+    border-radius:8px;
+    background:#000;
+  }
+  #scanner-video{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
+  .scanner-overlay{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:70%;
+    height:50%;
+    border:2px solid var(--accent);
+    border-radius:8px;
+    box-shadow:0 0 0 9999px rgba(0,0,0,.5);
+    pointer-events:none;
+  }
+  .scanner-result{
+    margin-top:12px;
+    padding:12px;
+    background:var(--bg);
+    border-radius:8px;
+    border:1px solid var(--line);
+  }
+  .scanner-result strong{color:var(--accent)}
+  
+  /* Add form in modal */
+  .add-form{
+    margin-top:16px;
+    display:none;
+  }
+  .add-form.active{display:block}
+  .add-form input, .add-form select{
+    width:100%;
+    margin:8px 0;
+    box-sizing:border-box;
+  }
+  .add-form button{
+    width:100%;
+    margin-top:8px;
+    padding:12px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    font-weight:600;
+  }
 </style>
 </head>
 <body>
@@ -197,101 +281,88 @@
   <hr>
   <button onclick="logout()">Logout</button>
 </nav>
+
 <label class="overlay" for="menu-check" aria-hidden="true"></label>
 
 <div class="toast-wrap" id="toast-wrap" aria-live="polite" aria-atomic="true"></div>
 
+<!-- Floating Barcode Scanner Button -->
+<button class="scanner-btn" onclick="openScanner()" aria-label="Scan Barcode" title="Scan Barcode/QR Code">
+  📷
+</button>
+
+<!-- Scanner Modal -->
+<div class="scanner-modal" id="scannerModal">
+  <div class="scanner-content">
+    <button class="scanner-close" onclick="closeScanner()">×</button>
+    <h3 style="margin-top:0">Scan Barcode or QR Code</h3>
+    <div class="scanner-viewport">
+      <video id="scanner-video" playsinline autoplay></video>
+      <div class="scanner-overlay"></div>
+    </div>
+    <div class="scanner-result" id="scannerResult" style="display:none">
+      <strong>Scanned Code:</strong> <span id="scannedCode"></span>
+    </div>
+    
+    <div class="add-form" id="addForm">
+      <h4>Add Item Details</h4>
+      <input type="text" id="scannedItemName" placeholder="Item Name" />
+      <input type="number" id="scannedItemQty" placeholder="Quantity" min="1" value="1" />
+      <select id="scannedItemLoc">
+        <option>Old warehouse</option>
+        <option>New warehouse</option>
+        <option>Office</option>
+      </select>
+      <button onclick="addScannedItem()">Add Item</button>
+    </div>
+  </div>
+</div>
+
 <main class="content">
-  <section aria-labelledby="adjustPageTitle">
-    <h2 id="adjustPageTitle">Adjust Stock</h2>
-    <div id="stockGrid" class="grid"></div>
+  <section aria-labelledby="addPageTitle">
+    <h2 id="addPageTitle">Add New Item</h2>
+    <div class="add-row" style="display:grid;grid-template-columns:minmax(260px,1fr) 160px minmax(220px,1fr) auto;gap:12px;align-items:center;max-width:900px">
+      <div class="input-container">
+        <input type="text" id="newItemName" class="input" placeholder=" " autocomplete="off" />
+        <span class="topline"></span><span class="underline"></span>
+        <label for="newItemName" class="label">Item Name</label>
+      </div>
+      <input type="number" id="newItemQty" placeholder="Quantity" min="1" inputmode="numeric" aria-label="Quantity" />
+      <div class="input-container">
+        <select id="newItemLoc" class="input" style="height:40px">
+          <option>Old warehouse</option>
+          <option>New warehouse</option>
+          <option>Office</option>
+        </select>
+        <span class="topline"></span><span class="underline"></span>
+        <label for="newItemLoc" class="label">Location</label>
+      </div>
+      <button onclick="addNewItem()" aria-label="Add Item">Add Item</button>
+    </div>
+
+    <div class="helper-row">
+      <div class="card helper" aria-label="Image Helper">
+        <div class="card-border-top"></div>
+        <div class="img">🖼️</div>
+        <span>Need an image URL?</span>
+        <span class="job">Upload to ImageKit, copy the link, then set it via the 🖼 button on an item.</span>
+        <button type="button" onclick="openImgbb()">Open ImageKit</button>
+        <div class="helper-note">Tip: choose "Direct link" if available.</div>
+      </div>
+    </div>
+
+    <div class="muted">Signed in as <strong id="signedAs"></strong>. Data syncs via Firebase (Firestore + Storage).</div>
   </section>
 </main>
 
-<!-- Adjust dialog -->
-<div id="adjustModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adj-title">
-  <div class="modal-card">
-    <h3 id="adj-title">Adjust Stock</h3>
-    <div id="adj-subtitle" style="color:var(--muted)"></div>
-
-    <label for="adj-amount">Amount</label>
-    <input id="adj-amount" type="number" min="1" step="1" value="1" placeholder="Enter amount" inputmode="numeric" class="input">
-
-    <label for="adj-location">Location</label>
-    <select id="adj-location" class="input">
-      <option>Old warehouse</option>
-      <option>New warehouse</option>
-      <option>Office</option>
-    </select>
-
-    <!-- Account = auto-filled from signed-in user, read-only -->
-    <label for="adj-account">Account</label>
-    <input id="adj-account" type="text" class="input" placeholder="Auto-filled" readonly aria-readonly="true">
-
-    <label for="adj-purpose">Purpose</label>
-    <input id="adj-purpose" type="text" class="input" placeholder="Enter purpose">
-
-    <label for="adj-takenby">Taken by</label>
-    <input id="adj-takenby" type="text" class="input" placeholder="Who took it">
-
-    <div class="modal-actions">
-      <button id="adj-cancel">Cancel</button>
-      <button id="adj-confirm">Confirm</button>
-    </div>
-  </div>
-</div>
-
-<!-- Delete dialog -->
-<div id="deleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="del-title">
-  <div class="modal-card">
-    <h3 id="del-title">Delete Item</h3>
-    <div id="del-subtitle" style="color:var(--muted)"></div>
-    <div class="input-container">
-      <input id="del-name" type="text" class="input" placeholder=" " readonly>
-      <span class="topline"></span><span class="underline"></span>
-      <label for="del-name" class="label">Your name (auto)</label>
-    </div>
-    <div class="input-container">
-      <input id="del-reason" type="text" class="input" placeholder=" ">
-      <span class="topline"></span><span class="underline"></span>
-      <label for="del-reason" class="label">Reason (e.g., discontinued)</label>
-    </div>
-    <div class="input-container">
-      <input id="del-by" type="text" class="input" placeholder=" ">
-      <span class="topline"></span><span class="underline"></span>
-      <label for="del-by" class="label">Adjusted by (name)</label>
-    </div>
-    <div class="modal-actions">
-      <button id="del-cancel">Cancel</button>
-      <button id="del-confirm">Delete</button>
-    </div>
-  </div>
-</div>
-
-<!-- Image viewer modal -->
-<div id="imageModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="img-title">
-  <div class="modal-card">
-    <h3 id="img-title">Image</h3>
-    <img id="img-view" src="" alt="" style="width:100%; max-height:70vh; object-fit:contain; border:1px solid var(--line); border-radius:8px;" />
-    <div class="modal-actions">
-      <a id="img-open" href="#" target="_blank" rel="noopener" style="margin-right:auto;color:var(--ink);text-decoration:underline">Open in new tab</a>
-      <button id="img-close">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- Hidden file picker -->
-<input type="file" id="hiddenFileInput" accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.heif" capture="environment" style="display:none" />
+<!-- Barcode Scanner Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import {
-    getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-    onSnapshot, serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+  import { getFirestore, collection, doc, addDoc, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
@@ -307,18 +378,11 @@
   try { getAnalytics(app); } catch(e) {}
   const auth = getAuth(app);
   const db   = getFirestore(app);
-  const st   = getStorage(app);
   signInAnonymously(auth).catch(console.error);
 
   const CURRENT_USER = localStorage.getItem('auth_user') || 'Unknown';
+  const signedAs = document.getElementById('signedAs'); if (signedAs) signedAs.textContent = CURRENT_USER;
 
-  /* Sidebar ARIA */
-  const menuCheck = document.getElementById('menu-check');
-  const hamb = document.querySelector('label.hamburger');
-  function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
-  menuCheck.addEventListener('change', syncAria); syncAria();
-
-  /* Toasts */
   const toastWrap = document.getElementById('toast-wrap');
   function toast(msg, type='info', timeout=3200){
     const el = document.createElement('div');
@@ -331,7 +395,6 @@
   }
   const notify = toast;
 
-  /* Utils */
   function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
   function normLoc(raw){
     const s=(raw||'').trim().toLowerCase();
@@ -341,302 +404,222 @@
     if (['old warehouse','new warehouse','office'].includes(s)) return s.replace(/\b\w/g,m=>m.toUpperCase());
     return null;
   }
-  function totalQty(item){
-    return (Number(item.qtyOld) || 0) + (Number(item.qtyNew) || 0) + (Number(item.qtyOffice) || 0);
-  }
-  function withCacheBuster(url){ if (!url) return url; const sep = url.includes('?') ? '&' : '?'; return `${url}${sep}v=${Date.now()}`; }
 
-  const SUPPORTED_IMAGE_TYPES=["image/jpeg","image/jpg","image/png","image/gif","image/webp","image/bmp","image/heic","image/heif"];
-  function isSupportedImage(file){ if (!file) return false; if (file.type && SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) return true; const n=(file.name||"").toLowerCase(); return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/.test(n); }
+  const menuCheck = document.getElementById('menu-check');
+  const hamb = document.querySelector('label.hamburger');
+  function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
+  menuCheck.addEventListener('change', syncAria); syncAria();
 
-  /* Firestore refs */
-  const colInventory   = collection(db, "inventory");
-  const colAdjustments = collection(db, "adjustments");
+  const colInventory = collection(db, "inventory");
 
-  /* State */
   let inventory = [];
-  const lowState = new Map();
+  onSnapshot(colInventory, (snap) => { inventory = snap.docs.map(d => ({ id:d.id, ...d.data() })); });
 
-  /* Live listeners */
-  onSnapshot(colInventory, (snap) => { inventory = snap.docs.map(d => ({ id:d.id, ...d.data() })); renderStockGrid(); checkLowStockAlerts(); });
+  window.openImgbb = () => window.open('https://imagekit.io/dashboard/media-library/L0VQRURVIElOVkVOVE9SWSA', '_blank', 'noopener');
 
-  /* Image viewer */
-  const imageModal   = document.getElementById('imageModal');
-  const imgView      = document.getElementById('img-view');
-  const imgTitle     = document.getElementById('img-title');
-  const imgOpenLink  = document.getElementById('img-open');
-  const imgCloseBtn  = document.getElementById('img-close');
-  function openImageViewer(url, title='Image'){ imgView.src = url; imgView.alt = title; imgTitle.textContent = title; imgOpenLink.href = url || '#'; imageModal.classList.add('open'); }
-  function closeImageViewer(){ imageModal.classList.remove('open'); imgView.src = ''; imgView.alt = ''; }
-  imgCloseBtn.addEventListener('click', closeImageViewer);
-  imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeImageViewer(); });
-  window.openImageViewer = openImageViewer;
+  async function addNewItem() {
+    const name = (document.getElementById('newItemName').value || '').trim().replace(/\s+/g,' ');
+    const qty  = parseInt(document.getElementById('newItemQty').value,10);
+    const location = normLoc(document.getElementById('newItemLoc').value);
+    if (!name || isNaN(qty) || qty <= 0) { notify("Enter a valid name and a quantity ≥ 1","warn"); return; }
+    if (!location) { notify('Location must be "Old warehouse", "New warehouse", or "Office".',"warn"); return; }
 
-  /* Render grid (show Old/New/Office) */
-  function renderStockGrid() {
-    const grid = document.getElementById('stockGrid'); if (!grid) return;
-    grid.innerHTML = '';
-    inventory.forEach((item) => {
-      const total = totalQty(item);
-      const isLow = (item.goal > 0) && (total <= item.goal);
-      const card = document.createElement('div'); card.className = 'card';
-
-      const bgUrl = item.img ? withCacheBuster(item.img) : '';
-      const safeBgUrl = bgUrl ? bgUrl.replace(/"/g,'%22').replace(/'/g,'%27') : '';
-      const bgStyle = bgUrl ? `style="background-image:url('${safeBgUrl}')"` : '';
-
-      card.innerHTML = `
-        <div class="badge-lowok ${isLow ? 'badge-lowok--low' : 'badge-lowok--ok'}">${isLow ? 'LOW' : 'OK'}</div>
-        ${item.isNew ? `<div class="badge-new" title="Dismiss">NEW</div>` : ''}
-        <div class="card__image" ${bgStyle}>
-          <button class="img-edit-btn" title="Set image" aria-label="Set image">🖼</button>
-          <button class="img-view-btn" title="View image" aria-label="View image">View Image</button>
-          <span class="qty-badge" title="Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}, Office: ${item.qtyOffice ?? 0}">Qty: ${total}</span>
-        </div>
-
-        <div class="card__body">
-          <h3 class="card__title" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</h3>
-
-          <ul class="card__loclist">
-            <li class="card__locitem">
-              <span class="chip chip--old" title="Old warehouse">Old warehouse</span>
-              <span class="kv"><span class="label"> — Qty: </span><span class="value">${item.qtyOld ?? 0}</span></span>
-            </li>
-            <li class="card__locitem">
-              <span class="chip chip--new" title="New warehouse">New warehouse</span>
-              <span class="kv"><span class="label"> — Qty: </span><span class="value">${item.qtyNew ?? 0}</span></span>
-            </li>
-            <li class="card__locitem">
-              <span class="chip chip--office" title="Office">Office</span>
-              <span class="kv"><span class="label"> — Qty: </span><span class="value">${item.qtyOffice ?? 0}</span></span>
-            </li>
-          </ul>
-
-          <p class="card__description">Total: ${total} • Goal: ${item.goal || 0}</p>
-
-          <div class="card__actions">
-            <div class="card__button" data-plus aria-label="Add" title="Add (Shift=Set image)">+</div>
-            <div class="card__button" data-minus aria-label="Minus" title="Minus">–</div>
-            <div class="card__button card__button--trash" data-del-id="${item.id}" aria-label="Delete" title="Delete">🗑</div>
-          </div>
-        </div>
-      `;
-
-      card.querySelector('.img-edit-btn').addEventListener('click', () => openImagePickerById(item.id));
-      card.querySelector('.img-view-btn').addEventListener('click', () => {
-        const current = inventory.find(i=>i.id===item.id);
-        if (!current || !current.img) { notify('No image set yet. Click 🖼 to add one.','warn'); return; }
-        openImageViewer(withCacheBuster(current.img), `Item: ${current.name}`);
-      });
-      if (item.isNew) card.querySelector('.badge-new')?.addEventListener('click', async ()=>{ try{ await updateDoc(doc(db,"inventory", item.id), { isNew:false }); }catch(e){} });
-      card.querySelector('[data-plus]').addEventListener('click', (e)=>{ if (e.shiftKey){ openImagePickerById(item.id); return; } openAdjustDialogById(item.id,'add'); });
-      card.querySelector('[data-minus]').addEventListener('click', ()=> openAdjustDialogById(item.id,'sub'));
-      card.querySelector('[data-del-id]').addEventListener('click', ()=> openDeleteDialogById(item.id));
-
-      grid.appendChild(card);
-    });
-  }
-
-  /* Low-stock toasts */
-  function checkLowStockAlerts(){
-    for (const item of inventory){
-      const goal = Number.isFinite(item.goal) ? item.goal : 0;
-      const total = totalQty(item);
-      const isLow = goal > 0 && total <= goal;
-      const prev = lowState.get(item.id) || false;
-      if (isLow && !prev){ notify(`LOW: "${item.name}" at ${total} (goal ${goal}).`, 'warn', 6000); }
-      lowState.set(item.id, isLow);
-    }
-  }
-
-  /* Adjust dialog & actions */
-  let pending = { index:null, mode:'add' };
-  function openAdjustDialog(index, mode) {
-    pending = { index, mode };
-    const item = inventory[index]; const total = totalQty(item);
-    document.getElementById('adj-title').textContent =
-      `${mode === 'add' ? 'Add to' : 'Minus from'} "${item.name}"`;
-    document.getElementById('adj-subtitle').textContent =
-      `Current total: ${total} (Old: ${item.qtyOld ?? 0}, New: ${item.qtyNew ?? 0}, Office: ${item.qtyOffice ?? 0})`;
-
-    document.getElementById('adj-amount').value = '1';
-    document.getElementById('adj-location').value = 'Old warehouse';
-
-    // Prefill & lock the Account field with the signed-in user
-    const accEl = document.getElementById('adj-account');
-    if (accEl){
-      accEl.value = CURRENT_USER;
-      accEl.readOnly = true;
-      accEl.setAttribute('aria-readonly','true');
-    }
-
-    // Clear the rest
-    ['adj-purpose','adj-takenby'].forEach(id=>{
-      const el=document.getElementById(id); if(el) el.value='';
-    });
-
-    document.getElementById('adjustModal').classList.add('open');
-    setTimeout(() => document.getElementById('adj-amount').focus(), 0);
-  }
-  function openAdjustDialogById(id, mode){
-    const index = inventory.findIndex(i => i.id === id);
-    if (index < 0) return;
-    openAdjustDialog(index, mode);
-  }
-  window.openAdjustDialogById = openAdjustDialogById;
-  function closeAdjustDialog(){ document.getElementById('adjustModal').classList.remove('open'); }
-  document.getElementById('adj-cancel').addEventListener('click', closeAdjustDialog);
-  document.getElementById('adjustModal').addEventListener('click', (e) => { if (e.target.id === 'adjustModal') closeAdjustDialog(); });
-  document.getElementById('adjustModal').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('adj-confirm').click(); } });
-
-  document.getElementById('adj-confirm').addEventListener('click', async () => {
-    try {
-      if (pending?.index == null) { closeAdjustDialog(); return; }
-      const item = inventory[pending.index]; if (!item) { closeAdjustDialog(); return; }
-
-      const amountRaw = document.getElementById('adj-amount').value;
-      const amt = parseInt(amountRaw, 10);
-      const loc = normLoc(document.getElementById('adj-location').value);
-
-      // Account always = CURRENT_USER (do not read from the input to avoid tampering)
-      const account = CURRENT_USER;
-      const purpose = (document.getElementById('adj-purpose').value || '').trim();
-      const takenBy = (document.getElementById('adj-takenby').value || '').trim();
-
-      if (!Number.isInteger(amt) || amt <= 0) { notify('Enter a positive integer amount.','warn'); return; }
-      if (!loc) { notify('Location must be "Old warehouse", "New warehouse", or "Office".','warn'); return; }
-      if (!purpose || !takenBy) { notify('Please fill Purpose and Taken by.','warn'); return; }
-
-      const mode = pending.mode === 'sub' ? 'sub' : 'add';
-      const delta = mode === 'add' ? amt : -amt;
-
-      const prevOld    = Number(item.qtyOld ?? 0);
-      const prevNew    = Number(item.qtyNew ?? 0);
-      const prevOffice = Number(item.qtyOffice ?? 0);
-
-      if (mode === 'sub') {
-        if (loc === 'Old warehouse' && amt > prevOld)    { notify(`Not enough stock in Old warehouse (have ${prevOld}).`,'warn'); return; }
-        if (loc === 'New warehouse' && amt > prevNew)    { notify(`Not enough stock in New warehouse (have ${prevNew}).`,'warn'); return; }
-        if (loc === 'Office'         && amt > prevOffice) { notify(`Not enough stock in Office (have ${prevOffice}).`,'warn'); return; }
+    const existing = inventory.find(i => (i.name||'').toLowerCase() === name.toLowerCase());
+    try{
+      if (existing) {
+        const incOld    = location === 'Old warehouse' ? qty : 0;
+        const incNew    = location === 'New warehouse' ? qty : 0;
+        const incOffice = location === 'Office'         ? qty : 0;
+        const newOld    = Math.max(0, (existing.qtyOld ?? 0)    + incOld);
+        const newNew    = Math.max(0, (existing.qtyNew ?? 0)    + incNew);
+        const newOffice = Math.max(0, (existing.qtyOffice ?? 0) + incOffice);
+        await updateDoc(doc(db, "inventory", existing.id), {
+          qtyOld: newOld, qtyNew: newNew, qtyOffice: newOffice, qty: newOld + newNew + newOffice, isNew:true
+        });
+      } else {
+        const qtyOld    = location === 'Old warehouse' ? qty : 0;
+        const qtyNew    = location === 'New warehouse' ? qty : 0;
+        const qtyOffice = location === 'Office'         ? qty : 0;
+        await addDoc(colInventory, {
+          name, qtyOld, qtyNew, qtyOffice, qty: qtyOld + qtyNew + qtyOffice, goal:0, img:null, isNew:true, createdAt: serverTimestamp()
+        });
       }
-
-      let newOld = prevOld, newNew = prevNew, newOffice = prevOffice;
-      if (loc === 'Old warehouse') newOld = prevOld + delta;
-      if (loc === 'New warehouse') newNew = prevNew + delta;
-      if (loc === 'Office')        newOffice = prevOffice + delta;
-
-      newOld = Math.max(0, newOld); newNew = Math.max(0, newNew); newOffice = Math.max(0, newOffice);
-      const newTotal = newOld + newNew + newOffice;
-
-      await updateDoc(doc(db, "inventory", item.id), {
-        qtyOld: newOld, qtyNew: newNew, qtyOffice: newOffice, qty: newTotal
-      });
-
-      await addDoc(colAdjustments, {
-        ts: serverTimestamp(),
-        item: item.name, itemId: item.id,
-        location: loc,
-        delta,
-        actor: CURRENT_USER,   // who performed the action
-        account,               // locked to signed-in account
-        purpose, takenBy,
-        qtyAfterOld: newOld, qtyAfterNew: newNew, qtyAfterOffice: newOffice, qtyAfter: newTotal
-      });
-
-      notify(`${mode === 'add' ? 'Added' : 'Subtracted'} ${Math.abs(delta)} to/from ${loc} for "${item.name}".`);
-      closeAdjustDialog();
-    } catch(err) { console.error(err); notify('Failed to adjust stock','error'); }
-  });
-
-  /* Delete item */
-  let pendingDeleteId = null;
-  function getItemById(id){ return inventory.find(i => i.id === id); }
-  function sumAll(it){ return (Number(it.qtyOld)||0)+(Number(it.qtyNew)||0)+(Number(it.qtyOffice)||0); }
-  function openDeleteDialogById(id) {
-    const item = getItemById(id); if (!item) return;
-    pendingDeleteId = id;
-    const t = sumAll(item);
-    document.getElementById('del-title').textContent = `Delete "${item.name}"`;
-    document.getElementById('del-subtitle').textContent = `This will remove the item and log a history entry with -${t} (Qty after: 0).`;
-    document.getElementById('del-name').value = CURRENT_USER;
-    document.getElementById('del-reason').value = '';
-    document.getElementById('del-by').value = '';
-    document.getElementById('deleteModal').classList.add('open');
-    setTimeout(() => document.getElementById('del-reason').focus(), 0);
+      notify(`Item "${name}" added to ${location}.`);
+    } catch(err){ console.error(err); notify('Failed to add item','error'); }
+    document.getElementById('newItemName').value = '';
+    document.getElementById('newItemQty').value = '';
   }
-  window.openDeleteDialogById = openDeleteDialogById;
-  function closeDeleteDialog(){ document.getElementById('deleteModal').classList.remove('open'); }
-  document.getElementById('del-cancel').addEventListener('click', closeDeleteDialog);
-  document.getElementById('deleteModal').addEventListener('click', e => { if (e.target.id === 'deleteModal') closeDeleteDialog(); });
-  document.getElementById('deleteModal').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('del-confirm').click(); } });
-  document.getElementById('del-confirm').addEventListener('click', async () => {
-    if (!pendingDeleteId) return closeDeleteDialog();
-    const actor = CURRENT_USER;
-    const reason = document.getElementById('del-reason').value.trim();
-    const adjustedBy = document.getElementById('del-by').value.trim();
-    if (!reason || !adjustedBy) { notify('Please fill in Reason and Adjusted by (name).','warn'); return; }
-    const removed = getItemById(pendingDeleteId);
-    if (!removed) { pendingDeleteId = null; closeDeleteDialog(); return; }
-    try{
-      await addDoc(collection(db, "adjustments"), {
-        ts: serverTimestamp(), item: removed.name, itemId: removed.id, location: 'ALL',
-        delta: -sumAll(removed), actor, reason, adjustedBy,
-        qtyAfterOld: 0, qtyAfterNew: 0, qtyAfterOffice: 0, qtyAfter: 0
-      });
-      await deleteDoc(doc(db,"inventory", removed.id));
-      notify('Item deleted');
-    } catch(err){ console.error(err); notify('Failed to delete item','error'); }
-    pendingDeleteId = null; closeDeleteDialog();
-  });
+  window.addNewItem = addNewItem;
 
-  /* Image picker */
-  let imgTargetIndex=null;
-  const fileInput=document.getElementById('hiddenFileInput');
-  function isLikelyHttpUrl(s){ const u=(s||'').trim(); return /^https?:\/\//i.test(u) || /^data:image\//i.test(u); }
-  function openImagePicker(index){
-    imgTargetIndex=index;
-    const choice=prompt("Set image:\n- Paste an image URL (http/https) and press OK, OR\n- Leave blank to choose a file (uploads to Firebase Storage).");
-    if (choice && choice.trim()){
-      if (!isLikelyHttpUrl(choice.trim())) { notify('Please enter a valid http(s) or data: image URL','warn'); imgTargetIndex=null; return; }
-      setItemImageFromURL(choice.trim());
-    } else fileInput.click();
-  }
-  function openImagePickerById(id){
-    const idx = inventory.findIndex(i=>i.id===id);
-    if (idx>=0) openImagePicker(idx);
-  }
-  window.openImagePickerById = openImagePickerById;
+  // Scanner functionality
+  let scannerActive = false;
+  let scannedBarcode = '';
+  let videoStream = null;
 
-  fileInput.addEventListener('change', async (e)=>{
-    const file=e.target.files && e.target.files[0]; e.target.value='';
-    if(!file || imgTargetIndex===null) return;
-    if (!isSupportedImage(file)) { notify(`Unsupported image format: ${file.type || file.name}`,'warn', 6000); imgTargetIndex = null; return; }
-    const item=inventory[imgTargetIndex];
-    try{
-      const ref  = storageRef(st, `itemImages/${item.id}/${Date.now()}_${(file.name||'photo').replace(/[^\w.\-]+/g,'_')}`);
-      await uploadBytes(ref, file, { contentType: file.type || "application/octet-stream" });
-      const url = await getDownloadURL(ref);
-      await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true });
-      openImageViewer(withCacheBuster(url), `Item: ${item.name}`);
-    }catch(err){ console.error(err); notify('Upload failed','error'); }
-    imgTargetIndex=null;
-  });
-  async function setItemImageFromURL(url){
-    if(imgTargetIndex===null) return; const item=inventory[imgTargetIndex];
-    try{ await updateDoc(doc(db,"inventory",item.id),{ img:url, isNew:true }); openImageViewer(withCacheBuster(url), `Item: ${item.name}`); }
-    catch(err){ console.error(err); notify('Failed to set image URL','error'); }
-    imgTargetIndex=null;
-  }
-  window.setItemImageFromURL=setItemImageFromURL;
+  window.openScanner = function() {
+    const modal = document.getElementById('scannerModal');
+    modal.classList.add('active');
+    startScanner();
+  };
 
-  /* ESC closes modals */
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape'){
-      document.getElementById('adjustModal').classList.remove('open');
-      document.getElementById('deleteModal').classList.remove('open');
-      document.getElementById('imageModal').classList.remove('open');
+  window.closeScanner = function() {
+    const modal = document.getElementById('scannerModal');
+    modal.classList.remove('active');
+    stopScanner();
+    document.getElementById('scannerResult').style.display = 'none';
+    document.getElementById('addForm').classList.remove('active');
+    scannedBarcode = '';
+  };
+
+  function startScanner() {
+    if (scannerActive) return;
+    
+    const video = document.getElementById('scanner-video');
+    
+    // Request camera access first
+    navigator.mediaDevices.getUserMedia({ 
+      video: { 
+        facingMode: 'environment',
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      } 
+    })
+    .then(stream => {
+      videoStream = stream;
+      video.srcObject = stream;
+      video.play();
+      
+      // Initialize Quagga after video is ready
+      video.addEventListener('loadedmetadata', () => {
+        Quagga.init({
+          inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: video,
+            constraints: {
+              facingMode: "environment",
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          },
+          locator: {
+            patchSize: "medium",
+            halfSample: true
+          },
+          numOfWorkers: 2,
+          decoder: {
+            readers: [
+              "code_128_reader",
+              "ean_reader",
+              "ean_8_reader",
+              "code_39_reader",
+              "code_39_vin_reader",
+              "codabar_reader",
+              "upc_reader",
+              "upc_e_reader",
+              "i2of5_reader",
+              "2of5_reader",
+              "code_93_reader"
+            ]
+          },
+          locate: true
+        }, function(err) {
+          if (err) {
+            console.error(err);
+            notify('Scanner initialization failed. Try again.', 'error');
+            return;
+          }
+          Quagga.start();
+          scannerActive = true;
+        });
+
+        Quagga.onDetected(function(result) {
+          const code = result.codeResult.code;
+          scannedBarcode = code;
+          document.getElementById('scannedCode').textContent = code;
+          document.getElementById('scannerResult').style.display = 'block';
+          document.getElementById('addForm').classList.add('active');
+          document.getElementById('scannedItemName').value = '';
+          document.getElementById('scannedItemName').focus();
+          notify('Barcode scanned! Enter item details.', 'info');
+          stopScanner();
+        });
+      }, { once: true });
+    })
+    .catch(err => {
+      console.error('Camera access error:', err);
+      notify('Camera access denied. Please allow camera permissions.', 'error');
+    });
+  }
+
+  function stopScanner() {
+    if (scannerActive) {
+      Quagga.stop();
+      scannerActive = false;
     }
-  });
+    if (videoStream) {
+      videoStream.getTracks().forEach(track => track.stop());
+      videoStream = null;
+    }
+    const video = document.getElementById('scanner-video');
+    video.srcObject = null;
+  }
+
+  window.addScannedItem = async function() {
+    const name = (document.getElementById('scannedItemName').value || '').trim().replace(/\s+/g,' ');
+    const qty = parseInt(document.getElementById('scannedItemQty').value, 10);
+    const location = normLoc(document.getElementById('scannedItemLoc').value);
+
+    if (!name || isNaN(qty) || qty <= 0) {
+      notify("Enter a valid name and quantity", "warn");
+      return;
+    }
+    if (!location) {
+      notify('Select a valid location', "warn");
+      return;
+    }
+
+    const existing = inventory.find(i => (i.name||'').toLowerCase() === name.toLowerCase());
+    try {
+      if (existing) {
+        const incOld = location === 'Old warehouse' ? qty : 0;
+        const incNew = location === 'New warehouse' ? qty : 0;
+        const incOffice = location === 'Office' ? qty : 0;
+        const newOld = Math.max(0, (existing.qtyOld ?? 0) + incOld);
+        const newNew = Math.max(0, (existing.qtyNew ?? 0) + incNew);
+        const newOffice = Math.max(0, (existing.qtyOffice ?? 0) + incOffice);
+        await updateDoc(doc(db, "inventory", existing.id), {
+          qtyOld: newOld,
+          qtyNew: newNew,
+          qtyOffice: newOffice,
+          qty: newOld + newNew + newOffice,
+          barcode: scannedBarcode,
+          isNew: true
+        });
+      } else {
+        const qtyOld = location === 'Old warehouse' ? qty : 0;
+        const qtyNew = location === 'New warehouse' ? qty : 0;
+        const qtyOffice = location === 'Office' ? qty : 0;
+        await addDoc(colInventory, {
+          name,
+          qtyOld,
+          qtyNew,
+          qtyOffice,
+          qty: qtyOld + qtyNew + qtyOffice,
+          goal: 0,
+          img: null,
+          barcode: scannedBarcode,
+          isNew: true,
+          createdAt: serverTimestamp()
+        });
+      }
+      notify(`Item "${name}" added with barcode ${scannedBarcode}!`);
+      closeScanner();
+    } catch (err) {
+      console.error(err);
+      notify('Failed to add item', 'error');
+    }
+  };
 </script>
 </body>
 </html>
