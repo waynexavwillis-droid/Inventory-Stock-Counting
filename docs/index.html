@@ -7,9 +7,9 @@
 
 <!-- Auth gate with role check -->
 <script>
-  const AUTH_OK   = sessionStorage.getItem('auth_v1') === 'ok';
-  const AUTH_USER = sessionStorage.getItem('auth_user');
-  const AUTH_ROLE = sessionStorage.getItem('auth_role');
+  const AUTH_OK   = localStorage.getItem('auth_v1') === 'ok';
+  const AUTH_USER = localStorage.getItem('auth_user');
+  const AUTH_ROLE = localStorage.getItem('auth_role');
   if (!AUTH_OK || !AUTH_USER) { window.location.replace('login.html'); }
   else if (AUTH_ROLE === 'viewer') { window.location.replace('viewer.html'); }
   function logout(){
@@ -356,7 +356,7 @@
   const db   = getFirestore(app);
   signInAnonymously(auth).catch(console.error);
 
-  const CURRENT_USER = sessionStorage.getItem('auth_user') || 'Unknown';
+  const CURRENT_USER = localStorage.getItem('auth_user') || 'Unknown';
   const signedAs = document.getElementById('signedAs'); if (signedAs) signedAs.textContent = CURRENT_USER;
 
   const toastWrap = document.getElementById('toast-wrap');
