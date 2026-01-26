@@ -474,81 +474,54 @@
   function startScanner() {
     if (scannerActive) return;
     
-    const video = document.getElementById('scanner-video');
-    
-    // Request camera access first
-    navigator.mediaDevices.getUserMedia({ 
-      video: { 
-        facingMode: 'environment',
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      } 
-    })
-    .then(stream => {
-      videoStream = stream;
-      video.srcObject = stream;
-      video.play();
-      
-      // Initialize Quagga after video is ready
-      video.addEventListener('loadedmetadata', () => {
-        Quagga.init({
-          inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: video,
-            constraints: {
-              facingMode: "environment",
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            }
-          },
-          locator: {
-            patchSize: "medium",
-            halfSample: true
-          },
-          numOfWorkers: 2,
-          decoder: {
-            readers: [
-              "code_128_reader",
-              "ean_reader",
-              "ean_8_reader",
-              "code_39_reader",
-              "code_39_vin_reader",
-              "codabar_reader",
-              "upc_reader",
-              "upc_e_reader",
-              "i2of5_reader",
-              "2of5_reader",
-              "code_93_reader"
-            ]
-          },
-          locate: true
-        }, function(err) {
-          if (err) {
-            console.error(err);
-            notify('Scanner initialization failed. Try again.', 'error');
-            return;
-          }
-          Quagga.start();
-          scannerActive = true;
-        });
+    Quagga.init({
+      inputStream: {
+        name: "Live",
+        type: "LiveStream",
+        target: document.querySelector('.scanner-viewport'),
+        constraints: {
+          facingMode: "environment"
+        }
+      },
+      locator: {
+        patchSize: "medium",
+        halfSample: true
+      },
+      numOfWorkers: navigator.hardwareConcurrency || 4,
+      decoder: {
+        readers: [
+          "code_128_reader",
+          "ean_reader",
+          "ean_8_reader",
+          "code_39_reader",
+          "upc_reader",
+          "upc_e_reader"
+        ]
+      },
+      locate: true
+    }, function(err) {
+      if (err) {
+        console.error('Quagga init error:', err);
+        notify('Failed to start camera: ' + err.message, 'error');
+        return;
+      }
+      console.log("Quagga initialized successfully");
+      Quagga.start();
+      scannerActive = true;
+    });
 
-        Quagga.onDetected(function(result) {
-          const code = result.codeResult.code;
-          scannedBarcode = code;
-          document.getElementById('scannedCode').textContent = code;
-          document.getElementById('scannerResult').style.display = 'block';
-          document.getElementById('addForm').classList.add('active');
-          document.getElementById('scannedItemName').value = '';
-          document.getElementById('scannedItemName').focus();
-          notify('Barcode scanned! Enter item details.', 'info');
-          stopScanner();
-        });
-      }, { once: true });
-    })
-    .catch(err => {
-      console.error('Camera access error:', err);
-      notify('Camera access denied. Please allow camera permissions.', 'error');
+    Quagga.onDetected(function(result) {
+      const code = result.codeResult.code;
+      if (!code) return;
+      
+      scannedBarcode = code;
+      document.getElementById('scannedCode').textContent = code;
+      document.getElementById('scannerResult').style.display = 'block';
+      document.getElementById('addForm').classList.add('active');
+      document.getElementById('scannedItemName').value = '';
+      document.getElementById('scannedItemName').focus();
+      notify('Barcode scanned: ' + code, 'info');
+      stopScanner();
     });
   }
 
