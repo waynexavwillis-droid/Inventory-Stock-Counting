@@ -5,309 +5,93 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Inventory System — Add New Stock</title>
 
-<!-- Auth gate with role check -->
+<!-- Auth gate -->
 <script>
   const AUTH_OK   = localStorage.getItem('auth_v1') === 'ok';
   const AUTH_USER = localStorage.getItem('auth_user');
   const AUTH_ROLE = localStorage.getItem('auth_role');
-  if (!AUTH_OK || !AUTH_USER) { window.location.replace('login.html'); }
-  else if (AUTH_ROLE === 'viewer') { window.location.replace('viewer.html'); }
+  if (!AUTH_OK || !AUTH_USER) location.replace('login.html');
+  else if (AUTH_ROLE === 'viewer') location.replace('viewer.html');
   function logout(){
-    localStorage.removeItem('auth_v1');
-    localStorage.removeItem('auth_user');
-    localStorage.removeItem('auth_role');
-    localStorage.removeItem('auth_time');
-    window.location.replace('login.html');
+    localStorage.clear();
+    location.replace('login.html');
   }
 </script>
 
 <style>
-  :root{
-    --nav-w:260px;
-    --bg:#F7F4EA;
-    --panel:#EEE6D8;
-    --ink:#1F2937;
-    --muted:#6B7280;
-    --line:#D9CFC1;
-    --accent:#0EA5A4;
-    --chip:#EDE7DA;
-    --helper-accent:#6D28D9;
-    --helper-panel:#F3ECDF;
-  }
+:root{
+  --bg:#F7F4EA;--panel:#EEE6D8;--ink:#1F2937;--line:#D9CFC1;--accent:#0EA5A4;
+}
+body{margin:0;font-family:Arial;background:var(--bg);color:var(--ink)}
+button{cursor:pointer}
 
-  html,body{height:100%}
-  body{
-    margin:0;
-    font-family:Arial,sans-serif;
-    background:var(--bg);
-    color:var(--ink)
-  }
-  h1,h2,h3{color:var(--ink)}
-  .content{padding:20px;padding-top:80px;min-height:100vh;box-sizing:border-box}
+.scanner-btn{
+  position:fixed;bottom:24px;right:24px;width:64px;height:64px;
+  border-radius:50%;background:var(--accent);color:#fff;
+  border:none;font-size:28px;z-index:1000;
+}
 
-  input,button,select,textarea{
-    padding:8px;margin:4px;font-family:inherit;
-    color:var(--ink);
-    background:var(--panel);
-    border:1px solid var(--line);
-    caret-color:var(--ink);
-  }
-  input::placeholder, textarea::placeholder{ color:var(--muted); opacity:1 }
+.scanner-modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.9);
+  display:none;align-items:center;justify-content:center;
+  z-index:2000;
+}
+.scanner-modal.active{display:flex}
 
-  button{
-    border-radius:8px;
-    cursor:pointer;
-    transition:.15s ease;
-  }
-  button:hover{
-    background:var(--accent);
-    color:#ffffff;
-    border-color:var(--accent);
-  }
+.scanner-content{
+  background:var(--panel);padding:20px;border-radius:16px;
+  max-width:600px;width:100%;position:relative;
+}
 
-  .muted{color:var(--muted);font-size:12px;margin-top:6px}
+.scanner-close{
+  position:absolute;top:10px;right:10px;font-size:22px;
+}
 
-  #menu-check{display:none}
-  .hamburger{
-    position:fixed;left:12px;top:12px;width:32px;display:flex;flex-direction:column;gap:7px;
-    cursor:pointer;user-select:none;z-index:1200;transition:transform .3s
-  }
-  .hamburger .bar{
-    height:3px;background:var(--ink);border-radius:10px;
-    transition:transform .35s,opacity .25s,width .35s
-  }
-  .hamburger .bar1,.hamburger .bar3{width:18px}.hamburger .bar2{width:28px}
-  #menu-check:checked+label.hamburger{transform:translateX(var(--nav-w))}
-  #menu-check:checked+label.hamburger .bar1{transform:translateY(10px) rotate(45deg);width:28px}
-  #menu-check:checked+label.hamburger .bar2{opacity:0}
-  #menu-check:checked+label.hamburger .bar3{transform:translateY(-10px) rotate(-45deg);width:28px}
+.scanner-viewport{
+  width:100%;height:350px;background:#000;border-radius:8px;
+  overflow:hidden;position:relative;
+}
 
-  .sidebar{
-    position:fixed;inset:0 auto 0 0;width:var(--nav-w);
-    background:var(--panel);padding:20px;box-sizing:border-box;
-    transform:translateX(-100%);transition:.3s;z-index:1100;overflow:auto;
-    box-shadow:0 10px 30px rgba(0,0,0,.08);border-right:1px solid var(--line)
-  }
-  .sidebar a,.sidebar button{
-    display:block;width:100%;margin-bottom:10px;padding:10px;text-align:left;border-radius:8px;text-decoration:none;
-    color:inherit;border:1px solid var(--line);background:transparent
-  }
-  .sidebar a:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
-  #menu-check:checked~.sidebar{transform:translateX(0)}
-  label.overlay{position:fixed;inset:0;background:rgba(0,0,0,.25);opacity:0;visibility:hidden;transition:.3s;z-index:1090}
-  #menu-check:checked~label.overlay{opacity:1;visibility:visible}
+.scanner-viewport video{
+  width:100%;height:100%;object-fit:cover;
+}
 
-  .input-container{position:relative;margin:8px 4px}
-  .input{
-    width:100%;padding:10px;height:40px;
-    border:2px solid var(--line);
-    border-top:none;border-bottom:none;
-    font-size:16px;background:transparent;outline:none;
-    box-shadow:7px 7px 0 0 var(--line);
-    transition:.5s;box-sizing:border-box;
-    color:var(--ink);caret-color:var(--ink);
-  }
-  .label{
-    position:absolute;top:10px;left:10px;color:var(--ink);
-    transition:.5s;transform:scale(0);z-index:-1;background:var(--bg);padding:0 4px
-  }
-  .topline,.underline{position:absolute;background-color:var(--line);height:2px;right:0;transition:.5s}
-  .topline{width:0}.underline{width:0;bottom:0}
-  .input-container input:focus~.topline{width:35%}
-  .input-container input:focus~.underline{width:100%}
-  .input-container input:focus~.label{top:-10px;transform:scale(1)}
-  .input-container select{appearance:none}
+.scanner-overlay{
+  position:absolute;inset:15%;border:2px solid var(--accent);
+  pointer-events:none;
+}
 
-  .helper-row{display:grid;grid-template-columns:1fr;gap:16px;margin-top:12px}
-  .card.helper{
-    width:100%;border-radius:15px;background:var(--helper-panel);color:var(--ink);padding:16px;
-    box-shadow:0 8px 22px rgba(0,0,0,.08);border:1px solid var(--line)
-  }
-  .card-border-top{width:60%;height:3px;background:var(--helper-accent);margin:6px auto 10px;border-radius:0 0 15px 15px}
-  .card.helper .img{
-    width:70px;height:70px;background:var(--panel);border-radius:15px;margin:14px auto 6px;
-    display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid var(--line)
-  }
-  .card.helper span{display:block;text-align:center}
-  .card.helper .job{font-size:12px;color:var(--muted)}
-  .card.helper button{
-    padding:10px 16px;display:block;margin:12px auto 6px;border-radius:8px;border:1px solid var(--accent);
-    background:var(--accent);color:#fff;font-weight:600;cursor:pointer
-  }
-  .card.helper button:hover{filter:brightness(.95)}
-  .helper-note{text-align:center;font-size:12px;color:var(--muted);margin-top:4px}
+.scanner-result,.add-form{
+  margin-top:12px;background:#fff;padding:12px;border-radius:8px;
+}
+.add-form{display:none}
+.add-form.active{display:block}
 
-  .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
-  .toast{
-    background:#E9E2D6;color:var(--ink);padding:10px 12px;border-radius:8px;
-    box-shadow:0 10px 30px rgba(0,0,0,.12);max-width:86vw
-  }
-  .toast--warn{background:#F2C97D;color:#4A2E00}.toast--error{background:#F3B8B8;color:#711313}
-  .toast__close{margin-left:12px;cursor:pointer;font-weight:700}
-
-  /* Barcode Scanner Button */
-  .scanner-btn{
-    position:fixed;
-    bottom:24px;
-    right:24px;
-    width:64px;
-    height:64px;
-    border-radius:50%;
-    background:var(--accent);
-    color:#fff;
-    border:3px solid var(--panel);
-    box-shadow:0 4px 16px rgba(14,165,164,.3);
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:28px;
-    transition:.2s;
-    z-index:900;
-  }
-  .scanner-btn:hover{
-    transform:scale(1.1);
-    box-shadow:0 6px 20px rgba(14,165,164,.4);
-  }
-  .scanner-btn:active{transform:scale(.95)}
-
-  /* Scanner Modal */
-  .scanner-modal{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.9);
-    z-index:2000;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    padding:20px;
-  }
-  .scanner-modal.active{display:flex}
-  .scanner-content{
-    background:var(--panel);
-    border-radius:16px;
-    padding:20px;
-    max-width:600px;
-    width:100%;
-    position:relative;
-  }
-  .scanner-close{
-    position:absolute;
-    top:12px;
-    right:12px;
-    width:32px;
-    height:32px;
-    border-radius:50%;
-    background:var(--line);
-    border:none;
-    cursor:pointer;
-    font-size:20px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
-  .scanner-viewport{
-    width:100%;
-    max-width:500px;
-    height:350px;
-    margin:12px auto;
-    position:relative;
-    overflow:hidden;
-    border-radius:8px;
-    background:#000;
-  }
-  #scanner-video{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-  }
-  .scanner-overlay{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    width:70%;
-    height:50%;
-    border:2px solid var(--accent);
-    border-radius:8px;
-    box-shadow:0 0 0 9999px rgba(0,0,0,.5);
-    pointer-events:none;
-  }
-  .scanner-result{
-    margin-top:12px;
-    padding:12px;
-    background:var(--bg);
-    border-radius:8px;
-    border:1px solid var(--line);
-  }
-  .scanner-result strong{color:var(--accent)}
-  
-  /* Add form in modal */
-  .add-form{
-    margin-top:16px;
-    display:none;
-  }
-  .add-form.active{display:block}
-  .add-form input, .add-form select{
-    width:100%;
-    margin:8px 0;
-    box-sizing:border-box;
-  }
-  .add-form button{
-    width:100%;
-    margin-top:8px;
-    padding:12px;
-    background:var(--accent);
-    color:#fff;
-    border:none;
-    font-weight:600;
-  }
+.toast-wrap{position:fixed;right:16px;bottom:16px}
+.toast{background:#eee;padding:10px;border-radius:8px;margin-top:8px}
 </style>
 </head>
+
 <body>
 
-<input id="menu-check" type="checkbox" />
-<label for="menu-check" class="hamburger" aria-label="Toggle menu" aria-controls="side" role="button" tabindex="0">
-  <span class="bar bar1"></span><span class="bar bar2"></span><span class="bar bar3"></span>
-</label>
+<button class="scanner-btn" onclick="openScanner()">📷</button>
 
-<nav class="sidebar" id="side" role="navigation" aria-label="Main">
-  <a href="index.html">Add New Stock</a>
-  <a href="adjust.html">Adjust Stock</a>
-  <a href="location.html">Location</a>
-  <a href="goal.html">Set Stock Count Goal</a>
-  <a href="history.html">History</a>
-  <a href="status.html">Status</a>
-  <hr>
-  <button onclick="logout()">Logout</button>
-</nav>
-
-<label class="overlay" for="menu-check" aria-hidden="true"></label>
-
-<div class="toast-wrap" id="toast-wrap" aria-live="polite" aria-atomic="true"></div>
-
-<!-- Floating Barcode Scanner Button -->
-<button class="scanner-btn" onclick="openScanner()" aria-label="Scan Barcode" title="Scan Barcode/QR Code">
-  📷
-</button>
-
-<!-- Scanner Modal -->
 <div class="scanner-modal" id="scannerModal">
   <div class="scanner-content">
     <button class="scanner-close" onclick="closeScanner()">×</button>
-    <h3 style="margin-top:0">Scan Barcode or QR Code</h3>
-    <div class="scanner-viewport">
-      <video id="scanner-video" playsinline autoplay></video>
+    <h3>Scan Barcode</h3>
+
+    <div class="scanner-viewport" id="scannerViewport">
       <div class="scanner-overlay"></div>
     </div>
+
     <div class="scanner-result" id="scannerResult" style="display:none">
       <strong>Scanned Code:</strong> <span id="scannedCode"></span>
     </div>
-    
+
     <div class="add-form" id="addForm">
-      <h4>Add Item Details</h4>
-      <input type="text" id="scannedItemName" placeholder="Item Name" />
-      <input type="number" id="scannedItemQty" placeholder="Quantity" min="1" value="1" />
+      <input id="scannedItemName" placeholder="Item name">
+      <input id="scannedItemQty" type="number" value="1" min="1">
       <select id="scannedItemLoc">
         <option>Old warehouse</option>
         <option>New warehouse</option>
@@ -318,281 +102,113 @@
   </div>
 </div>
 
-<main class="content">
-  <section aria-labelledby="addPageTitle">
-    <h2 id="addPageTitle">Add New Item</h2>
-    <div class="add-row" style="display:grid;grid-template-columns:minmax(260px,1fr) 160px minmax(220px,1fr) auto;gap:12px;align-items:center;max-width:900px">
-      <div class="input-container">
-        <input type="text" id="newItemName" class="input" placeholder=" " autocomplete="off" />
-        <span class="topline"></span><span class="underline"></span>
-        <label for="newItemName" class="label">Item Name</label>
-      </div>
-      <input type="number" id="newItemQty" placeholder="Quantity" min="1" inputmode="numeric" aria-label="Quantity" />
-      <div class="input-container">
-        <select id="newItemLoc" class="input" style="height:40px">
-          <option>Old warehouse</option>
-          <option>New warehouse</option>
-          <option>Office</option>
-        </select>
-        <span class="topline"></span><span class="underline"></span>
-        <label for="newItemLoc" class="label">Location</label>
-      </div>
-      <button onclick="addNewItem()" aria-label="Add Item">Add Item</button>
-    </div>
+<div class="toast-wrap" id="toast-wrap"></div>
 
-    <div class="helper-row">
-      <div class="card helper" aria-label="Image Helper">
-        <div class="card-border-top"></div>
-        <div class="img">🖼️</div>
-        <span>Need an image URL?</span>
-        <span class="job">Upload to ImageKit, copy the link, then set it via the 🖼 button on an item.</span>
-        <button type="button" onclick="openImgbb()">Open ImageKit</button>
-        <div class="helper-note">Tip: choose "Direct link" if available.</div>
-      </div>
-    </div>
-
-    <div class="muted">Signed in as <strong id="signedAs"></strong>. Data syncs via Firebase (Firestore + Storage).</div>
-  </section>
-</main>
-
-<!-- Barcode Scanner Library -->
+<!-- Quagga -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
-  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, collection, doc, addDoc, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+import { getFirestore, collection, addDoc, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
-    authDomain: "epedu-inventory-database.firebaseapp.com",
-    projectId: "epedu-inventory-database",
-    storageBucket: "epedu-inventory-database.appspot.com",
-    messagingSenderId: "124437251040",
-    appId: "1:124437251040:web:4989c73efc2f4afbf22185",
-    measurementId: "G-GFEEP49VRP"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
+  authDomain: "epedu-inventory-database.firebaseapp.com",
+  projectId: "epedu-inventory-database"
+};
 
-  const app = initializeApp(firebaseConfig);
-  try { getAnalytics(app); } catch(e) {}
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
-  signInAnonymously(auth).catch(console.error);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const colInventory = collection(db,"inventory");
 
-  const CURRENT_USER = localStorage.getItem('auth_user') || 'Unknown';
-  const signedAs = document.getElementById('signedAs'); if (signedAs) signedAs.textContent = CURRENT_USER;
+const toastWrap = document.getElementById('toast-wrap');
+function notify(msg){
+  const d=document.createElement('div');
+  d.className='toast';d.textContent=msg;
+  toastWrap.appendChild(d);
+  setTimeout(()=>d.remove(),3000);
+}
 
-  const toastWrap = document.getElementById('toast-wrap');
-  function toast(msg, type='info', timeout=3200){
-    const el = document.createElement('div');
-    el.className = 'toast' + (type==='warn' ? ' toast--warn' : type==='error' ? ' toast--error' : '');
-    el.innerHTML = `${escapeHtml(msg)} <span class="toast__close" aria-label="Dismiss" role="button">×</span>`;
-    toastWrap.appendChild(el);
-    const close = ()=>{ if (el && el.parentNode) el.parentNode.removeChild(el); };
-    el.querySelector('.toast__close').addEventListener('click', close);
-    if (timeout>0) setTimeout(close, timeout);
-  }
-  const notify = toast;
+// =========================
+// SCANNER LOGIC (FIXED)
+// =========================
+let scannerActive=false;
+let scannedBarcode='';
 
-  function escapeHtml(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-  function normLoc(raw){
-    const s=(raw||'').trim().toLowerCase();
-    if (s.startsWith('old')) return 'Old warehouse';
-    if (s.startsWith('new')) return 'New warehouse';
-    if (s.startsWith('off')) return 'Office';
-    if (['old warehouse','new warehouse','office'].includes(s)) return s.replace(/\b\w/g,m=>m.toUpperCase());
-    return null;
-  }
+window.openScanner=()=>{
+  document.getElementById('scannerModal').classList.add('active');
+  startScanner();
+};
 
-  const menuCheck = document.getElementById('menu-check');
-  const hamb = document.querySelector('label.hamburger');
-  function syncAria(){ hamb.setAttribute('aria-expanded', String(menuCheck.checked)); }
-  menuCheck.addEventListener('change', syncAria); syncAria();
+window.closeScanner=()=>{
+  document.getElementById('scannerModal').classList.remove('active');
+  stopScanner();
+};
 
-  const colInventory = collection(db, "inventory");
+function startScanner(){
+  if(scannerActive) return;
 
-  let inventory = [];
-  onSnapshot(colInventory, (snap) => { inventory = snap.docs.map(d => ({ id:d.id, ...d.data() })); });
-
-  window.openImgbb = () => window.open('https://imagekit.io/dashboard/media-library/L0VQRURVIElOVkVOVE9SWSA', '_blank', 'noopener');
-
-  async function addNewItem() {
-    const name = (document.getElementById('newItemName').value || '').trim().replace(/\s+/g,' ');
-    const qty  = parseInt(document.getElementById('newItemQty').value,10);
-    const location = normLoc(document.getElementById('newItemLoc').value);
-    if (!name || isNaN(qty) || qty <= 0) { notify("Enter a valid name and a quantity ≥ 1","warn"); return; }
-    if (!location) { notify('Location must be "Old warehouse", "New warehouse", or "Office".',"warn"); return; }
-
-    const existing = inventory.find(i => (i.name||'').toLowerCase() === name.toLowerCase());
-    try{
-      if (existing) {
-        const incOld    = location === 'Old warehouse' ? qty : 0;
-        const incNew    = location === 'New warehouse' ? qty : 0;
-        const incOffice = location === 'Office'         ? qty : 0;
-        const newOld    = Math.max(0, (existing.qtyOld ?? 0)    + incOld);
-        const newNew    = Math.max(0, (existing.qtyNew ?? 0)    + incNew);
-        const newOffice = Math.max(0, (existing.qtyOffice ?? 0) + incOffice);
-        await updateDoc(doc(db, "inventory", existing.id), {
-          qtyOld: newOld, qtyNew: newNew, qtyOffice: newOffice, qty: newOld + newNew + newOffice, isNew:true
-        });
-      } else {
-        const qtyOld    = location === 'Old warehouse' ? qty : 0;
-        const qtyNew    = location === 'New warehouse' ? qty : 0;
-        const qtyOffice = location === 'Office'         ? qty : 0;
-        await addDoc(colInventory, {
-          name, qtyOld, qtyNew, qtyOffice, qty: qtyOld + qtyNew + qtyOffice, goal:0, img:null, isNew:true, createdAt: serverTimestamp()
-        });
+  Quagga.init({
+    inputStream:{
+      name:"Live",
+      type:"LiveStream",
+      target:document.querySelector('#scannerViewport'),
+      constraints:{
+        facingMode:{ideal:"environment"},
+        width:{ideal:1280},
+        height:{ideal:720}
       }
-      notify(`Item "${name}" added to ${location}.`);
-    } catch(err){ console.error(err); notify('Failed to add item','error'); }
-    document.getElementById('newItemName').value = '';
-    document.getElementById('newItemQty').value = '';
-  }
-  window.addNewItem = addNewItem;
+    },
+    locator:{patchSize:"medium",halfSample:true},
+    numOfWorkers:1,
+    decoder:{
+      readers:[
+        "ean_reader","ean_8_reader",
+        "upc_reader","upc_e_reader",
+        "code_128_reader","code_39_reader"
+      ]
+    },
+    locate:true
+  },err=>{
+    if(err){console.error(err);notify("Camera error");return;}
+    Quagga.start();
+    scannerActive=true;
+  });
 
-  // Scanner functionality
-  let scannerActive = false;
-  let scannedBarcode = '';
-  let videoStream = null;
+  Quagga.onDetected(onDetected);
+}
 
-  window.openScanner = function() {
-    const modal = document.getElementById('scannerModal');
-    modal.classList.add('active');
-    startScanner();
-  };
+function stopScanner(){
+  if(!scannerActive) return;
+  Quagga.offDetected(onDetected);
+  Quagga.stop();
+  scannerActive=false;
+}
 
-  window.closeScanner = function() {
-    const modal = document.getElementById('scannerModal');
-    modal.classList.remove('active');
-    stopScanner();
-    document.getElementById('scannerResult').style.display = 'none';
-    document.getElementById('addForm').classList.remove('active');
-    scannedBarcode = '';
-  };
+function onDetected(res){
+  const code=res?.codeResult?.code;
+  if(!code) return;
 
-  function startScanner() {
-    if (scannerActive) return;
-    
-    Quagga.init({
-      inputStream: {
-        name: "Live",
-        type: "LiveStream",
-        target: document.querySelector('.scanner-viewport'),
-        constraints: {
-          facingMode: "environment"
-        }
-      },
-      locator: {
-        patchSize: "medium",
-        halfSample: true
-      },
-      numOfWorkers: navigator.hardwareConcurrency || 4,
-      decoder: {
-        readers: [
-          "code_128_reader",
-          "ean_reader",
-          "ean_8_reader",
-          "code_39_reader",
-          "upc_reader",
-          "upc_e_reader"
-        ]
-      },
-      locate: true
-    }, function(err) {
-      if (err) {
-        console.error('Quagga init error:', err);
-        notify('Failed to start camera: ' + err.message, 'error');
-        return;
-      }
-      console.log("Quagga initialized successfully");
-      Quagga.start();
-      scannerActive = true;
-    });
+  scannedBarcode=code;
+  document.getElementById('scannedCode').textContent=code;
+  document.getElementById('scannerResult').style.display='block';
+  document.getElementById('addForm').classList.add('active');
+  notify("Scanned: "+code);
+  stopScanner();
+}
 
-    Quagga.onDetected(function(result) {
-      const code = result.codeResult.code;
-      if (!code) return;
-      
-      scannedBarcode = code;
-      document.getElementById('scannedCode').textContent = code;
-      document.getElementById('scannerResult').style.display = 'block';
-      document.getElementById('addForm').classList.add('active');
-      document.getElementById('scannedItemName').value = '';
-      document.getElementById('scannedItemName').focus();
-      notify('Barcode scanned: ' + code, 'info');
-      stopScanner();
-    });
-  }
+window.addScannedItem=async()=>{
+  const name=scannedItemName.value.trim();
+  const qty=parseInt(scannedItemQty.value,10);
+  const loc=scannedItemLoc.value;
+  if(!name||qty<=0) return notify("Invalid input");
 
-  function stopScanner() {
-    if (scannerActive) {
-      Quagga.stop();
-      scannerActive = false;
-    }
-    if (videoStream) {
-      videoStream.getTracks().forEach(track => track.stop());
-      videoStream = null;
-    }
-    const video = document.getElementById('scanner-video');
-    video.srcObject = null;
-  }
-
-  window.addScannedItem = async function() {
-    const name = (document.getElementById('scannedItemName').value || '').trim().replace(/\s+/g,' ');
-    const qty = parseInt(document.getElementById('scannedItemQty').value, 10);
-    const location = normLoc(document.getElementById('scannedItemLoc').value);
-
-    if (!name || isNaN(qty) || qty <= 0) {
-      notify("Enter a valid name and quantity", "warn");
-      return;
-    }
-    if (!location) {
-      notify('Select a valid location', "warn");
-      return;
-    }
-
-    const existing = inventory.find(i => (i.name||'').toLowerCase() === name.toLowerCase());
-    try {
-      if (existing) {
-        const incOld = location === 'Old warehouse' ? qty : 0;
-        const incNew = location === 'New warehouse' ? qty : 0;
-        const incOffice = location === 'Office' ? qty : 0;
-        const newOld = Math.max(0, (existing.qtyOld ?? 0) + incOld);
-        const newNew = Math.max(0, (existing.qtyNew ?? 0) + incNew);
-        const newOffice = Math.max(0, (existing.qtyOffice ?? 0) + incOffice);
-        await updateDoc(doc(db, "inventory", existing.id), {
-          qtyOld: newOld,
-          qtyNew: newNew,
-          qtyOffice: newOffice,
-          qty: newOld + newNew + newOffice,
-          barcode: scannedBarcode,
-          isNew: true
-        });
-      } else {
-        const qtyOld = location === 'Old warehouse' ? qty : 0;
-        const qtyNew = location === 'New warehouse' ? qty : 0;
-        const qtyOffice = location === 'Office' ? qty : 0;
-        await addDoc(colInventory, {
-          name,
-          qtyOld,
-          qtyNew,
-          qtyOffice,
-          qty: qtyOld + qtyNew + qtyOffice,
-          goal: 0,
-          img: null,
-          barcode: scannedBarcode,
-          isNew: true,
-          createdAt: serverTimestamp()
-        });
-      }
-      notify(`Item "${name}" added with barcode ${scannedBarcode}!`);
-      closeScanner();
-    } catch (err) {
-      console.error(err);
-      notify('Failed to add item', 'error');
-    }
-  };
+  await addDoc(colInventory,{
+    name,qty,location:loc,barcode:scannedBarcode
+  });
+  notify("Item added");
+  closeScanner();
+};
 </script>
 </body>
 </html>
