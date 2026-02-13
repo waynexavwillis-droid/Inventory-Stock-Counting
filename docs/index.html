@@ -148,7 +148,7 @@
     .helper-row{grid-template-columns:1fr 1fr}
   }
   @media (min-width: 900px) {
-    .helper-row{grid-template-columns:1fr 1fr 1fr}
+    .helper-row{grid-template-columns:1fr 1fr 1fr 1fr}
   }
   .card.helper{
     width:100%;border-radius:15px;background:var(--helper-panel);color:var(--ink);padding:16px;
@@ -446,6 +446,66 @@
     color:#fff;
   }
 
+  /* Barcode List Items */
+  .barcode-group{
+    margin-bottom:16px;
+    background:var(--bg);
+    border-radius:8px;
+    padding:12px;
+    border:1px solid var(--line);
+  }
+  .barcode-group-header{
+    font-weight:600;
+    font-size:16px;
+    color:var(--ink);
+    margin-bottom:8px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .barcode-count{
+    font-size:12px;
+    color:var(--muted);
+    font-weight:normal;
+  }
+  .barcode-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px;
+    background:var(--panel);
+    border-radius:6px;
+    margin-bottom:6px;
+    border:1px solid var(--line);
+  }
+  .barcode-item:last-child{margin-bottom:0}
+  .barcode-code{
+    font-family:monospace;
+    font-size:14px;
+    color:var(--accent);
+    font-weight:600;
+  }
+  .barcode-remove{
+    padding:6px 12px;
+    font-size:12px;
+    background:transparent;
+    border:1px solid #E74C3C;
+    color:#E74C3C;
+    border-radius:6px;
+    cursor:pointer;
+    transition:.2s;
+  }
+  .barcode-remove:hover{
+    background:#E74C3C;
+    color:#fff;
+  }
+  .no-barcodes{
+    text-align:center;
+    padding:40px 20px;
+    color:var(--muted);
+    font-size:14px;
+  }
+
   /* Toasts */
   .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
   .toast{
@@ -578,10 +638,26 @@
   </div>
 </div>
 
+<!-- View Barcodes Modal -->
+<div class="product-modal" id="viewBarcodesModal" style="z-index:2200">
+  <div class="product-content" style="max-width:700px">
+    <div class="product-header">
+      <h3>Barcode Assignments</h3>
+      <p style="font-size:14px;color:var(--muted);margin:8px 0 0 0">View and manage barcode-to-product assignments</p>
+    </div>
+    <div id="barcodesList" style="max-height:400px;overflow-y:auto;margin-bottom:16px">
+      <!-- Barcodes will be populated here -->
+    </div>
+    <div class="product-actions">
+      <button class="btn-confirm" style="flex:none;width:100%" onclick="closeViewBarcodesModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <main class="content">
   <section aria-labelledby="addPageTitle">
     <h2 id="addPageTitle">Add New Item</h2>
-    <div class="add-row" style="display:grid;grid-template-columns:minmax(260px,1fr) 160px minmax(220px,1fr) auto auto auto;gap:12px;align-items:center;max-width:1100px">
+    <div class="add-row" style="display:grid;grid-template-columns:minmax(260px,1fr) 160px minmax(220px,1fr) auto auto auto auto;gap:12px;align-items:center;max-width:1200px">
       <div class="input-container">
         <input type="text" id="newItemName" class="input" placeholder=" " autocomplete="off" />
         <span class="topline"></span><span class="underline"></span>
@@ -599,6 +675,7 @@
       </div>
       <button class="scanner-btn" onclick="openRegisterScanner()" aria-label="Register Barcode" title="Register Barcode">🔖</button>
       <button class="scanner-btn secondary" onclick="openQuickScanner()" aria-label="Quick Scan" title="Quick Scan">⚡</button>
+      <button class="scanner-btn" style="background:#E67E22;border-color:#E67E22" onclick="openViewBarcodesModal()" aria-label="View Barcodes" title="View Barcodes">📋</button>
       <button onclick="addNewItem()" aria-label="Add Item">Add Item</button>
     </div>
 
@@ -629,6 +706,15 @@
         <button type="button" onclick="openImgbb()">Open ImageKit</button>
         <div class="helper-note">Tip: choose "Direct link" if available.</div>
       </div>
+      
+      <div class="card helper" aria-label="View Barcodes Helper">
+        <div class="card-border-top"></div>
+        <div class="img">📋</div>
+        <span>View Barcode Assignments</span>
+        <span class="job">See all registered barcodes and which products they're assigned to. Remove barcodes you no longer need.</span>
+        <button type="button" onclick="openViewBarcodesModal()">View Barcodes</button>
+        <div class="helper-note">Tip: Manage all barcode assignments in one place.</div>
+      </div>
     </div>
 
     <div class="muted">Signed in as <strong id="signedAs"></strong>. Data syncs via Firebase (Firestore + Storage).</div>
@@ -655,7 +741,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, collection, doc, addDoc, updateDoc, onSnapshot, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { getFirestore, collection, doc, addDoc, updateDoc, onSnapshot, serverTimestamp, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
@@ -1020,6 +1106,82 @@
 
   document.getElementById('quickActionModal').addEventListener('click', (e) => {
     if (e.target.id === 'quickActionModal') closeQuickActionModal();
+  });
+
+  /* ============================================ */
+  /* FUNCTION 3: VIEW & MANAGE BARCODES          */
+  /* ============================================ */
+
+  window.openViewBarcodesModal = function() {
+    const modal = document.getElementById('viewBarcodesModal');
+    const barcodesList = document.getElementById('barcodesList');
+    
+    barcodesList.innerHTML = '';
+    
+    // Group barcodes by product
+    const productsWithBarcodes = inventory.filter(item => (item.barcodes || []).length > 0);
+    
+    if (productsWithBarcodes.length === 0) {
+      barcodesList.innerHTML = '<div class="no-barcodes">No barcodes registered yet. Use the 🔖 Register Barcode button to get started!</div>';
+    } else {
+      productsWithBarcodes.forEach(product => {
+        const barcodes = product.barcodes || [];
+        
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'barcode-group';
+        
+        let headerHtml = `
+          <div class="barcode-group-header">
+            ${escapeHtml(product.name)}
+            <span class="barcode-count">(${barcodes.length} barcode${barcodes.length !== 1 ? 's' : ''})</span>
+          </div>
+        `;
+        
+        let barcodesHtml = '';
+        barcodes.forEach(barcode => {
+          barcodesHtml += `
+            <div class="barcode-item">
+              <span class="barcode-code">${escapeHtml(barcode)}</span>
+              <button class="barcode-remove" onclick="removeBarcode('${escapeHtml(product.id)}', '${escapeHtml(barcode)}')">Remove</button>
+            </div>
+          `;
+        });
+        
+        groupDiv.innerHTML = headerHtml + barcodesHtml;
+        barcodesList.appendChild(groupDiv);
+      });
+    }
+    
+    modal.classList.add('active');
+  };
+
+  window.closeViewBarcodesModal = function() {
+    document.getElementById('viewBarcodesModal').classList.remove('active');
+  };
+
+  window.removeBarcode = async function(productId, barcode) {
+    if (!confirm(`Remove barcode "${barcode}"?\n\nThis action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      await updateDoc(doc(db, "inventory", productId), {
+        barcodes: arrayRemove(barcode)
+      });
+      
+      notify(`Barcode removed successfully`);
+      
+      // Refresh the barcodes list
+      openViewBarcodesModal();
+      
+    } catch (err) {
+      console.error('Error removing barcode:', err);
+      notify('Failed to remove barcode', 'error');
+    }
+  };
+
+  document.getElementById('viewBarcodesModal').addEventListener('click', (e) => {
+    if (e.target.id === 'viewBarcodesModal') closeViewBarcodesModal();
   });
 
   /* ============================================ */
