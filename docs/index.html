@@ -239,6 +239,108 @@
   .scanner-result.active{display:block}
   .scanner-result strong{color:var(--accent)}
 
+  /* Product Selection Modal */
+  .product-modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.85);
+    z-index:2100;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .product-modal.active{display:flex}
+  .product-content{
+    background:var(--panel);
+    border-radius:12px;
+    padding:24px;
+    max-width:500px;
+    width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.3);
+  }
+  .product-header{
+    margin-bottom:20px;
+  }
+  .product-header h3{margin:0 0 8px 0}
+  .serial-display{
+    background:var(--bg);
+    padding:12px;
+    border-radius:8px;
+    border:2px solid var(--accent);
+    margin-bottom:16px;
+    text-align:center;
+  }
+  .serial-display .serial-label{
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  .serial-display .serial-number{
+    font-size:20px;
+    font-weight:bold;
+    color:var(--accent);
+    font-family:monospace;
+  }
+  .product-list{
+    max-height:300px;
+    overflow-y:auto;
+    margin-bottom:16px;
+  }
+  .product-item{
+    padding:12px;
+    margin-bottom:8px;
+    background:var(--bg);
+    border:2px solid var(--line);
+    border-radius:8px;
+    cursor:pointer;
+    transition:.2s ease;
+  }
+  .product-item:hover{
+    border-color:var(--accent);
+    background:var(--chip);
+  }
+  .product-item.selected{
+    border-color:var(--accent);
+    background:var(--chip);
+  }
+  .product-name{
+    font-weight:600;
+    margin-bottom:4px;
+  }
+  .product-info{
+    font-size:12px;
+    color:var(--muted);
+  }
+  .product-actions{
+    display:flex;
+    gap:12px;
+  }
+  .product-actions button{
+    flex:1;
+    padding:12px;
+  }
+  .btn-cancel{
+    background:transparent;
+    border:2px solid var(--line);
+  }
+  .btn-cancel:hover{
+    background:var(--line);
+    color:var(--ink);
+  }
+  .btn-confirm{
+    background:var(--accent);
+    border:2px solid var(--accent);
+    color:#fff;
+  }
+  .btn-confirm:hover{
+    filter:brightness(.9);
+  }
+  .btn-confirm:disabled{
+    opacity:.5;
+    cursor:not-allowed;
+  }
+
   /* Toasts */
   .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10000}
   .toast{
@@ -280,12 +382,32 @@
 <div class="scanner-modal" id="scannerModal">
   <div class="scanner-content">
     <div class="scanner-header">
-      <h3>Scan Barcode</h3>
+      <h3>Scan Barcode/Serial Number</h3>
       <button class="scanner-close" onclick="closeScanner()" aria-label="Close scanner">×</button>
     </div>
     <div id="reader"></div>
     <div class="scanner-result" id="scannerResult">
       <strong>Scanned:</strong> <span id="scannedCode"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Product Selection Modal -->
+<div class="product-modal" id="productModal">
+  <div class="product-content">
+    <div class="product-header">
+      <h3>Select Product for Serial Number</h3>
+      <div class="serial-display">
+        <div class="serial-label">Serial Number / Barcode</div>
+        <div class="serial-number" id="modalSerialNumber">—</div>
+      </div>
+    </div>
+    <div class="product-list" id="productList">
+      <!-- Products will be populated here -->
+    </div>
+    <div class="product-actions">
+      <button class="btn-cancel" onclick="closeProductModal()">Cancel</button>
+      <button class="btn-confirm" id="confirmProductBtn" onclick="confirmProduct()" disabled>Confirm</button>
     </div>
   </div>
 </div>
@@ -317,9 +439,9 @@
       <div class="card helper" aria-label="Barcode Scanner Helper">
         <div class="card-border-top"></div>
         <div class="img">📷</div>
-        <span>Quick Barcode Scan</span>
-        <span class="job">Click the camera button to scan barcodes with your device camera. The scanned code will auto-fill the item name.</span>
-        <button type="button" onclick="openScanner()">Open Scanner</button>
+        <span>Serial Number Scanner</span>
+        <span class="job">Scan a barcode/serial number, then select which product it belongs to. The system will register the serial number for that product.</span>
+        <button type="button" onclick="openScanner()">Scan Serial Number</button>
         <div class="helper-note">Tip: Works with most 1D and 2D barcodes.</div>
       </div>
       
@@ -345,7 +467,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, collection, doc, addDoc, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { getFirestore, collection, doc, addDoc, updateDoc, onSnapshot, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAL_C_bGiD-G_2g1jro7-OzxIlM0akRdTY",
@@ -409,6 +531,8 @@
   /* Barcode Scanner */
   let html5QrCode = null;
   let scannerActive = false;
+  let scannedSerialNumber = null;
+  let selectedProductId = null;
 
   window.openScanner = async function() {
     const modal = document.getElementById('scannerModal');
@@ -436,14 +560,15 @@
           document.getElementById('scannedCode').textContent = decodedText;
           document.getElementById('scannerResult').classList.add('active');
           
-          // Auto-fill the item name with the scanned barcode
-          document.getElementById('newItemName').value = decodedText;
+          // Store the scanned serial number
+          scannedSerialNumber = decodedText;
           
-          notify(`Barcode scanned: ${decodedText}`);
+          notify(`Serial number scanned: ${decodedText}`);
           
-          // Auto-close scanner after 1.5 seconds
+          // Close scanner and open product selection modal
           setTimeout(() => {
             closeScanner();
+            openProductModal(decodedText);
           }, 1500);
         },
         (errorMessage) => {
@@ -478,6 +603,101 @@
     }
   });
 
+  /* Product Selection Modal */
+  function openProductModal(serialNumber) {
+    const modal = document.getElementById('productModal');
+    const serialDisplay = document.getElementById('modalSerialNumber');
+    const productList = document.getElementById('productList');
+    const confirmBtn = document.getElementById('confirmProductBtn');
+    
+    serialDisplay.textContent = serialNumber;
+    selectedProductId = null;
+    confirmBtn.disabled = true;
+    
+    // Populate product list from inventory
+    productList.innerHTML = '';
+    
+    if (inventory.length === 0) {
+      productList.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">No products available. Add products first.</div>';
+    } else {
+      inventory.forEach(item => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'product-item';
+        itemDiv.dataset.productId = item.id;
+        
+        const totalQty = (item.qtyOld || 0) + (item.qtyNew || 0) + (item.qtyOffice || 0);
+        const serialCount = (item.serialNumbers || []).length;
+        
+        itemDiv.innerHTML = `
+          <div class="product-name">${escapeHtml(item.name)}</div>
+          <div class="product-info">Total Qty: ${totalQty} | Serial Numbers: ${serialCount}</div>
+        `;
+        
+        itemDiv.addEventListener('click', () => selectProduct(item.id));
+        productList.appendChild(itemDiv);
+      });
+    }
+    
+    modal.classList.add('active');
+  }
+
+  function selectProduct(productId) {
+    selectedProductId = productId;
+    
+    // Update UI to show selection
+    document.querySelectorAll('.product-item').forEach(item => {
+      item.classList.remove('selected');
+    });
+    document.querySelector(`[data-product-id="${productId}"]`)?.classList.add('selected');
+    
+    // Enable confirm button
+    document.getElementById('confirmProductBtn').disabled = false;
+  }
+
+  window.closeProductModal = function() {
+    document.getElementById('productModal').classList.remove('active');
+    selectedProductId = null;
+    scannedSerialNumber = null;
+  };
+
+  window.confirmProduct = async function() {
+    if (!selectedProductId || !scannedSerialNumber) {
+      notify('Please select a product', 'warn');
+      return;
+    }
+    
+    try {
+      const productDoc = doc(db, "inventory", selectedProductId);
+      const product = inventory.find(i => i.id === selectedProductId);
+      
+      // Check if serial number already exists
+      const existingSerials = product.serialNumbers || [];
+      if (existingSerials.includes(scannedSerialNumber)) {
+        notify('This serial number is already registered for this product', 'warn');
+        return;
+      }
+      
+      // Add serial number to the product
+      await updateDoc(productDoc, {
+        serialNumbers: arrayUnion(scannedSerialNumber)
+      });
+      
+      notify(`Serial number registered to ${product.name}`);
+      closeProductModal();
+      
+    } catch (err) {
+      console.error('Error registering serial number:', err);
+      notify('Failed to register serial number', 'error');
+    }
+  };
+
+  // Close product modal when clicking outside
+  document.getElementById('productModal').addEventListener('click', (e) => {
+    if (e.target.id === 'productModal') {
+      closeProductModal();
+    }
+  });
+
   /* Add item (supports Office) */
   async function addNewItem() {
     const name = (document.getElementById('newItemName').value || '').trim().replace(/\s+/g,' ');
@@ -503,7 +723,9 @@
         const qtyNew    = location === 'New warehouse' ? qty : 0;
         const qtyOffice = location === 'Office'         ? qty : 0;
         await addDoc(colInventory, {
-          name, qtyOld, qtyNew, qtyOffice, qty: qtyOld + qtyNew + qtyOffice, goal:0, img:null, isNew:true, createdAt: serverTimestamp()
+          name, qtyOld, qtyNew, qtyOffice, qty: qtyOld + qtyNew + qtyOffice, goal:0, img:null, isNew:true, 
+          serialNumbers: [], // Initialize empty serial numbers array
+          createdAt: serverTimestamp()
         });
       }
       notify(`Item "${name}" added to ${location}.`);
@@ -512,6 +734,7 @@
     document.getElementById('newItemQty').value = '';
   }
   window.addNewItem = addNewItem;
+  window.selectProduct = selectProduct;
 </script>
 </body>
 </html>
