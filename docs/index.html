@@ -147,6 +147,9 @@
   @media (min-width: 600px) {
     .helper-row{grid-template-columns:1fr 1fr}
   }
+  @media (min-width: 900px) {
+    .helper-row{grid-template-columns:1fr 1fr 1fr}
+  }
   .card.helper{
     width:100%;border-radius:15px;background:var(--helper-panel);color:var(--ink);padding:16px;
     box-shadow:0 8px 22px rgba(0,0,0,.08);border:1px solid var(--line)
@@ -617,6 +620,15 @@
         <button type="button" onclick="openQuickScanner()">Quick Scan</button>
         <div class="helper-note">Tip: Barcode must be registered first.</div>
       </div>
+      
+      <div class="card helper" aria-label="Image Helper">
+        <div class="card-border-top"></div>
+        <div class="img">🖼️</div>
+        <span>Need an image URL?</span>
+        <span class="job">Upload to ImageKit, copy the link, then set it via the 🖼 button on an item.</span>
+        <button type="button" onclick="openImgbb()">Open ImageKit</button>
+        <div class="helper-note">Tip: choose "Direct link" if available.</div>
+      </div>
     </div>
 
     <div class="muted">Signed in as <strong id="signedAs"></strong>. Data syncs via Firebase (Firestore + Storage).</div>
@@ -628,6 +640,18 @@
 
 <!-- Firebase + App Logic -->
 <script type="module">
+  // Global error handler to prevent blank pages
+  window.addEventListener('error', function(e) {
+    console.error('Global error caught:', e.error);
+    // Don't let errors break the page
+    e.preventDefault();
+  });
+
+  window.addEventListener('unhandledrejection', function(e) {
+    console.error('Unhandled promise rejection:', e.reason);
+    e.preventDefault();
+  });
+
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -688,6 +712,9 @@
   /* Keep a local copy of inventory */
   let inventory = [];
   onSnapshot(colInventory, (snap) => { inventory = snap.docs.map(d => ({ id:d.id, ...d.data() })); });
+
+  /* Open ImageKit */
+  window.openImgbb = () => window.open('https://imagekit.io/dashboard/media-library/L0VQRURVIElOVkVOVE9SWSA', '_blank', 'noopener');
 
   /* ============================================ */
   /* FUNCTION 1: REGISTER BARCODE TO PRODUCT     */
