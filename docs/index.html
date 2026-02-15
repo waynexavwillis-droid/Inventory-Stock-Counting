@@ -173,16 +173,22 @@
     background:var(--helper-accent);
     border-color:var(--helper-accent);
     color:#fff;
-    font-size:20px;
+    font-size:14px;
+    font-weight:600;
     padding:10px 16px;
-    min-width:50px;
+    min-width:80px;
+    white-space:nowrap;
   }
   .scanner-btn:hover{
     filter:brightness(.9);
+    color:#fff;
   }
   .scanner-btn.secondary{
     background:#0EA5A4;
     border-color:#0EA5A4;
+  }
+  .scanner-btn.secondary:hover{
+    color:#fff;
   }
 
   /* Scanner Modal */
@@ -673,9 +679,9 @@
         <span class="topline"></span><span class="underline"></span>
         <label for="newItemLoc" class="label">Location</label>
       </div>
-      <button class="scanner-btn" onclick="openRegisterScanner()" aria-label="Register Barcode" title="Register Barcode">🔖</button>
-      <button class="scanner-btn secondary" onclick="openQuickScanner()" aria-label="Quick Scan" title="Quick Scan">⚡</button>
-      <button class="scanner-btn" style="background:#E67E22;border-color:#E67E22" onclick="openViewBarcodesModal()" aria-label="View Barcodes" title="View Barcodes">📋</button>
+      <button class="scanner-btn" onclick="openRegisterScanner()" aria-label="Register Barcode" title="Register Barcode">Register</button>
+      <button class="scanner-btn secondary" onclick="openQuickScanner()" aria-label="Quick Scan" title="Quick Scan">Quick Scan</button>
+      <button class="scanner-btn" style="background:#E67E22;border-color:#E67E22" onclick="openViewBarcodesModal()" aria-label="View Barcodes" title="View Barcodes">View</button>
       <button onclick="addNewItem()" aria-label="Add Item">Add Item</button>
     </div>
 
