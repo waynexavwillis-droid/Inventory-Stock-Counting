@@ -663,7 +663,7 @@
 <main class="content">
   <section aria-labelledby="addPageTitle">
     <h2 id="addPageTitle">Add New Item</h2>
-    <div class="add-row" style="display:grid;grid-template-columns:minmax(260px,1fr) 160px minmax(220px,1fr) auto auto auto auto;gap:12px;align-items:center;max-width:1200px">
+    <div class="add-row" style="display:grid;grid-template-columns:minmax(260px,1fr) 160px minmax(220px,1fr) auto;gap:12px;align-items:center;max-width:900px">
       <div class="input-container">
         <input type="text" id="newItemName" class="input" placeholder=" " autocomplete="off" />
         <span class="topline"></span><span class="underline"></span>
@@ -679,9 +679,6 @@
         <span class="topline"></span><span class="underline"></span>
         <label for="newItemLoc" class="label">Location</label>
       </div>
-      <button class="scanner-btn" onclick="openRegisterScanner()" aria-label="Register Barcode" title="Register Barcode">Register</button>
-      <button class="scanner-btn secondary" onclick="openQuickScanner()" aria-label="Quick Scan" title="Quick Scan">Quick Scan</button>
-      <button class="scanner-btn" style="background:#E67E22;border-color:#E67E22" onclick="openViewBarcodesModal()" aria-label="View Barcodes" title="View Barcodes">View</button>
       <button onclick="addNewItem()" aria-label="Add Item">Add Item</button>
     </div>
 
