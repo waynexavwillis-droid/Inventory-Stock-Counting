@@ -142,6 +142,50 @@
   .input-container input:focus~.label{top:-10px;transform:scale(1)}
   .input-container select{appearance:none}
 
+  /* UPDATED: Add Item form layout */
+  .add-form{
+    max-width:900px;
+    display:grid;
+    gap:12px;
+  }
+  .add-form-top{
+    display:grid;
+    grid-template-columns:minmax(260px,1fr) 160px;
+    gap:12px;
+    align-items:center;
+  }
+  .add-form-bottom{
+    display:grid;
+    grid-template-columns:minmax(220px,1fr) auto;
+    gap:12px;
+    align-items:center;
+  }
+  .add-form-top .input-container,
+  .add-form-bottom .input-container{
+    margin:0;
+  }
+  .add-form-top input,
+  .add-form-bottom select,
+  .add-form-bottom button{
+    margin:0;
+  }
+  .add-btn{
+    height:40px;
+    padding:0 18px;
+    min-width:120px;
+    white-space:nowrap;
+  }
+
+  @media (max-width: 700px){
+    .add-form-top,
+    .add-form-bottom{
+      grid-template-columns:1fr;
+    }
+    .add-btn{
+      width:100%;
+    }
+  }
+
   /* Helper card (themed) */
   .helper-row{display:grid;grid-template-columns:1fr;gap:16px;margin-top:12px}
   @media (min-width: 600px) {
@@ -663,23 +707,31 @@
 <main class="content">
   <section aria-labelledby="addPageTitle">
     <h2 id="addPageTitle">Add New Item</h2>
-    <div class="add-row" style="display:grid;grid-template-columns:minmax(260px,1fr) 160px minmax(220px,1fr) auto;gap:12px;align-items:center;max-width:900px">
-      <div class="input-container">
-        <input type="text" id="newItemName" class="input" placeholder=" " autocomplete="off" />
-        <span class="topline"></span><span class="underline"></span>
-        <label for="newItemName" class="label">Item Name</label>
+
+    <div class="add-form">
+      <div class="add-form-top">
+        <div class="input-container">
+          <input type="text" id="newItemName" class="input" placeholder=" " autocomplete="off" />
+          <span class="topline"></span><span class="underline"></span>
+          <label for="newItemName" class="label">Item Name</label>
+        </div>
+
+        <input type="number" id="newItemQty" placeholder="Quantity" min="1" inputmode="numeric" aria-label="Quantity" />
       </div>
-      <input type="number" id="newItemQty" placeholder="Quantity" min="1" inputmode="numeric" aria-label="Quantity" />
-      <div class="input-container">
-        <select id="newItemLoc" class="input" style="height:40px">
-          <option>Old warehouse</option>
-          <option>New warehouse</option>
-          <option>Office</option>
-        </select>
-        <span class="topline"></span><span class="underline"></span>
-        <label for="newItemLoc" class="label">Location</label>
+
+      <div class="add-form-bottom">
+        <div class="input-container">
+          <select id="newItemLoc" class="input" style="height:40px">
+            <option>Old warehouse</option>
+            <option>New warehouse</option>
+            <option>Office</option>
+          </select>
+          <span class="topline"></span><span class="underline"></span>
+          <label for="newItemLoc" class="label">Location</label>
+        </div>
+
+        <button class="add-btn" onclick="addNewItem()" aria-label="Add Item">Add Item</button>
       </div>
-      <button onclick="addNewItem()" aria-label="Add Item">Add Item</button>
     </div>
 
     <div class="helper-row">
